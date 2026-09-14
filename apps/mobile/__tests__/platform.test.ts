@@ -73,6 +73,10 @@ const cacheStore = () => mmkv.__stores.get('correctiv.cache');
 
 beforeEach(() => {
   for (const store of mmkv.__stores.values()) store.data.clear();
+  // The two `jest.isolateModules` suites below each open a store under their own
+  // conditions, and this flag reaches them: without the reset, whichever runs
+  // second inherits the first one's backend.
+  mmkv.__control.failOnProbe = false;
   jest.clearAllMocks();
 });
 
@@ -236,6 +240,59 @@ describe('a storage backend that is not there at all', () => {
     warn.mockRestore();
   });
 });
+
+/**
+ * The third failure, and the only one that looks like success.
+ *
+ * A browser with site data switched off throws on `window.localStorage`, and MMKV's
+ * web build catches that itself and falls back to a module-global `Map`. The probe
+ * above therefore passes, writes resolve, reads in the same session answer, and
+ * nothing survives a reload. Issue #96 asks for unavailable storage to be surfaced,
+ * and this is the half of it no throw ever reaches.
+ */
+describe('a browser that refuses localStorage', () => {
+  const realWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+
+  afterEach(() => {
+    if (realWindow) Object.defineProperty(globalThis, 'window', realWindow);
+  });
+
+  it('says the store will not outlive the session, once per store', async () => {
+    // jest-expo points `window` at `global` and gives it no document, which is the
+    // native shape. A browser is a document plus an accessor that throws.
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        document: { createElement: () => ({}) },
+        get localStorage(): unknown {
+          throw new Error('The operation is insecure.');
+        },
+      },
+    });
+
+    let isolated!: CorePlatform;
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      isolated = (require('../src/lib/platform/expo') as { expoPlatform: CorePlatform })
+        .expoPlatform;
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // The session still works, deliberately: an in-memory store carries it, and
+    // rejecting every write would turn a browser setting into an unusable app.
+    await expoPlatformWrite(isolated);
+
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(String(warn.mock.calls[0]?.[0])).toContain('survive a reload');
+    warn.mockRestore();
+  });
+});
+
+/** One write through each port, which is what opens both stores. */
+async function expoPlatformWrite(host: CorePlatform): Promise<void> {
+  await host.keyValue.setString('store.settings', '{}');
+  await host.blobs.write('feeds', 'klima.json', 'x');
+}
 
 /**
  * The bundle is this host's offline promise: the reader has to open without a

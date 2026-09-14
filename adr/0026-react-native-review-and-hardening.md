@@ -589,9 +589,16 @@ measurement without one expires invisibly.
 
 ## What this retires
 
-Nothing in another ADR. Three claims in the source, and none is struck here, because a
-claim is struck when the code that made it true changes and not when a record says it
-will:
+~~Nothing in another ADR.~~ Two cells in [ADR 0006](0006-one-core-two-hosts.md)'s ports
+table, struck there when section 4 was carried out in
+[#136](https://github.com/faktenforum/correctiv-app/pull/136): the Expo host's answer
+for `KeyValueStore`, "AsyncStorage", and its answer for `BlobStore`, also
+"AsyncStorage". Both are MMKV now, in a store of its own each, and anyone reading
+either cell would go looking in the wrong place. The rest of that table and the
+argument around it stand.
+
+Three claims in the source, and none is struck here, because a claim is struck when the
+code that made it true changes and not when a record says it will:
 
 - The comment atop `packages/app-core/src/lib/format.ts` justifies hand-written German
   month and weekday names with "The NS runtime has no German ICU". That runtime left

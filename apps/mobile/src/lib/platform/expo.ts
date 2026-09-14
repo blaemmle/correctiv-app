@@ -77,8 +77,37 @@ const CACHE_ID = 'correctiv.cache';
  * which is what a prerendered page should contain. What it must not be is quiet or
  * repeated — quiet hides a broken build, and repeated is one line per key per
  * route in the export log.
+ *
+ * **What the probe cannot see, and why there is a second check.** A browser with
+ * site data switched off throws on `window.localStorage` itself, and MMKV's web
+ * build catches that inside `getLocalStorage()` and hands back a module-global
+ * `Map` instead. So the probe passes, every write resolves, every read in the same
+ * session answers — and nothing survives a reload. That is the failure issue #96
+ * asks to be surfaced, and it is the only one of the three that looks like success
+ * from here, so the check below repeats MMKV's own question rather than trusting
+ * the answer it never reports.
  */
 const opened = new Map<string, MMKV | null>();
+
+/**
+ * Whether what this host writes outlives the session.
+ *
+ * On native the store is a file and the answer is yes. In a browser it is the same
+ * question MMKV's `getLocalStorage()` asks, in the same order: is there a DOM at
+ * all, and does touching `localStorage` throw. The duplication is the point — the
+ * one place that knows the answer keeps it.
+ */
+function storageOutlivesTheSession(): boolean {
+  // `window` exists on native and `window.document` does not, which is how MMKV's
+  // web build decides it is in a browser. In Node during a prerender there is no
+  // `window` either, and that case is already reported by the probe's throw.
+  if (typeof window === 'undefined' || window.document?.createElement == null) return true;
+  try {
+    return window.localStorage != null;
+  } catch {
+    return false;
+  }
+}
 
 function store(id: string): MMKV | null {
   if (!opened.has(id)) {
@@ -86,6 +115,14 @@ function store(id: string): MMKV | null {
       const instance = createMMKV({ id });
       instance.contains('storage-probe'); // reaches the backend; see above
       opened.set(id, instance);
+      if (!storageOutlivesTheSession()) {
+        // Not treated as unavailable: an in-memory store still carries the session,
+        // and rejecting every write would turn a browser setting into an app that
+        // cannot be used at all. It is said once per store, like the case below.
+        console.warn(
+          `[platform] storage '${id}' opened, but this browser refuses localStorage — MMKV is holding it in memory and nothing will survive a reload`,
+        );
+      }
     } catch (err) {
       opened.set(id, null);
       console.warn(`[platform] storage '${id}' is unavailable, nothing will persist:`, err);

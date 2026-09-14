@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { createRequire } from 'node:module';
+import { dirname, join, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -95,6 +96,41 @@ function payload(store: Storage, slice: string): Record<string, unknown> {
 }
 
 describe('the storage layout the shell copies', () => {
+  /**
+   * The third side of the prefix, and the one neither `seed.ts` nor this file can
+   * import.
+   *
+   * MMKV's web build turns an instance id into a `localStorage` key prefix by
+   * appending `LOCAL_STORAGE_KEY_WILDCARD`, which is a backslash — and that name is
+   * not exported from the package's entry point, so both spellings above are typed
+   * out by hand and agree only with each other. If a 4.x release picks another
+   * character, or builds the prefix differently, every fixture would seed keys the
+   * app never reads, the suite would stay green, and `preview.html#/?s=signed-in`
+   * would look like a broken app: exactly the silent failure this file exists to
+   * prevent, one layer further down.
+   *
+   * So it is read out of the package's own source, the way
+   * `apps/mobile/__tests__/native-versions.test.ts` reads React Native's renderer
+   * version. A package that moves the file fails here loudly, which is the point.
+   */
+  const MMKV_WEB = dirname(
+    createRequire(import.meta.url).resolve('react-native-mmkv/package.json'),
+  );
+
+  it('spells its prefix the way MMKV spells it, character for character', () => {
+    const wildcard = /LOCAL_STORAGE_KEY_WILDCARD = '(.*)'/.exec(
+      readFileSync(join(MMKV_WEB, 'src/web/getLocalStorage.ts'), 'utf8'),
+    )?.[1];
+    expect(wildcard).toBe('\\\\'); // the source spells one backslash as two
+
+    // And the prefix is `<id>` plus that, with nothing else in between.
+    expect(readFileSync(join(MMKV_WEB, 'src/createMMKV/createMMKV.web.ts'), 'utf8')).toContain(
+      'const keyPrefix = `${config.id}${LOCAL_STORAGE_KEY_WILDCARD}`',
+    );
+    expect(STATE_PREFIX).toBe('correctiv.state\\');
+    expect(CACHE_PREFIX).toBe('correctiv.cache\\');
+  });
+
   it('writes into the two stores the app opens, and nowhere else', () => {
     // `lib/platform/expo.ts` is the only place the two ids are declared, and MMKV's
     // web build turns an id into a `localStorage` key prefix of `<id>\\`. Two
