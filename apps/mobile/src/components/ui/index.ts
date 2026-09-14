@@ -18,7 +18,7 @@ export { SafeAreaView } from './SafeAreaView';
 export { Screen } from './Screen';
 export type { ScreenProps } from './Screen';
 export { ScreenHeader } from './ScreenHeader';
-export type { ScreenHeaderProps } from './ScreenHeader';
+export type { ScreenHeaderProps } from './screenHeaderTypes';
 export { SectionCard } from './SectionCard';
 export type { SectionCardProps } from './SectionCard';
 export { SectionHeader } from './SectionHeader';

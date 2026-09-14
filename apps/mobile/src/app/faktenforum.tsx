@@ -14,7 +14,7 @@ import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 export default function FaktenforumScreen() {
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Faktenforum" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"

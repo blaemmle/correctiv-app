@@ -75,7 +75,10 @@ export default function SucheScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader>
+      {/* A named exception in ADR 0030: the drawn bar on every platform, because
+          the platform's own search field is a different interaction on each of
+          them and this screen's three empty states are bound to this one. */}
+      <ScreenHeader title="Suche" drawnBar>
         <TextInput
           value={query}
           onChangeText={setQuery}

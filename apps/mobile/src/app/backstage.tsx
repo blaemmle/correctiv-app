@@ -28,7 +28,7 @@ import { useColors } from '@/lib/theme';
 export default function BackstageScreen() {
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Backstage" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"
