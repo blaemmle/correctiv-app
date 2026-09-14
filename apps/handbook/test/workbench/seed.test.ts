@@ -29,7 +29,7 @@ function sources(dir: string, out: string[] = []): string[] {
 
 /**
  * The shell writes the app's storage directly, so it has to know four things the
- * app owns: the two key prefixes, how a slice's key is spelled, how a cache blob
+ * app owns: the two MMKV store ids, how a slice's key is spelled, how a cache blob
  * is named, and which feeds carry content. `seed.ts` re-implements all four,
  * deliberately — it must not import the React Native project, and it wants no
  * runtime dependency on the core either.
@@ -84,22 +84,30 @@ function seeded(id: string): { store: Storage; keys: string[] } {
   return { store, keys: Object.keys(store) };
 }
 
+/** The two prefixes MMKV's web build gives each instance, `<id>` plus a backslash. */
+const STATE_PREFIX = 'correctiv.state\\';
+const CACHE_PREFIX = 'correctiv.cache\\';
+
 function payload(store: Storage, slice: string): Record<string, unknown> {
-  const raw = store.getItem(`kv:store.${slice}`);
+  const raw = store.getItem(`${STATE_PREFIX}store.${slice}`);
   if (raw === null) throw new Error(`no payload for ${slice}`);
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
 describe('the storage layout the shell copies', () => {
-  it('uses the prefixes the app reads', () => {
-    // `lib/platform/expo.ts` is the only place these two are declared.
+  it('writes into the two stores the app opens, and nowhere else', () => {
+    // `lib/platform/expo.ts` is the only place the two ids are declared, and MMKV's
+    // web build turns an id into a `localStorage` key prefix of `<id>\\`. Two
+    // stores rather than one prefix is the app's own guarantee that its cache can
+    // never evict a bookmark, and a fixture that wrote into the wrong one would be
+    // seeding a bookmark into an evictable cache.
     const adapter = source('apps/mobile/src/lib/platform/expo.ts');
-    expect(adapter).toContain("const KV_PREFIX = 'kv:'");
-    expect(adapter).toContain("const BLOB_PREFIX = 'blob:'");
+    expect(adapter).toContain("const STATE_ID = 'correctiv.state'");
+    expect(adapter).toContain("const CACHE_ID = 'correctiv.cache'");
 
     for (const fixture of FIXTURES) {
       for (const key of seeded(fixture.id).keys) {
-        expect(key).toMatch(/^(kv:|blob:)/);
+        expect(key.startsWith(STATE_PREFIX) || key.startsWith(CACHE_PREFIX)).toBe(true);
       }
     }
   });
@@ -108,18 +116,18 @@ describe('the storage layout the shell copies', () => {
     expect(source('packages/app-core/src/stores/persist.ts')).toContain(
       'const storageKey = `store.${slice.id}`',
     );
-    expect(seeded('onboarded').keys.filter((k) => k.startsWith('kv:'))).toEqual([
-      'kv:store.session',
-      'kv:store.settings',
+    expect(seeded('onboarded').keys.filter((k) => k.startsWith(STATE_PREFIX))).toEqual([
+      `${STATE_PREFIX}store.session`,
+      `${STATE_PREFIX}store.settings`,
     ]);
   });
 
   it('names a cache blob the way the cache service does', () => {
     // The hash is djb2, re-implemented in seed.ts. If the two ever disagree the
     // bundle fixture writes six blobs the feed cascade will never look for.
-    const blobs = seeded('bundle').keys.filter((k) => k.startsWith('blob:'));
+    const blobs = seeded('bundle').keys.filter((k) => k.startsWith(CACHE_PREFIX));
 
-    expect(blobs).toEqual(CONTENT_FEEDS.map((key) => `blob:feeds/${fileKey(key)}.json`));
+    expect(blobs).toEqual(CONTENT_FEEDS.map((key) => `${CACHE_PREFIX}feeds/${fileKey(key)}.json`));
   });
 
   it('carries exactly the keys each slice declares as persisted', () => {
@@ -133,8 +141,8 @@ describe('the storage layout the shell copies', () => {
   });
 
   it('wipes every key any fixture can write before writing the next', () => {
-    // `clearApp` matches on the same two prefixes. A fixture that wrote outside
-    // them would survive the wipe and leak into the next one silently.
+    // `clearApp` matches on the same two store prefixes. A fixture that wrote
+    // outside them would survive the wipe and leak into the next one silently.
     const store = new FakeStorage() as unknown as Storage;
     for (const fixture of FIXTURES) fixture.write(store);
     const everything = Object.keys(store);
@@ -153,17 +161,17 @@ describe('the storage layout the shell copies', () => {
  * about what it leaves standing rather than what it writes.
  */
 describe('holding the door open', () => {
-  const OTHER = 'kv:store.savedArticles';
+  const OTHER = `${STATE_PREFIX}store.savedArticles`;
 
   it('leaves every other key alone', () => {
     const store = new FakeStorage() as unknown as Storage;
     store.setItem(OTHER, JSON.stringify({ items: [{ url: 'https://example.org' }] }));
-    store.setItem('blob:feeds/abc.json', '{"data":[]}');
+    store.setItem(`${CACHE_PREFIX}feeds/abc.json`, '{"data":[]}');
 
     holdTheDoorOpen(store);
 
     expect(store.getItem(OTHER)).toContain('example.org');
-    expect(store.getItem('blob:feeds/abc.json')).toBe('{"data":[]}');
+    expect(store.getItem(`${CACHE_PREFIX}feeds/abc.json`)).toBe('{"data":[]}');
     expect(payload(store, 'session').entitlement).toMatchObject({ appAccess: true });
   });
 
@@ -173,7 +181,7 @@ describe('holding the door open', () => {
       account: { email: 'me@example.org', name: 'Me' },
       entitlement: { tier: 'paid', appAccess: true },
     };
-    store.setItem('kv:store.session', JSON.stringify(mine));
+    store.setItem(`${STATE_PREFIX}store.session`, JSON.stringify(mine));
 
     holdTheDoorOpen(store);
 
@@ -183,7 +191,7 @@ describe('holding the door open', () => {
   it('writes over a session that is shut, or unreadable', () => {
     for (const raw of [JSON.stringify({ entitlement: { appAccess: false } }), 'not json']) {
       const store = new FakeStorage() as unknown as Storage;
-      store.setItem('kv:store.session', raw);
+      store.setItem(`${STATE_PREFIX}store.session`, raw);
 
       holdTheDoorOpen(store);
 
@@ -224,16 +232,16 @@ describe('holding the door open', () => {
 describe('saying that the door was held open', () => {
   const GALLERY = readFileSync(resolve(ROOT, 'apps/mobile/src/gallery/Gallery.tsx'), 'utf8');
 
-  it('marks the session it writes, under a name outside the app’s own prefixes', () => {
+  it('marks the session it writes, under a name outside the app’s own stores', () => {
     const store = new FakeStorage() as unknown as Storage;
 
     holdTheDoorOpen(store);
 
     expect(store.getItem(SEEDED_KEY)).not.toBeNull();
-    // Not under `kv:store.`: `persist()` writes back only the keys a slice
-    // declares, so anything invented under that prefix is dropped on the app's
+    // Not inside the app's state store: `persist()` writes back only the keys a
+    // slice declares, so anything invented under `store.` is dropped on the app's
     // first write, and this is not the core's state.
-    expect(SEEDED_KEY.startsWith('kv:store.')).toBe(false);
+    expect(SEEDED_KEY.startsWith(STATE_PREFIX)).toBe(false);
     // And the account is obviously not a person, which is the half a developer
     // sees on the profile screen without knowing this key exists.
     expect(payload(store, 'session').account).toMatchObject({ name: 'Handbuch' });

@@ -248,9 +248,9 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
       </text>
       {/*
         The test matches a list of names, not the region of this drawing. Its
-        patterns are anchored at the start of the import, so `react-native` and
-        `expo-audio` are caught and the scoped `@react-native-async-storage/…` is
-        not. Saying "anything below" made the drawing promise more than the test.
+        patterns are anchored at the start of the import, so `react-native`,
+        `react-native-mmkv` and `expo-audio` are all caught. Saying "anything
+        below" made the drawing promise more than the test.
       */}
       <text x="40" y="640" className={cn(T12, MUTED)}>
         <tspan className={MONO}>packages/app-core/test/boundary.test.ts</tspan> fails the build on
@@ -269,12 +269,12 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         <text x="255" y="675" textAnchor="middle">
           expo-audio
         </text>
-        <rect x="310" y="660" width="210" height="30" rx="6" className={GHOST} />
-        <text x="415" y="675" textAnchor="middle">
-          @react-native-async-storage
+        <rect x="310" y="660" width="150" height="30" rx="6" className={GHOST} />
+        <text x="385" y="675" textAnchor="middle">
+          react-native-mmkv
         </text>
       </g>
-      <text x="536" y="675" className={cn(T11, MUTED)}>
+      <text x="476" y="675" className={cn(T11, MUTED)}>
         platform SDKs, reached by the host only
       </text>
 
@@ -367,14 +367,13 @@ export function InsideCore({ alt = true }: { alt?: boolean }) {
           </ol>
           <p>
             Below the contracts is a hard boundary. The platform SDKs (react-native, expo,
-            expo-audio, async storage) sit on the far side and nothing in the package imports them.{' '}
-            <code>packages/app-core/test/boundary.test.ts</code> holds that line by refusing a list
-            of names: react-native, expo, node built-ins, the NativeScript scopes, and the view
-            layers the core used to be tied to. It matches the start of the import, so{' '}
-            <code>@react-native-async-storage/async-storage</code> is not on the list and stays out
-            by convention rather than by the test. The same file also checks that{' '}
-            <code>ports/index.ts</code> still declares all four ports, so a capability cannot reach
-            the host without being named there.
+            expo-audio, react-native-mmkv) sit on the far side and nothing in the package imports
+            them. <code>packages/app-core/test/boundary.test.ts</code> holds that line by refusing a
+            list of names: react-native, expo, node built-ins, the NativeScript scopes, and the view
+            layers the core used to be tied to. It matches the start of the import, so the storage
+            SDK is caught by the <code>react-native</code> entry rather than needing one of its own.
+            The same file also checks that <code>ports/index.ts</code> still declares all four
+            ports, so a capability cannot reach the host without being named there.
           </p>
           <p>
             Two conventions: derived values are exported selectors taking state, never store

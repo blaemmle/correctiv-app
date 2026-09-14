@@ -53,10 +53,25 @@ export interface KeyValueStore {
  * port was sync while a synchronous file API was the only implementation, and that
  * shape forced this host to hydrate its entire cache into memory before the first
  * frame just to answer a read.
+ *
+ * ## Why this port can delete and `KeyValueStore` cannot be reached from the cache
+ *
+ * `services/cache.service.ts` evicts, and eviction needs a way to say "drop this".
+ * The port was `read` and `write` until then, which made an unbounded cache not
+ * merely unbounded but impossible to bound.
+ *
+ * `delete` is the whole of the cache's destructive reach, and it points here.
+ * Bookmarks, settings and session state are `KeyValueStore`, a different port, and
+ * the cache module imports no name from it — so no key the reader chose is
+ * addressable by the policy that evicts. The host doubles that: this store and the
+ * key/value store are two separate backends, so even a name passed to the wrong
+ * port would find nothing.
  */
 export interface BlobStore {
   read(namespace: string, name: string): Promise<string | null>;
   write(namespace: string, name: string, contents: string): Promise<void>;
+  /** Drop one entry. Deleting what is not there is not an error. */
+  delete(namespace: string, name: string): Promise<void>;
 }
 
 // --- bundled content ----------------------------------------------------------
@@ -194,6 +209,10 @@ export function createMemoryPlatform(): CorePlatform {
       read: (namespace, name) => Promise.resolve(blobs.get(`${namespace}/${name}`) ?? null),
       write: (namespace, name, contents) => {
         blobs.set(`${namespace}/${name}`, contents);
+        return Promise.resolve();
+      },
+      delete: (namespace, name) => {
+        blobs.delete(`${namespace}/${name}`);
         return Promise.resolve();
       },
     },

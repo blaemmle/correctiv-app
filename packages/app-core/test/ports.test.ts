@@ -106,6 +106,7 @@ describe('cache.service', () => {
       blobs: {
         read: () => Promise.reject(new Error('disk gone')),
         write: () => Promise.reject(new Error('disk full')),
+        delete: () => Promise.reject(new Error('disk gone')),
       },
     });
     await expect(setCached('feeds', 'x', 'a')).resolves.toBeUndefined();
