@@ -9,9 +9,12 @@ import {
 } from '../src/lib/format';
 
 /**
- * These formatters exist because a JS runtime on a device may ship no German ICU
- * data, and `toLocaleDateString('de-DE')` then silently falls back to English. That
- * failure is invisible in a browser, which is exactly why it needs tests.
+ * These formatters lean on `Intl.DateTimeFormat` and `Intl.NumberFormat`, which
+ * `hermes-android 250829098.0.17` (the runtime this app ships on Android) carries
+ * with real German data — see ADR 0026, section 6. Node's own `Intl` is full ICU,
+ * though, so a pass here only proves the assembly logic is right; it is not
+ * evidence the device produces the same bytes. That check still has to happen on
+ * a device, and separately on iOS.
  */
 describe('date formatting', () => {
   // Constructed in local time so the assertions do not depend on the TZ the
@@ -39,6 +42,61 @@ describe('date formatting', () => {
     expect(formatDateDe('nope')).toBe('');
     expect(formatDateWeekdayDe('')).toBe('');
     expect(formatDateShortDe('nope')).toBe('');
+  });
+
+  it('names every month, on both the long and the short formatter', () => {
+    const months = [
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
+    ];
+    months.forEach((name, index) => {
+      const date = new Date(2026, index, 1);
+      expect(formatDateDe(date)).toBe(`1. ${name} 2026`);
+      expect(formatDateShortDe(date)).toBe(`1. ${name}`);
+    });
+  });
+
+  it('names every weekday', () => {
+    const weekdays = [
+      'Sonntag',
+      'Montag',
+      'Dienstag',
+      'Mittwoch',
+      'Donnerstag',
+      'Freitag',
+      'Samstag',
+    ];
+    // 2026-06-07 is a Sunday, so the seven days from it cover every weekday once.
+    for (let offset = 0; offset < 7; offset++) {
+      const date = new Date(2026, 5, 7 + offset);
+      expect(date.getDay()).toBe(offset);
+      expect(formatDateWeekdayDe(date)).toBe(`${weekdays[offset]}, ${formatDateDe(date)}`);
+    }
+  });
+
+  it('does not pad a single-digit day', () => {
+    expect(formatDateDe(new Date(2026, 6, 5))).toBe('5. Juli 2026');
+    expect(formatDateShortDe(new Date(2026, 6, 5))).toBe('5. Juli');
+  });
+
+  it('crosses a year boundary', () => {
+    expect(formatDateDe(new Date(2026, 11, 31))).toBe('31. Dezember 2026');
+    expect(formatDateDe(new Date(2027, 0, 1))).toBe('1. Januar 2027');
+  });
+
+  it('formats a leap day', () => {
+    expect(formatDateDe(new Date(2028, 1, 29))).toBe('29. Februar 2028');
+    expect(formatDateShortDe(new Date(2028, 1, 29))).toBe('29. Februar');
   });
 });
 
@@ -76,5 +134,21 @@ describe('formatNumberDe', () => {
   it('leaves small numbers alone', () => {
     expect(formatNumberDe(0)).toBe('0');
     expect(formatNumberDe(999)).toBe('999');
+  });
+
+  it('groups right at the thousands boundaries', () => {
+    expect(formatNumberDe(999)).toBe('999');
+    expect(formatNumberDe(1000)).toBe('1.000');
+    expect(formatNumberDe(1001)).toBe('1.001');
+    expect(formatNumberDe(9999)).toBe('9.999');
+    expect(formatNumberDe(10000)).toBe('10.000');
+    expect(formatNumberDe(999999)).toBe('999.999');
+    expect(formatNumberDe(1000000)).toBe('1.000.000');
+  });
+
+  it('groups a negative number the same way, with the sign kept in front', () => {
+    expect(formatNumberDe(-999)).toBe('-999');
+    expect(formatNumberDe(-1000)).toBe('-1.000');
+    expect(formatNumberDe(-1234567)).toBe('-1.234.567');
   });
 });

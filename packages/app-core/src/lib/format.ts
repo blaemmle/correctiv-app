@@ -1,39 +1,48 @@
-// The NS runtime has no German ICU — toLocaleDateString('de-DE')
-// falls back to English. Custom formatters instead of Intl.
-const MONTHS = [
-  'Januar',
-  'Februar',
-  'März',
-  'April',
-  'Mai',
-  'Juni',
-  'Juli',
-  'August',
-  'September',
-  'Oktober',
-  'November',
-  'Dezember',
-];
+// Built once at module scope: constructing an Intl.DateTimeFormat is the
+// expensive part, and these run in list render paths.
+const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'long' });
+const dayMonthYearFormatter = new Intl.DateTimeFormat('de-DE', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+const dayMonthFormatter = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long' });
+const numberFormatter = new Intl.NumberFormat('de-DE');
 
-const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+/** Collapses formatToParts() output into type -> value, so callers pick fields by name. */
+function partsByType(parts: Intl.DateTimeFormatPart[]): Record<string, string> {
+  const byType: Record<string, string> = {};
+  for (const part of parts) byType[part.type] = part.value;
+  return byType;
+}
+
+/** "12. Juni 2026" — day, a literal ". ", month, a space, year. Assembled from
+ * parts rather than trusting the formatter's own concatenation, since the
+ * option bag alone does not guarantee this order or the trailing period. */
+function dayMonthYear(d: Date): string {
+  const parts = partsByType(dayMonthYearFormatter.formatToParts(d));
+  return `${parts.day}. ${parts.month} ${parts.year}`;
+}
 
 /** "Freitag, 12. Juni 2026" — home header date per the design draft */
 export function formatDateWeekdayDe(iso: string | Date): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   if (Number.isNaN(d.getTime())) return '';
-  return `${WEEKDAYS[d.getDay()]}, ${formatDateDe(d)}`;
+  const weekday = partsByType(weekdayFormatter.formatToParts(d)).weekday;
+  return `${weekday}, ${dayMonthYear(d)}`;
 }
 
 export function formatDateDe(iso: string | Date): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   if (Number.isNaN(d.getTime())) return '';
-  return `${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return dayMonthYear(d);
 }
 
 export function formatDateShortDe(iso: string | Date): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   if (Number.isNaN(d.getTime())) return '';
-  return `${d.getDate()}. ${MONTHS[d.getMonth()]}`;
+  const parts = partsByType(dayMonthFormatter.formatToParts(d));
+  return `${parts.day}. ${parts.month}`;
 }
 
 export function formatTimeHm(sec: number): string {
@@ -48,5 +57,5 @@ export function formatMinutesDe(sec: number): string {
 }
 
 export function formatNumberDe(n: number): string {
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return numberFormatter.format(n);
 }
