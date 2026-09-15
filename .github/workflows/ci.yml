@@ -31,9 +31,17 @@ on:
     branches: [main]
 
 # Cancel an in-progress run when a newer commit is pushed to the same ref.
+# On a branch, a new push makes the running check pointless and cancelling it is
+# right. On `main` it is not: every merge commit is a state somebody can bisect
+# to or deploy from, and a cancelled run means that state was never checked.
+#
+# Seven merges landed on 2026-09-15 and most of `main`'s runs were cancelled by
+# the next one. That is how run #358 went unnoticed — the Android build failed on
+# `main` right after #139 merged, and `gh pr checks 139` shows green because it
+# reports the newest run against the pull request's head, not the one on `main`.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   check:
@@ -254,6 +262,24 @@ jobs:
 
       # arm64-v8a for a real demo device, x86_64 so the APK also installs on an
       # emulator. Skipping armeabi-v7a and x86 roughly halves the native build.
+      # `:app:mergeExtDexRelease` died twice on 2026-09-15 with
+      # `java.lang.OutOfMemoryError: Java heap space` — run #356 on the branch and
+      # run #358 on `main` after the merge — and a retry passed both times. The
+      # heap is marginal for this dependency set rather than short, which is the
+      # worse of the two: a check that fails at random is one nobody reads, and
+      # this one put a red mark on a merged pull request whose code was fine.
+      #
+      # 2048m is what the React Native ecosystem's own `gradle.properties` files
+      # all carry and what `expo prebuild` writes. D8 merges dex in the Gradle
+      # daemon, so this is the daemon's heap, and the runner has 16 GB.
+      - name: Give the dex merge room to finish
+        working-directory: apps/mobile/android
+        run: |
+          set -euo pipefail
+          sed -i '/^org\.gradle\.jvmargs=/d' gradle.properties
+          echo 'org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8' >> gradle.properties
+          grep '^org.gradle.jvmargs' gradle.properties
+
       - name: Build Android (release)
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64
