@@ -469,7 +469,12 @@ and `git commit --no-verify` skips it, so this is a convenience and never a gate
 One figure to correct while the hooks land: [AGENTS.md](../AGENTS.md) says
 `npm run check` takes "about ten seconds", and it took 17.2 s here. That sentence sets
 the expectation the `pre-commit`/`pre-push` split is argued from, so it is part of
-this work rather than a note beside it.
+this work rather than a note beside it. **Done**, and not where this expected: the
+figure is in [ARCHITECTURE.md](../ARCHITECTURE.md) now and AGENTS.md carries none,
+because a number typed in two documents is the shape AGENTS.md has a section about
+([#151](https://github.com/faktenforum/correctiv-app/pull/151), 18.9 to 19.9 s over
+three warm runs). Not struck: the sentence was true when it was written and the
+instruction in it was carried out, which is what a record should look like afterwards.
 
 ### 9. Navigation headers: the platform's on iOS and Android, ours on web
 
@@ -633,7 +638,10 @@ gets corrected rather than struck. Each correction belongs in the commit that ma
 necessary, not in this one: German "for everything a user reads, and only there" and
 multilingual support being "under consideration" both stop being true with the first
 message descriptor (section 6), and `npm run check` taking "about ten seconds" is
-already 7 s out (section 8).
+already 7 s out (section 8). **All three are done**: the first two in
+[#144](https://github.com/faktenforum/correctiv-app/pull/144) with the localisation
+seam, the third in [#151](https://github.com/faktenforum/correctiv-app/pull/151),
+which moved the figure to ARCHITECTURE.md rather than correcting it in place.
 
 ## What this has not delivered
 
