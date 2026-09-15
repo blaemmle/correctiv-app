@@ -219,9 +219,16 @@ jobs:
           # `@rozenite/react-navigation-plugin`. Measured 2026-09-15 by running
           # this same grep over a `--dev` export with ROZENITE=1, where it hits,
           # and over the production export, where it does not.
-          if grep -riq 'rozenite' site/app/_expo/; then
+          # `test -d` first, and it is not belt-and-braces: a `grep` over a
+          # directory that is not there exits 2, the `if` is then false, and this
+          # step prints "deployable OK" and deploys. `set -euo pipefail` does not
+          # reach inside an `if` condition. A renamed export directory would have
+          # turned the check off silently, which is the failure this whole section
+          # is about.
+          test -d site/app || { echo "::error::site/app is missing — the export did not assemble"; exit 1; }
+          if grep -riq 'rozenite' site/app/; then
             echo "::error::the app bundle carries Rozenite. It is development-only tooling: check that metro.config.js still passes an explicit enabled, that ROZENITE is unset here, and that app/_layout.tsx still selects lib/devtools/AgentTools at MODULE scope — a require inside a function keeps its module whatever guards the call."
-            grep -ril 'rozenite' site/app/_expo/ | head
+            grep -ril 'rozenite' site/app/ | head
             exit 1
           fi
 

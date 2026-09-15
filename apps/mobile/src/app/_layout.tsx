@@ -122,6 +122,9 @@ export const unstable_settings = { anchor: '(tabs)' };
  * and the suites mock `expo-router` without the container ref this reaches for.
  */
 const AgentTools: () => null =
+  // `__DEV__` is the operand that does the work. `NODE_ENV !== 'test'` is TRUE in a
+  // release build, so it must never be left standing alone here — it excludes the
+  // test runner and nothing else.
   __DEV__ && process.env.NODE_ENV !== 'test'
     ? // eslint-disable-next-line @typescript-eslint/no-require-imports
       (require('@/lib/devtools/AgentTools') as typeof import('@/lib/devtools/AgentTools')).default

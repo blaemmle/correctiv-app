@@ -126,6 +126,9 @@ const rozeniteDevToolsEnhancer: (() => StoreEnhancer) | null =
   // true: there is no dev client for it to talk to, and a debugger has no business
   // being loaded 15 times per `npm run check`. Both operands fold to constants at
   // build time, so the require goes with them.
+  // `__DEV__` is the operand that does the work. `NODE_ENV !== 'test'` is TRUE in a
+  // release build, so it must never be left standing alone here — it excludes the
+  // test runner and nothing else.
   __DEV__ && process.env.NODE_ENV !== 'test'
     ? // eslint-disable-next-line @typescript-eslint/no-require-imports
       (
