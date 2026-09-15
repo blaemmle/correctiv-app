@@ -441,6 +441,21 @@ equivalents for focus, liveness and errors.
   class appeared to do nothing; with the machine's own scheme left alone and only the
   site switched, the framed app followed the site in all three of its settings. Set the
   site's appearance and use the real device scheme.
+- **Persisting a setting from the effect that applies it is a delete on every page
+  that opens.** The handbook's `useAppearance` wrote the reader's choice to
+  `localStorage` in the same effect that stamps the class, so the write ran on mount
+  as well as on a change — and because "system" is the key being *absent*, a document
+  that had read "system" wrote it by calling `removeItem` on somebody else's choice.
+  One document would be harmless; this site runs more than one on the origin, because
+  `workbench/AppFrame.tsx` frames `<base>/app<route>` and a static host answers every
+  path the app's export does not contain with the site's own `404.html`, which is a
+  second copy of the site. Issue #131: the setting came back on the device scheme and
+  the key was gone, with nothing in the bundle that names the key except the site's own
+  hook. Typecheck, lint and 137 handbook tests were green throughout, and so was every
+  single-tab browser walk. → **A read is not a fact about what the reader wants**, only
+  about what the store said when that document started, so only a click may write.
+  `theme.ts` keeps one writer, `rememberAppearance`, reached from the setter alone, and
+  `test/theme.test.ts` fails if a write finds its way back into the effect.
 - **`userInterfaceStyle` in `app.json` is a promise to the OS, and on iOS it is
   binding.** It was `"light"`, which `expo prebuild` writes into
   `ios/<name>/Info.plist` as `UIUserInterfaceStyle = Light`. iOS then reports light
