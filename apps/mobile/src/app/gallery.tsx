@@ -20,6 +20,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { Gallery } from '@/gallery/Gallery';
+import { useDocumentTitle } from '@/lib/navigation/documentTitle';
 
 /**
  * `?c=ui/SectionCard` narrows the page to one component, `&bare=1` strips the
@@ -34,6 +35,9 @@ import { Gallery } from '@/gallery/Gallery';
  * this page's header says. It is a display, so it takes no chrome.
  */
 export default function GalleryRoute() {
+  // English, like the page's own heading and everything else on it: this one is
+  // read by developers and designers rather than by readers (AGENTS.md, Language).
+  useDocumentTitle('Component gallery');
   const { c, bare } = useLocalSearchParams<{ c?: string; bare?: string }>();
   return <Gallery only={typeof c === 'string' && c ? c : undefined} bare={bare === '1'} />;
 }

@@ -6,6 +6,7 @@ import { SettingRow } from '@/components/profile/SettingRow';
 import { Button, Card, Chip, SafeAreaView, Typo } from '@/components/ui';
 import { interests } from '@correctiv/app-core/data/interests';
 import { useCoreActions, useSelectedInterests, useSettings } from '@/lib/store/core';
+import { useDocumentTitle } from '@/lib/navigation/documentTitle';
 import { useColors } from '@/lib/theme';
 
 /**
@@ -33,6 +34,9 @@ const MISSION = ['Gemeinnützig: uns gehört niemand', 'Spendenfinanziert: von T
  * the steps after it run on the normal surface.
  */
 export default function OnboardingScreen() {
+  // The one title in the app that is not a word on the screen under it: these
+  // three steps have three headings and no name. ADR 0030 names it as such.
+  useDocumentTitle('Willkommen');
   const actions = useCoreActions();
   const colors = useColors();
   const [step, setStep] = useState(0);

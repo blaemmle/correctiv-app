@@ -69,7 +69,7 @@ export default function ProjektScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Projekt" />
 
       {!project ? (
         <View className="flex-1 items-center justify-center px-m">

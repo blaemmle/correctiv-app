@@ -16,7 +16,7 @@ export default function AtlasScreen() {
   const colors = useColors();
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Abriss-Atlas" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"

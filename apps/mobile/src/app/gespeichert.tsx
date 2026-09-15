@@ -34,7 +34,7 @@ export default function GespeichertScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Gespeicherte Artikel" />
       <FlatList
         className="flex-1"
         data={items}

@@ -23,6 +23,10 @@ jest.mock('expo-router', () => ({
     canGoBack: jest.fn(() => true),
   },
   useLocalSearchParams: jest.fn(() => ({})),
+  // `Stack.Screen` because `ScreenHeader` configures the platform's header through
+  // it on native, and a screen with a header therefore reaches expo-router for more
+  // than `router` now (ADR 0030).
+  Stack: { Screen: () => null },
 }));
 
 import { router, useLocalSearchParams } from 'expo-router';

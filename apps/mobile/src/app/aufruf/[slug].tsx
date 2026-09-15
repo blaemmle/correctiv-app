@@ -29,7 +29,7 @@ export default function AufrufScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Mitmach-Aufruf" />
 
       {!callout ? (
         <View className="flex-1 items-center justify-center px-m">
