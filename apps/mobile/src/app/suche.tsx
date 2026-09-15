@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
 
 import { SampleHitRow, sampleTarget } from '@/components/discover/SampleHitRow';
 import { ArticleRow } from '@/components/feed/ArticleRow';
+import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
 import { Hairline, Overline, ScreenHeader, Typo } from '@/components/ui';
 import { searchSamples } from '@correctiv/app-core/data/search-samples';
 import { MIN_SEARCH_QUERY } from '@correctiv/app-core/stores/search';
@@ -93,65 +94,70 @@ export default function SucheScreen() {
         />
       </ScreenHeader>
 
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-m pt-s pb-2xl"
-        showsVerticalScrollIndicator={false}
-        // Without "handled", the first tap on a result only swallows the keyboard
-        // instead of opening the article.
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        {tooShort && (
-          <Typo variant="text-m" color="on-canvas-muted">
-            Suchen Sie über Recherchen, Faktenchecks, Projekte, Podcasts und Mitmach-Aktionen.
-          </Typo>
-        )}
+      {/* Results, not the field: the field sits in the bar above and does not
+          move. What the keyboard would otherwise take is the list, and with it
+          every hit below the first two. */}
+      <KeyboardAvoiding className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-m pt-s pb-2xl"
+          showsVerticalScrollIndicator={false}
+          // Without "handled", the first tap on a result only swallows the keyboard
+          // instead of opening the article.
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {tooShort && (
+            <Typo variant="text-m" color="on-canvas-muted">
+              Suchen Sie über Recherchen, Faktenchecks, Projekte, Podcasts und Mitmach-Aktionen.
+            </Typo>
+          )}
 
-        {searching && articles.length === 0 && (
-          <View className="py-l">
-            <ActivityIndicator color={colors.accent} />
-          </View>
-        )}
-
-        {articles.length > 0 && (
-          <View>
-            <Overline label="Artikel" />
-            <View className="mt-2xs">
-              {articles.map((item, i) => (
-                <View key={item.id}>
-                  {i > 0 && <Hairline />}
-                  <ArticleRow item={item} onPress={openArticle} />
-                </View>
-              ))}
+          {searching && articles.length === 0 && (
+            <View className="py-l">
+              <ActivityIndicator color={colors.accent} />
             </View>
-          </View>
-        )}
+          )}
 
-        {sampleHits.length > 0 && (
-          <View className="mt-m">
-            <Overline label="Aus den Projekten" />
-            <View className="mt-2xs">
-              {sampleHits.map((hit) => {
-                const target = sampleTarget(hit.kind);
-                return (
-                  <SampleHitRow
-                    key={hit.id}
-                    hit={hit}
-                    onPress={target ? () => router.push(target) : undefined}
-                  />
-                );
-              })}
+          {articles.length > 0 && (
+            <View>
+              <Overline label="Artikel" />
+              <View className="mt-2xs">
+                {articles.map((item, i) => (
+                  <View key={item.id}>
+                    {i > 0 && <Hairline />}
+                    <ArticleRow item={item} onPress={openArticle} />
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {nothingFound && (
-          <Typo variant="text-m" color="on-canvas-muted">
-            Keine Treffer für „{debounced}“.
-          </Typo>
-        )}
-      </ScrollView>
+          {sampleHits.length > 0 && (
+            <View className="mt-m">
+              <Overline label="Aus den Projekten" />
+              <View className="mt-2xs">
+                {sampleHits.map((hit) => {
+                  const target = sampleTarget(hit.kind);
+                  return (
+                    <SampleHitRow
+                      key={hit.id}
+                      hit={hit}
+                      onPress={target ? () => router.push(target) : undefined}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {nothingFound && (
+            <Typo variant="text-m" color="on-canvas-muted">
+              Keine Treffer für „{debounced}“.
+            </Typo>
+          )}
+        </ScrollView>
+      </KeyboardAvoiding>
     </View>
   );
 }
