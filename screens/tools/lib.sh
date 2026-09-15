@@ -23,6 +23,23 @@ mkdir -p "$OUT"
 quiet_system_ui() {
   $A shell settings put secure stylus_handwriting_enabled 0 >/dev/null 2>&1
   $A shell settings put secure stylus_handwriting_default_value 0 >/dev/null 2>&1
+  # Animations ON, which is not the obvious choice for a screenshot tour and is
+  # the right one twice over. An emulator left at scale 0 makes Reanimated warn
+  # "Reduced motion setting is enabled on this device", and in a debuggable build
+  # that warning is a LogBox banner across the bottom of the screen. The banner is
+  # not in the accessibility tree: `uiautomator` reports the button underneath it
+  # as present and clickable, `tap` taps the right coordinates, the banner eats the
+  # touch, and the walk stalls with every step reported as done. Three rounds went
+  # that way before a screenshot showed it, which is this file's own rule turned on
+  # itself — the UI tree is not evidence either.
+  #
+  # The second reason is the one that would matter even without the banner: at
+  # scale 0 Reanimated disables animations, so a tour with them off is not walking
+  # the app that ships. `tap` waits for a node's bounds to stop moving, which is
+  # what makes leaving them on affordable.
+  for scale in window_animation_scale transition_animation_scale animator_duration_scale; do
+    $A shell settings put global "$scale" 1 >/dev/null 2>&1
+  done
   # Whatever is already on screen, before the first step.
   $A shell input keyevent 4 >/dev/null 2>&1
 }
@@ -89,12 +106,20 @@ ui_dump() {
 # build that is regularly the screen before — the tap reports MISS while the label
 # arrives half a second later. Waiting costs nothing when it is already there.
 tap() {
-  local label="$1" coords deadline=$((SECONDS + ${TAP_TIMEOUT:-8}))
+  local label="$1" coords previous="" deadline=$((SECONDS + ${TAP_TIMEOUT:-8}))
   while :; do
     coords=$(ui_dump | python3 "$TOOLS_DIR/find-node.py" "$label")
-    [ -n "$coords" ] && break
+    # Found is not the same as still. A modal route slides up, and uiautomator
+    # reports the node at its FINAL bounds from the first frame — so a tap the
+    # instant the label appears goes to where the control is about to be, and
+    # lands on whatever is under that point while it is still on its way. That
+    # is what stalled this tour on the onboarding twice in a row: the tap was
+    # reported, the screen did not move, and only `expect` further down caught
+    # it. Two dumps agreeing is what "still" means here.
+    if [ -n "$coords" ] && [ "$coords" = "$previous" ]; then break; fi
+    previous="$coords"
     if [ $SECONDS -ge $deadline ]; then note_miss "tap $label"; return 1; fi
-    sleep 1
+    sleep "${TAP_SETTLE:-1.4}"
   done
   $A shell input tap $coords
   echo "  tap $label"
