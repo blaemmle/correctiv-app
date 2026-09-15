@@ -2,6 +2,7 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 
+import { Localisation } from '@/i18n/Localisation';
 import { coreStore } from '@/lib/store/core';
 
 /**
@@ -45,7 +46,13 @@ export function render(element: React.ReactElement): ReactTestRenderer {
   act(() => {
     tree = create(
       <Provider store={coreStore}>
-        <SafeAreaProvider initialMetrics={METRICS}>{element}</SafeAreaProvider>
+        {/* The same provider `lib/env/AppEnvironment.tsx` mounts, and for the same
+            reason: a component that formats a message finds none otherwise. This
+            list is short of that environment on purpose — fonts and the gesture
+            root are what a device has and a test tree does not. */}
+        <Localisation>
+          <SafeAreaProvider initialMetrics={METRICS}>{element}</SafeAreaProvider>
+        </Localisation>
       </Provider>,
     );
   });

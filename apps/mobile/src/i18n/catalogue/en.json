@@ -1,0 +1,95 @@
+{
+  "gate.checking": {
+    "defaultMessage": "Checking your membership …"
+  },
+  "gate.emailHeading": {
+    "defaultMessage": "Email"
+  },
+  "gate.emailLabel": {
+    "defaultMessage": "Email address"
+  },
+  "gate.emailPlaceholder": {
+    "defaultMessage": "name@example.org"
+  },
+  "gate.failure.unreachable": {
+    "defaultMessage": "correctiv.org cannot be reached at the moment. Please try again in a few minutes."
+  },
+  "gate.failure.wrongCredentials": {
+    "defaultMessage": "That email address and password do not match. Please check both."
+  },
+  "gate.forgot": {
+    "defaultMessage": "Forgotten your password?"
+  },
+  "gate.headline": {
+    "defaultMessage": "For everyone who carries CORRECTIV."
+  },
+  "gate.join": {
+    "defaultMessage": "Become a member with a contribution"
+  },
+  "gate.lead": {
+    "defaultMessage": "This app is the place for members who contribute. Your account is the same one you use on correctiv.org."
+  },
+  "gate.noAccess.accessLapsed": {
+    "defaultMessage": "Trial, ended on {date}"
+  },
+  "gate.noAccess.accessNone": {
+    "defaultMessage": "Not included"
+  },
+  "gate.noAccess.accessRow": {
+    "defaultMessage": "App access"
+  },
+  "gate.noAccess.headline": {
+    "defaultMessage": "Good to have you with us."
+  },
+  "gate.noAccess.lapsed": {
+    "defaultMessage": "Your trial ended on {date}. Thank you for trying the app. With a contribution it carries on here, with everything you already know."
+  },
+  "gate.noAccess.lead": {
+    "defaultMessage": "The app is part of membership with a contribution."
+  },
+  "gate.noAccess.recheck": {
+    "defaultMessage": "Check again"
+  },
+  "gate.noAccess.resume": {
+    "defaultMessage": "Set a contribution"
+  },
+  "gate.noAccess.signedInAs": {
+    "defaultMessage": "Signed in as {email}"
+  },
+  "gate.noAccess.simulated": {
+    "defaultMessage": "Nothing is transmitted. After \"{button}\", \"Check again\" finds a membership with a contribution."
+  },
+  "gate.noAccess.switchAccount": {
+    "defaultMessage": "Sign in with a different account"
+  },
+  "gate.noAccess.tier": {
+    "defaultMessage": "Your account is on the free tier. It keeps everything on correctiv.org open to you. The app comes with the contribution: it funds the investigations, and in return there is audio, video and formats that exist only here."
+  },
+  "gate.noAccess.tierRow": {
+    "defaultMessage": "Your tier"
+  },
+  "gate.noAccess.tierTrial": {
+    "defaultMessage": "Trial"
+  },
+  "gate.noAccess.upgrade": {
+    "defaultMessage": "Extend membership"
+  },
+  "gate.passwordHeading": {
+    "defaultMessage": "Password"
+  },
+  "gate.passwordLabel": {
+    "defaultMessage": "Enter password"
+  },
+  "gate.passwordPlaceholder": {
+    "defaultMessage": "Your password"
+  },
+  "gate.simulated": {
+    "defaultMessage": "Nothing is transmitted. Every address signs in: with \"frei\" as the free tier without app access, with \"test\" during the trial, with \"lokal\" through the local bundle. A password shorter than four characters fails."
+  },
+  "gate.simulatedHeading": {
+    "defaultMessage": "Simulated"
+  },
+  "gate.submit": {
+    "defaultMessage": "Sign in"
+  }
+}

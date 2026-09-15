@@ -16,6 +16,10 @@
  * string drew at regular weight — this app names one loaded family per cut, so a
  * missing family takes the weight with it. ADR 0028 carries the table.
  *
+ * **The language is here**, since ADR 0026 §6: `i18n/Localisation` is the
+ * `react-intl` provider, and a specimen the handbook draws formats its messages
+ * against the same catalogue the app does.
+ *
  * **What is deliberately NOT here**, because it is routing or the app's own
  * lifecycle and a drawn card has neither: the splash screen, the persistence
  * hydration, the onboarding redirect, the error boundary, the status bar, the
@@ -38,6 +42,7 @@ import { Provider } from 'react-redux';
 // names are written in, so whoever compiles it gets the whole app's utilities
 // and not only the ones the host happens to write itself.
 import '@/global.css';
+import { Localisation } from '@/i18n/Localisation';
 import { coreStore } from '@/lib/store/core';
 import { useAppearance, useGivenAppearance, type ThemeSetting } from '@/lib/theme';
 
@@ -83,11 +88,16 @@ export function AppEnvironment({ children, appearance, insets }: AppEnvironmentP
           `useSelector` and that cannot run in the component that renders the
           Provider — the same split `app/_layout.tsx` makes for `AppShell`. */}
       <Appearance setting={appearance} />
-      <SafeArea insets={insets}>
-        {/* `flex: 1` fills a device window and is inert in a page's block box,
-            where the specimen's own height decides. */}
-        <GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>
-      </SafeArea>
+      {/* Inside the Provider, because the locale is a selector on the store, and
+          above everything drawn, because a component that formats a message finds
+          no provider otherwise — in the app OR in the handbook. */}
+      <Localisation>
+        <SafeArea insets={insets}>
+          {/* `flex: 1` fills a device window and is inert in a page's block box,
+              where the specimen's own height decides. */}
+          <GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>
+        </SafeArea>
+      </Localisation>
     </Provider>
   );
 }

@@ -63,7 +63,7 @@ import {
   sessionActions,
   signIn,
 } from '@correctiv/app-core/stores/session';
-import { settingsActions } from '@correctiv/app-core/stores/settings';
+import { locale as selectLocale, settingsActions } from '@correctiv/app-core/stores/settings';
 import {
   fetchIssues,
   recentIssues as selectRecentIssues,
@@ -146,6 +146,8 @@ export const useIsAdmitted = () => useAppSelector((s) => selectIsAdmitted(s.sess
 export const useActiveTab = () => useAppSelector((s) => s.settings.activeTab);
 export const useTextScale = () => useAppSelector((s) => s.settings.textScale);
 export const useTheme = () => useAppSelector((s) => s.settings.theme);
+/** The language to render in. Fixed at 'de'; `i18n/Localisation` is its one reader. */
+export const useLocale = () => useAppSelector((s) => selectLocale(s.settings));
 
 export const useVideoIsActive = () => useAppSelector((s) => s.video.current !== null);
 

@@ -101,18 +101,26 @@ can break is noise beside the ones they can.
 ## Language
 
 English for everything a developer reads: code, comments, test names, CLI output,
-commits, `.md`. German, formal *Sie*, for everything a user reads, and only there.
-The codebase is fully English as of 2026-08-12, so a German comment now is a
-regression, not a leftover.
+commits, `.md`. The codebase is fully English as of 2026-08-12, so a German comment
+now is a regression, not a leftover.
+
+**The source a user reads is English too, and the German is data.** Every
+user-facing string is a message descriptor — `defineMessages({ id, defaultMessage })`
+in one obvious place per screen, not interpolated through the markup — and its
+`defaultMessage` is English. The German, formal *Sie*, lives in
+`apps/mobile/src/i18n/catalogue/de/`, one file per id namespace, and that directory
+is the only place under `apps/mobile/src` where a German character may be written.
+German is the only language that ships: the locale is a fixed value in the core's
+settings slice, and a switch for it belongs in the workbench rather than in the app.
+`apps/mobile/__tests__/localisation-seam.test.ts` is what enforces this, including
+the screens that still hold their own German, which it names one by one until there
+are none. ([ADR 0026](adr/0026-react-native-review-and-hardening.md) §6)
 
 **A pull request is the exception, and German is the rule there.** Its title and body
 are an argument with the team about work that has not landed, and the people having
 that argument speak German. The line is the merge: what goes into the repository is
 English, what is said about it on the way in is not. A commit message is on the
 English side of that line, because it stays.
-
-User-facing text goes in one obvious place per screen, not interpolated through the
-markup. Multilingual support is under consideration.
 
 German typography, not English, wherever German is written, a pull request included:
 quotation marks are „…“, and the em dash does not appear at all. Where a sentence

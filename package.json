@@ -49,6 +49,7 @@
     "fonts": "npm run fonts -w @correctiv/mobile",
     "offline-articles": "npm run offline-articles -w @correctiv/mobile",
     "offline-podcasts": "npm run offline-podcasts -w @correctiv/mobile",
+    "i18n:extract": "npm run i18n:extract -w @correctiv/mobile",
     "handbook": "npm run dev -w @correctiv/handbook",
     "build:handbook": "npm run build -w @correctiv/handbook",
     "app": "npm run web -w @correctiv/mobile"
