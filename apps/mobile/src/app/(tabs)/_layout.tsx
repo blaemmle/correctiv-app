@@ -1,4 +1,5 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { defineMessages, useIntl } from 'react-intl';
 import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -29,6 +30,26 @@ import { useColors } from '@/lib/theme';
  * tabs now mount eagerly, and the bar's height can no longer be measured.
  */
 
+/**
+ * The five tab labels, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/ui.ts` (ADR 0026 §6).
+ *
+ * **The same five ids are declared in `_layout.web.tsx`, with the same defaults.** The two
+ * files draw the bar differently and share nothing they could import a constant
+ * through, so the agreement is enforced instead of arranged: `npm run
+ * i18n:extract` runs with `--throws`, which fails on one id carrying two
+ * different English defaults, and `__tests__/localisation-seam.test.ts` fails if
+ * an id loses its German. One set of ids, one German word per tab, on both
+ * targets.
+ */
+const TABS = defineMessages({
+  home: { id: 'ui.tabHome', defaultMessage: 'Home' },
+  discover: { id: 'ui.tabDiscover', defaultMessage: 'Discover' },
+  mediathek: { id: 'ui.tabMediathek', defaultMessage: 'Mediathek' },
+  participate: { id: 'ui.tabParticipate', defaultMessage: 'Take part' },
+  profile: { id: 'ui.tabProfile', defaultMessage: 'Profile' },
+});
+
 const IS_IOS = Platform.OS === 'ios';
 
 /**
@@ -56,6 +77,7 @@ const IS_IOS = Platform.OS === 'ios';
 const ANDROID_TAB_BAR_HEIGHT = 80;
 
 export default function TabsLayout() {
+  const intl = useIntl();
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -87,7 +109,7 @@ export default function TabsLayout() {
       labelVisibilityMode="labeled"
     >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.home)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
           md={{ default: 'home', selected: 'home' }}
@@ -95,7 +117,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="entdecken">
-        <NativeTabs.Trigger.Label>Entdecken</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.discover)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'safari', selected: 'safari.fill' }}
           md={{ default: 'explore', selected: 'explore' }}
@@ -103,7 +125,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mediathek">
-        <NativeTabs.Trigger.Label>Mediathek</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.mediathek)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'play.circle', selected: 'play.circle.fill' }}
           md={{ default: 'play_circle', selected: 'play_circle' }}
@@ -111,7 +133,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mitmachen">
-        <NativeTabs.Trigger.Label>Mitmachen</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.participate)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.2', selected: 'person.2.fill' }}
           md={{ default: 'groups', selected: 'groups' }}
@@ -119,7 +141,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profil">
-        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.profile)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
           md={{ default: 'account_circle', selected: 'account_circle' }}

@@ -1,11 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
+import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, View } from 'react-native';
 
 import { Button, Overline, Typo } from '@/components/ui';
 import type { Callout } from '@correctiv/app-core/data/callouts';
-import { formatNumberDe } from '@correctiv/app-core/lib/format';
-import { calloutStyle } from '@/lib/participate/calloutStyle';
+import { calloutKicker, calloutStyle } from '@/lib/participate/calloutStyle';
 import { colors } from '@/lib/theme';
+
+/**
+ * The one word this module adds to what `lib/participate/calloutStyle.ts` already
+ * answers: on Home the kicker names the module before it names the callout, so
+ * the two halves are one message rather than two glued together at the call site.
+ */
+const COPY = defineMessages({
+  kicker: { id: 'callout.teaser.kicker', defaultMessage: 'Take part · {kicker}' },
+});
 
 /**
  * The participate module on Home: one open callout, dark card, coral button.
@@ -26,7 +35,9 @@ export function CalloutTeaser({
   callout: Callout;
   onPress: (callout: Callout) => void;
 }) {
+  const intl = useIntl();
   const style = calloutStyle(callout);
+  const cta = intl.formatMessage(style.cta);
 
   return (
     <Pressable
@@ -35,7 +46,11 @@ export function CalloutTeaser({
       accessibilityLabel={callout.title}
       className="rounded-md bg-always-dark p-m active:opacity-90"
     >
-      <Overline label={`Mitmachen · ${style.kicker}`} color="always-light" className="opacity-70" />
+      <Overline
+        label={intl.formatMessage(COPY.kicker, { kicker: calloutKicker(intl, style) })}
+        color="always-light"
+        className="opacity-70"
+      />
       <Typo variant="headline-s" color="always-light" className="mt-2xs">
         {callout.title}
       </Typo>
@@ -47,14 +62,14 @@ export function CalloutTeaser({
       <View className="mt-s flex-row items-center opacity-70">
         <Ionicons name="people-outline" size={16} color={colors['always-light']} />
         <Typo variant="text-s" color="always-light" className="ml-2xs">
-          {formatNumberDe(callout.responseCount)} {style.unit} bisher
+          {intl.formatMessage(style.countSoFar, { count: callout.responseCount })}
         </Typo>
       </View>
       <Button
-        title={style.cta}
+        title={cta}
         className="mt-s"
         onPress={() => onPress(callout)}
-        accessibilityLabel={`${style.cta}: ${callout.title}`}
+        accessibilityLabel={`${cta}: ${callout.title}`}
       />
     </Pressable>
   );

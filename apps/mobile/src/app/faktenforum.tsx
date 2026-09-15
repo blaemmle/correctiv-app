@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { ClaimStatusTag } from '@/components/participate/ClaimStatusTag';
@@ -7,11 +8,31 @@ import { claims, type Claim } from '@correctiv/app-core/data/claims';
 import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 
 /**
+ * Everything a person reads on this screen, in ENGLISH; the German that ships is
+ * `src/i18n/catalogue/de/faktenforum.ts`.
+ *
+ * The screen's own name is not among them, and it is written out twice below
+ * rather than lifted: Faktenforum is the product's name, the same word in every
+ * language, so it is a mark and not a message — the exception
+ * `gate/LoginGate.tsx` makes for the wordmark.
+ */
+const COPY = defineMessages({
+  lead: {
+    id: 'faktenforum.lead',
+    defaultMessage:
+      'The community checks claims together with the CORRECTIV newsroom. Have a look at what is being worked on.',
+  },
+  quote: { id: 'faktenforum.quote', defaultMessage: '"{quote}"' },
+  submitted: { id: 'faktenforum.submitted', defaultMessage: '{shortId} · submitted {date}' },
+});
+
+/**
  * The Faktenforum — what the community is checking right now. The data sits in the
  * core in the GraphQL response shape of the real Faktenforum backend, so that a
  * later phase only has to swap the data layer.
  */
 export default function FaktenforumScreen() {
+  const intl = useIntl();
   return (
     <View className="flex-1 bg-canvas">
       <ScreenHeader title="Faktenforum" />
@@ -22,8 +43,7 @@ export default function FaktenforumScreen() {
       >
         <Typo variant="headline-l">Faktenforum</Typo>
         <Typo variant="text-m" color="on-canvas-muted" className="mt-2xs">
-          Die Community prüft Behauptungen, gemeinsam mit der CORRECTIV-Redaktion. Schauen Sie, was
-          gerade in Arbeit ist.
+          {intl.formatMessage(COPY.lead)}
         </Typo>
 
         <View className="mt-m">
@@ -37,6 +57,7 @@ export default function FaktenforumScreen() {
 }
 
 function ClaimRow({ claim }: { claim: Claim }) {
+  const intl = useIntl();
   return (
     <Pressable
       accessibilityRole="link"
@@ -47,10 +68,13 @@ function ClaimRow({ claim }: { claim: Claim }) {
       <Card>
         <ClaimStatusTag claim={claim} />
         <Typo variant="headline-xs" className="mt-2xs">
-          „{claim.quote}“
+          {intl.formatMessage(COPY.quote, { quote: claim.quote })}
         </Typo>
         <Typo variant="text-s" color="grey-500" className="mt-2xs">
-          {claim.shortId} · eingereicht {formatDateShortDe(claim.submittedAt)}
+          {intl.formatMessage(COPY.submitted, {
+            shortId: claim.shortId,
+            date: formatDateShortDe(claim.submittedAt),
+          })}
         </Typo>
       </Card>
     </Pressable>

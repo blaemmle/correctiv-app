@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
 
 import { SampleHitRow, sampleTarget } from '@/components/discover/SampleHitRow';
@@ -17,6 +18,28 @@ import { useDebounced } from '@/lib/useDebounced';
 const DEBOUNCE_MS = 300;
 
 /**
+ * Everything a person reads on this screen, in ENGLISH; the German that ships is
+ * `src/i18n/catalogue/de/search.ts`.
+ *
+ * `noResults` carries its own quotation marks. German sets them low-then-high and
+ * English does not, so the marks are part of the sentence and belong with the
+ * language rather than in the markup.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'search.screenTitle', defaultMessage: 'Search' },
+  placeholder: { id: 'search.placeholder', defaultMessage: 'Search …' },
+  fieldLabel: { id: 'search.fieldLabel', defaultMessage: 'Search term' },
+  hint: {
+    id: 'search.hint',
+    defaultMessage:
+      'Search across investigations, fact checks, projects, podcasts and ways to take part.',
+  },
+  articlesHeading: { id: 'search.articlesHeading', defaultMessage: 'Articles' },
+  projectsHeading: { id: 'search.projectsHeading', defaultMessage: 'From the projects' },
+  noResults: { id: 'search.noResults', defaultMessage: 'No hits for "{query}".' },
+});
+
+/**
  * Full-text search over correctiv.org, with a local fallback.
  *
  * The cascade itself — live first, the loaded feeds on an error or an empty result
@@ -28,6 +51,7 @@ const DEBOUNCE_MS = 300;
  * and are filtered locally — without a debounce, because that costs nothing.
  */
 export default function SucheScreen() {
+  const intl = useIntl();
   const colors = useColors();
   const actions = useCoreActions();
   const [query, setQuery] = useState('');
@@ -79,13 +103,13 @@ export default function SucheScreen() {
       {/* A named exception in ADR 0030: the drawn bar on every platform, because
           the platform's own search field is a different interaction on each of
           them and this screen's three empty states are bound to this one. */}
-      <ScreenHeader title="Suche" drawnBar>
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} drawnBar>
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Suchen …"
+          placeholder={intl.formatMessage(COPY.placeholder)}
           placeholderTextColor={colors['grey-500']}
-          accessibilityLabel="Suchbegriff"
+          accessibilityLabel={intl.formatMessage(COPY.fieldLabel)}
           autoFocus
           autoCorrect={false}
           returnKeyType="search"
@@ -109,7 +133,7 @@ export default function SucheScreen() {
         >
           {tooShort && (
             <Typo variant="text-m" color="on-canvas-muted">
-              Suchen Sie über Recherchen, Faktenchecks, Projekte, Podcasts und Mitmach-Aktionen.
+              {intl.formatMessage(COPY.hint)}
             </Typo>
           )}
 
@@ -121,7 +145,7 @@ export default function SucheScreen() {
 
           {articles.length > 0 && (
             <View>
-              <Overline label="Artikel" />
+              <Overline label={intl.formatMessage(COPY.articlesHeading)} />
               <View className="mt-2xs">
                 {articles.map((item, i) => (
                   <View key={item.id}>
@@ -135,7 +159,7 @@ export default function SucheScreen() {
 
           {sampleHits.length > 0 && (
             <View className="mt-m">
-              <Overline label="Aus den Projekten" />
+              <Overline label={intl.formatMessage(COPY.projectsHeading)} />
               <View className="mt-2xs">
                 {sampleHits.map((hit) => {
                   const target = sampleTarget(hit.kind);
@@ -153,7 +177,7 @@ export default function SucheScreen() {
 
           {nothingFound && (
             <Typo variant="text-m" color="on-canvas-muted">
-              Keine Treffer für „{debounced}“.
+              {intl.formatMessage(COPY.noResults, { query: debounced })}
             </Typo>
           )}
         </ScrollView>

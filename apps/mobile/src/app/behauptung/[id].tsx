@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
+import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { ClaimStatusTag } from '@/components/participate/ClaimStatusTag';
@@ -13,8 +14,40 @@ export function generateStaticParams(): { id: string }[] {
   return claims.map((claim) => ({ id: claim.id }));
 }
 
-/** How far along the check is: submitted → being checked → checked. */
-const STAGES = ['Eingereicht', 'In Prüfung', 'Geprüft'] as const;
+/**
+ * Everything a person reads on this screen, in ENGLISH; the German that ships is
+ * `src/i18n/catalogue/de/claim.ts`.
+ *
+ * `quote` is a message even though the claim itself is content: the marks around
+ * it are typography, German sets them low-then-high and English does not, so they
+ * belong with the language rather than in the markup.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'claim.screenTitle', defaultMessage: 'Claim' },
+  unknownHeadline: { id: 'claim.unknownHeadline', defaultMessage: 'This claim does not exist' },
+  unknownId: { id: 'claim.unknownId', defaultMessage: 'Unknown identifier "{id}".' },
+  noId: { id: 'claim.noId', defaultMessage: 'No identifier was given.' },
+  quote: { id: 'claim.quote', defaultMessage: '"{quote}"' },
+  sourcesHeading: { id: 'claim.sourcesHeading', defaultMessage: 'Source assessment' },
+  noSources: {
+    id: 'claim.noSources',
+    defaultMessage: 'No sources yet. The community is gathering them.',
+  },
+  credibility: { id: 'claim.credibility', defaultMessage: 'Reliability: {level}' },
+  submitOwn: {
+    id: 'claim.submitOwn',
+    defaultMessage: 'Submit a tip of your own (in the Faktenforum)',
+  },
+});
+
+const STAGE = defineMessages({
+  submitted: { id: 'claim.stage.submitted', defaultMessage: 'Submitted' },
+  checking: { id: 'claim.stage.checking', defaultMessage: 'Being checked' },
+  checked: { id: 'claim.stage.checked', defaultMessage: 'Checked' },
+});
+
+/** How far along the check is, in order: submitted, being checked, checked. */
+const STAGES = [STAGE.submitted, STAGE.checking, STAGE.checked];
 
 function stageOf(claim: Claim): number {
   return claim.status === 'checked' ? 2 : claim.status === 'checking' ? 1 : 0;
@@ -26,20 +59,21 @@ function credibilityDot(level: ClaimSource['credibility']): string {
 }
 
 export default function BehauptungScreen() {
+  const intl = useIntl();
   const { id } = useLocalSearchParams<{ id: string }>();
   const claim = (claims.find((c) => c.id === id) ?? null) as Claim | null;
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title="Behauptung" />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
 
       {!claim ? (
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="headline-s" className="text-center">
-            Diese Behauptung gibt es nicht
+            {intl.formatMessage(COPY.unknownHeadline)}
           </Typo>
           <Typo variant="text-m" color="on-canvas-muted" className="mt-2xs text-center">
-            {id ? `Unbekannte Kennung „${id}“.` : 'Es wurde keine Kennung übergeben.'}
+            {id ? intl.formatMessage(COPY.unknownId, { id }) : intl.formatMessage(COPY.noId)}
           </Typo>
         </View>
       ) : (
@@ -50,7 +84,7 @@ export default function BehauptungScreen() {
         >
           <ClaimStatusTag claim={claim} />
           <Typo variant="headline-m" className="mt-s">
-            „{claim.quote}“
+            {intl.formatMessage(COPY.quote, { quote: claim.quote })}
           </Typo>
           <Typo variant="text-m" color="on-canvas-muted" className="mt-s">
             {claim.synopsis}
@@ -59,12 +93,12 @@ export default function BehauptungScreen() {
           <ReviewProgress stage={stageOf(claim)} />
 
           <Typo variant="headline-xs" className="mt-m">
-            Quellenbewertung
+            {intl.formatMessage(COPY.sourcesHeading)}
           </Typo>
           {claim.sources.length === 0 ? (
             <Card tone="surface" className="mt-s">
               <Typo variant="text-s" color="on-canvas-muted">
-                Noch keine Quellen. Die Community sammelt.
+                {intl.formatMessage(COPY.noSources)}
               </Typo>
             </Card>
           ) : (
@@ -81,7 +115,7 @@ export default function BehauptungScreen() {
                   <View className="ml-s flex-1">
                     <Typo variant="text-m">{source.note ?? source.url}</Typo>
                     <Typo variant="text-s" color="grey-500" className="mt-4xs">
-                      Verlässlichkeit: {source.credibility}
+                      {intl.formatMessage(COPY.credibility, { level: source.credibility })}
                     </Typo>
                   </View>
                 </Card>
@@ -90,7 +124,7 @@ export default function BehauptungScreen() {
           )}
 
           <Button
-            title="Eigenen Hinweis einreichen (im Faktenforum)"
+            title={intl.formatMessage(COPY.submitOwn)}
             variant="outline"
             className="mt-m"
             onPress={() => openExternal(FORUM_URL)}
@@ -103,10 +137,11 @@ export default function BehauptungScreen() {
 
 /** Three dots joined by lines, filled up to the stage reached. */
 function ReviewProgress({ stage }: { stage: number }) {
+  const intl = useIntl();
   return (
     <View className="mt-m flex-row items-start">
-      {STAGES.map((label, i) => (
-        <View key={label} className="flex-1 flex-row items-start">
+      {STAGES.map((message, i) => (
+        <View key={message.id} className="flex-1 flex-row items-start">
           {i > 0 && (
             <View
               className={['flex-1 self-start', i <= stage ? 'bg-accent' : 'bg-stroke'].join(' ')}
@@ -127,7 +162,7 @@ function ReviewProgress({ stage }: { stage: number }) {
               className="mt-3xs text-center"
               style={{ fontSize: 11 }}
             >
-              {label}
+              {intl.formatMessage(message)}
             </Typo>
           </View>
         </View>

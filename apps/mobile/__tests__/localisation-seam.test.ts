@@ -107,12 +107,33 @@ describe('every id exists on both sides', () => {
  * The characters that betray a German string written outside the catalogue.
  *
  * A partial net on purpose, and the ADR says so: "Suchen" slips through, and no
- * cheap check catches it. What it does catch is most of them, for twenty lines
- * and no false positives, because English prose in this repo has no use for any
- * of these — a comment quoting a German label uses straight quotes
- * ([AGENTS.md](../../../AGENTS.md#language)).
+ * cheap check catches it. What it does catch is most of them, for twenty lines.
+ *
+ * ~~and no false positives, because English prose in this repo has no use for any
+ * of these — a comment quoting a German label uses straight quotes~~ The quotes
+ * were the only half of that considered. Straight quotes do nothing about `ü`,
+ * and the rule in [AGENTS.md](../../../AGENTS.md#language) that an English
+ * sentence "leaves an identifier, a path and a command in their own spelling"
+ * covers a quoted label too: four files explain a decision by naming the label it
+ * is about — `Backstage · Früher lesen`, "Zurück", "im Browser öffnen" — and each
+ * was on the migration list for a string that does not exist. Comments are
+ * stripped before the test now, which is why they are not.
  */
 const GERMAN_CHARACTERS = /[äöüßÄÖÜ„“]/;
+
+/**
+ * The file with its comments removed, because a comment is not a string a user
+ * reads. Block comments go whole; a line comment goes when `//` opens the line,
+ * which is the only shape this codebase writes and keeps `https://` inside a
+ * string intact.
+ *
+ * The cost is real and worth naming: a comment written in German — a regression,
+ * not a leftover, since 2026-08-12 — is now invisible here. It always was, since
+ * every file this would have caught sat on the list below for a different reason.
+ */
+function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+}
 
 /**
  * Bundled CONTENT rather than UI: the offline article and podcast snapshots, which
@@ -126,75 +147,67 @@ const CONTENT = new Set([
 ]);
 
 /**
- * The screens whose German has not been lifted yet, and the reason this check can
- * pass today at all.
- *
- * ADR 0026 §6 asks for no German under `apps/mobile/src` outside the catalogue.
- * That is the end state and it is 36 files away: the app was written in German
- * and one screen has moved. So the rule is enforced as a ratchet instead — this
- * list is asserted EXACTLY, so a new German string in a file that is not on it
- * fails, and a migrated screen still named here fails too. Migrating a screen
- * deletes its line. When the last line goes, the assertion below is literally
- * what the ADR wrote and this list can go with it.
+ * The gallery, which is a developer's catalogue of the components and is read by
+ * nobody else. Its fixtures exist to show those components carrying the copy they
+ * really carry, so translating them would make the preview lie and forcing them
+ * to English would make it lie differently. Excluded by path rather than listed
+ * below, because "not yet" is the wrong word: this one is never.
  */
-const NOT_YET_MIGRATED = [
-  'app/+not-found.tsx',
-  'app/(tabs)/mediathek.tsx',
-  'app/(tabs)/mitmachen.tsx',
-  'app/(tabs)/profil.tsx',
-  'app/artikel.tsx',
-  'app/atlas.tsx',
-  'app/aufruf/[slug].tsx',
-  'app/backstage.tsx',
-  'app/behauptung/[id].tsx',
-  'app/einstellungen.tsx',
-  'app/faktenforum.tsx',
-  'app/formular.tsx',
-  'app/onboarding.tsx',
-  'app/player.tsx',
-  'app/projekt/[id].tsx',
-  'app/serie/[id].tsx',
-  'app/suche.tsx',
-  'app/tagebuch/[id].tsx',
-  'app/video.tsx',
-  'components/discover/SearchEntry.tsx',
-  'components/home/EarlyAccessCard.tsx',
-  'components/home/ImpactFooter.tsx',
-  'components/home/MediathekReihe.tsx',
-  'components/media/LiveBanner.tsx',
-  'components/participate/FormField.tsx',
-  'components/player/MiniPlayer.tsx',
-  'components/recovery/RecoveryScreen.tsx',
-  'components/ui/Badge.tsx',
-  'components/ui/Overline.tsx',
-  'components/ui/ScreenHeader.tsx',
-  'components/ui/ScreenHeaderBar.tsx',
-  'components/ui/screenHeaderTypes.ts',
-  'gallery/catalogue.tsx',
-  'gallery/fixtures.ts',
-  'lib/articles/articleUrl.ts',
-  'lib/participate/calloutStyle.ts',
-];
+const DEVELOPER_ONLY = /^gallery\//;
 
+/**
+ * The two files that still write a German character in code, and why each one
+ * does. Asserted EXACTLY, in both directions: a new German string in a file that
+ * is not named here fails, and a file named here that no longer holds German
+ * fails too. Neither is allowed to pass quietly, which is what a one-directional
+ * allow-list would do.
+ *
+ * This was thirty-six entries and the word for it was "not yet". It is two, and
+ * the word is now "because" — so each line carries its reason, and a third line
+ * arriving without one is the thing to argue about.
+ */
+const GERMAN_OUTSIDE_THE_CATALOGUE = [
+  // A channel's name, `CORRECTIV im Gespräch`. Marks get no id (a mark is not
+  // translated), and an id would not help: a descriptor's `defaultMessage` would
+  // BE the German spelling and would sit in this file all the same. The ways out
+  // are a display name in the feed configuration or a line-level exception here,
+  // and neither is worth doing before a second channel needs one.
+  'app/(tabs)/mediathek.tsx',
+  // `useIntl()` throws here. The recovery screen is rendered BY the error
+  // boundary, and expo-router's `Try` wraps the root route's default export — so
+  // the boundary sits above `RootLayout`, and the `IntlProvider` that
+  // `AppEnvironment` mounts is inside the subtree being caught. Measured, not
+  // assumed: adding `useIntl()` to this screen fails 7 of the 8 cases in
+  // `error-boundary.test.tsx` with "Could not find required `intl` object".
+  // Moving the provider above the boundary would fix it and would also put the
+  // catalogue between a crash and the screen that reports it, which is the wrong
+  // trade for the one screen that has to render when everything else did not.
+  'components/recovery/RecoveryScreen.tsx',
+];
 describe('German lives in the catalogue', () => {
   /** Every file under `src/`, as a path relative to it, with `/` on every OS. */
   const sources = filesUnder(SRC)
     .map((full) => relative(SRC, full).split(sep).join('/'))
-    .filter((path) => !path.startsWith('i18n/catalogue/de/') && !CONTENT.has(path));
+    .filter(
+      (path) =>
+        !path.startsWith('i18n/catalogue/de/') && !CONTENT.has(path) && !DEVELOPER_ONLY.test(path),
+    );
 
   const german = sources
-    .filter((path) => GERMAN_CHARACTERS.test(readFileSync(join(SRC, path), 'utf8')))
+    .filter((path) =>
+      GERMAN_CHARACTERS.test(withoutComments(readFileSync(join(SRC, path), 'utf8'))),
+    )
     .sort();
 
   it('reads the app it is checking (guards against a silently empty walk)', () => {
     expect(sources.length).toBeGreaterThan(50);
   });
 
-  it('holds German in the catalogue and in the screens still waiting for one', () => {
+  it('holds German in the catalogue, and in two files that say why not', () => {
     // Exact, in both directions. A new German string outside the catalogue adds a
-    // line here; a migrated screen removes one. Neither is allowed to pass
-    // silently, which is what a one-directional allow-list would do.
-    expect(german).toEqual([...NOT_YET_MIGRATED].sort());
+    // line above; a file that stops holding one removes it. Neither is allowed to
+    // pass silently, which is what a one-directional allow-list would do.
+    expect(german).toEqual([...GERMAN_OUTSIDE_THE_CATALOGUE].sort());
   });
 });
 

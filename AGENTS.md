@@ -112,9 +112,11 @@ in one obvious place per screen, not interpolated through the markup — and its
 is the only place under `apps/mobile/src` where a German character may be written.
 German is the only language that ships: the locale is a fixed value in the core's
 settings slice, and a switch for it belongs in the workbench rather than in the app.
-`apps/mobile/__tests__/localisation-seam.test.ts` is what enforces this, including
-the screens that still hold their own German, which it names one by one until there
-are none. ([ADR 0026](adr/0026-react-native-review-and-hardening.md) §6)
+`apps/mobile/__tests__/localisation-seam.test.ts` is what enforces this. Two files
+are exempt and it names both with the reason: a channel's own name, and the recovery
+screen, which renders from inside the subtree the provider is in. A third one
+arriving without a reason is the thing to argue about.
+([ADR 0026](adr/0026-react-native-review-and-hardening.md) §6)
 
 **A pull request is the exception, and German is the rule there.** Its title and body
 are an argument with the team about work that has not landed, and the people having
@@ -131,7 +133,7 @@ spelling.
 
 ## Checks
 
-`npm run check` at the root: typecheck, oxlint, oxfmt, tests, about ten seconds. Do
+`npm run check` at the root: typecheck, oxlint, oxfmt, tests, under twenty seconds. Do
 not introduce eslint or prettier.
 
 **A green check proves nothing about how the app looks or whether it runs.** After a

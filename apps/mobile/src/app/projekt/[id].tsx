@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { defineMessages, useIntl, type MessageDescriptor } from 'react-intl';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 
 import { ArticleRow } from '@/components/feed/ArticleRow';
@@ -12,22 +13,62 @@ import { openArticle } from '@/lib/openArticle';
 import { openExternal } from '@/lib/openExternal';
 import { useColors } from '@/lib/theme';
 
-/** The project's own action — label and target in one place. */
-const ACTIONS: Record<NonNullable<Project['action']>, { label: string; run: () => void }> = {
+/**
+ * Everything this screen says, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/project.ts` (ADR 0026 §6). The project's name and
+ * description are content from `@correctiv/app-core/data/projects`.
+ *
+ * `unknownId` carries the German quotation marks INSIDE the message rather than
+ * around it in the markup: they are part of the sentence, and a language that
+ * quotes differently should get its own pair.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'project.screenTitle', defaultMessage: 'Project' },
+  notFound: { id: 'project.notFound', defaultMessage: 'This project does not exist' },
+  unknownId: { id: 'project.unknownId', defaultMessage: 'Unknown identifier "{id}".' },
+  noId: { id: 'project.noId', defaultMessage: 'No identifier was passed.' },
+  comingSoon: { id: 'project.comingSoon', defaultMessage: 'Coming soon' },
+  comingSoonBody: {
+    id: 'project.comingSoonBody',
+    defaultMessage:
+      '{name} is just starting. The first pieces appear here as soon as they are published.',
+  },
+  latestPosts: { id: 'project.latestPosts', defaultMessage: 'Latest pieces' },
+  feedFailed: { id: 'project.feedFailed', defaultMessage: 'The pieces could not be loaded.' },
+  tipWhatsapp: { id: 'project.tipWhatsapp', defaultMessage: 'Send a tip on WhatsApp' },
+  listenRadio: { id: 'project.listenRadio', defaultMessage: 'Listen to Salon5 Radio' },
+  joinLocalNetwork: { id: 'project.joinLocalNetwork', defaultMessage: 'Join the local network' },
+});
+
+/**
+ * The project's own action — label and target in one place.
+ *
+ * The label is a descriptor and not a string, because this table is module scope
+ * and cannot call a hook; the screen formats it where it draws the button. The
+ * three descriptors come from `COPY` above rather than being written out here:
+ * `@formatjs/cli` extracts from `defineMessages` and from nothing else, so a
+ * descriptor spelled as a bare object literal in this table would have no English
+ * side at all — measured, it extracted to zero and
+ * `__tests__/localisation-seam.test.ts` named all three.
+ */
+const ACTIONS: Record<
+  NonNullable<Project['action']>,
+  { label: MessageDescriptor; run: () => void }
+> = {
   'whatsapp-tip': {
-    label: 'Tipp per WhatsApp schicken',
+    label: COPY.tipWhatsapp,
     // The fact-check desk's real tip number.
     run: () => openExternal('https://wa.me/4915142647500'),
   },
   radio: {
-    label: 'Salon5 Radio hören',
+    label: COPY.listenRadio,
     // The live stream belongs to the player, and that is ONE app-wide singleton
     // (expo-audio). A second player here would be a second state for the same
     // playback — hence only the jump into the Mediathek.
     run: () => router.push('/(tabs)/mediathek'),
   },
   'local-network': {
-    label: 'Teil des Lokal-Netzwerks werden',
+    label: COPY.joinLocalNetwork,
     run: () => openExternal('https://correctiv.org/lokal/'),
   },
 };
@@ -63,21 +104,22 @@ export function generateStaticParams(): { id: string }[] {
  * title plus description here.
  */
 export default function ProjektScreen() {
+  const intl = useIntl();
   const { id } = useLocalSearchParams<{ id: string }>();
   const project = resolveProject(id ?? '');
   const action = project?.action ? ACTIONS[project.action] : null;
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title="Projekt" />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
 
       {!project ? (
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="headline-s" className="text-center">
-            Dieses Projekt gibt es nicht
+            {intl.formatMessage(COPY.notFound)}
           </Typo>
           <Typo variant="text-m" color="on-canvas-muted" className="mt-2xs text-center">
-            {id ? `Unbekannte Kennung „${id}“.` : 'Es wurde keine Kennung übergeben.'}
+            {id ? intl.formatMessage(COPY.unknownId, { id }) : intl.formatMessage(COPY.noId)}
           </Typo>
         </View>
       ) : (
@@ -92,17 +134,21 @@ export default function ProjektScreen() {
           </Typo>
 
           {action && (
-            <Button title={action.label} variant="outline" onPress={action.run} className="mt-s" />
+            <Button
+              title={intl.formatMessage(action.label)}
+              variant="outline"
+              onPress={action.run}
+              className="mt-s"
+            />
           )}
 
           {project.feed ? <ProjectFeed feed={project.feed} /> : null}
 
           {project.teaserOnly && (
             <Card tone="surface" className="mt-m">
-              <Typo variant="headline-xs">Bald verfügbar</Typo>
+              <Typo variant="headline-xs">{intl.formatMessage(COPY.comingSoon)}</Typo>
               <Typo variant="text-s" color="on-canvas-muted" className="mt-4xs">
-                {project.name} startet gerade. Die ersten Inhalte erscheinen hier, sobald sie
-                veröffentlicht sind.
+                {intl.formatMessage(COPY.comingSoonBody, { name: project.name })}
               </Typo>
             </Card>
           )}
@@ -117,13 +163,14 @@ export default function ProjektScreen() {
  * not be called conditionally.
  */
 function ProjectFeed({ feed }: { feed: FeedKey }) {
+  const intl = useIntl();
   const colors = useColors();
   const { data, loading, error } = useFeed(feed);
   const items = data?.slice(0, 12) ?? [];
 
   return (
     <View className="mt-l">
-      <SectionHeader title="Neueste Beiträge" />
+      <SectionHeader title={intl.formatMessage(COPY.latestPosts)} />
 
       {loading && items.length === 0 && (
         <View className="py-l">
@@ -136,7 +183,7 @@ function ProjectFeed({ feed }: { feed: FeedKey }) {
           ADR 0015: the REST API sends a CORS header, so a browser has a live path. */}
       {error && items.length === 0 && !loading && (
         <Typo variant="text-s" color="on-canvas-muted" className="mt-2xs">
-          Beiträge konnten nicht geladen werden.
+          {intl.formatMessage(COPY.feedFailed)}
         </Typo>
       )}
 

@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
+import { de } from '@/i18n/catalogue/de';
+
 /**
  * Every route pushed over the tabs names itself, and no two name themselves the
  * same.
@@ -38,17 +40,60 @@ function routeFiles(dir: string): string[] {
 }
 
 /**
- * Every name a route gives itself, in source order.
+ * The German a descriptor key stands for, found in the route's own source.
  *
- * Two spellings, because there are two kinds of screen. One has a `ScreenHeader`
- * and passes it a `title`; the five that have none — the reader, the player, the
- * onboarding, the gallery and the 404 — call `useDocumentTitle` directly, which
- * is the same string reaching the same place by the shorter route (ADR 0030).
+ * A migrated route writes `title={intl.formatMessage(COPY.screenTitle)}`, so the
+ * word itself is two hops away: the key names a descriptor in the same file, the
+ * descriptor carries an id, and the id is what the catalogue answers. Both hops
+ * are done here rather than by importing the route, for the reason the file
+ * header gives — and the catalogue is a plain object, so importing THAT costs
+ * nothing.
+ *
+ * Returns undefined when either hop fails, and the caller keeps the key. That is
+ * deliberate: a key with no descriptor, or an id with no German, should surface
+ * as a title this file can then judge, not vanish and take the route's only name
+ * with it. A vanishing title is precisely the defect the suite exists to catch.
  */
-function titlesIn(source: string): string[] {
+function germanFor(source: string, key: string): string | undefined {
+  const descriptor = new RegExp(`\\b${key}:\\s*\\{[^}]*?\\bid:\\s*'([^']+)'`, 's').exec(source);
+  return descriptor ? de[descriptor[1]] : undefined;
+}
+
+/**
+ * Every name a route gives itself.
+ *
+ * Four spellings now, from two independent splits. One is where the title goes:
+ * a screen with a `ScreenHeader` passes it a `title`, and the five without one —
+ * the reader, the player, the onboarding, the gallery and the 404 — call
+ * `useDocumentTitle` directly, which is the same string reaching the same place
+ * by the shorter route (ADR 0030).
+ *
+ * The other is how the title is spelled. Before the localisation seam every one
+ * was a German literal; a migrated screen names a message descriptor instead and
+ * the German lives in the catalogue (issue #99). Both spellings are read, and
+ * both resolve to the German, because what the three assertions below test is
+ * the word a person sees: whether two routes share it, whether it says anything,
+ * and whether it is typed the way German is typed. A route that had been
+ * migrated would otherwise contribute nothing at all and pass every one of them
+ * by being invisible — which is how a missing title got into the app in the
+ * first place.
+ */
+function headerTitlesIn(source: string): string[] {
   return [
     ...[...source.matchAll(/<ScreenHeader\b[^>]*?\btitle="([^"]*)"/gs)].map((m) => m[1]),
+    ...[...source.matchAll(/<ScreenHeader\b[^>]*?\btitle=\{[^}]*?\bCOPY\.(\w+)/gs)].map(
+      (m) => germanFor(source, m[1]) ?? m[1],
+    ),
+  ];
+}
+
+function titlesIn(source: string): string[] {
+  return [
+    ...headerTitlesIn(source),
     ...[...source.matchAll(/\buseDocumentTitle\('([^']*)'\)/g)].map((m) => m[1]),
+    ...[...source.matchAll(/\buseDocumentTitle\([^)]*?\bCOPY\.(\w+)/g)].map(
+      (m) => germanFor(source, m[1]) ?? m[1],
+    ),
   ];
 }
 
@@ -82,8 +127,10 @@ describe('screen titles', () => {
   it('gives every ScreenHeader call site a title', () => {
     const offenders = routes.filter(({ source }) => {
       const calls = source.match(/<ScreenHeader\b/g)?.length ?? 0;
-      const titles = [...source.matchAll(/<ScreenHeader\b[^>]*?\btitle="([^"]*)"/gs)];
-      return titles.filter((m) => m[1].trim().length > 0).length !== calls;
+      // Both spellings, through the same helper the rest of the file uses: a
+      // call site whose title is a descriptor has a title, and counting only
+      // literals here would report every migrated screen as untitled.
+      return headerTitlesIn(source).filter((t) => t.trim().length > 0).length !== calls;
     });
 
     expect(offenders.map((r) => r.rel)).toEqual([]);

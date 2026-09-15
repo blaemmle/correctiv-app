@@ -1,15 +1,47 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { defineMessages, useIntl } from 'react-intl';
 import { ScrollView, View } from 'react-native';
 
 import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
 import { FormField } from '@/components/participate/FormField';
 import { Button, Hairline, ScreenHeader, Typo } from '@/components/ui';
 import { callouts, type CalloutComponent, type Callout } from '@correctiv/app-core/data/callouts';
-import { formatNumberDe } from '@correctiv/app-core/lib/format';
 import { useCoreActions, useExtraCount } from '@/lib/store/core';
 import { sizes, useColors } from '@/lib/theme';
+
+/**
+ * Everything a person reads in the flow, in ENGLISH; the German that ships is
+ * `src/i18n/catalogue/de/form.ts`.
+ *
+ * `step` and `contributors` are one message each rather than a number stuck
+ * between two fragments: word order is the translator's to change, and the
+ * counter's noun inflects.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'form.screenTitle', defaultMessage: 'Participation form' },
+  unknownHeadline: { id: 'form.unknownHeadline', defaultMessage: 'This form does not exist' },
+  unknownSlug: { id: 'form.unknownSlug', defaultMessage: 'Unknown callout "{slug}".' },
+  noSlug: { id: 'form.noSlug', defaultMessage: 'No callout was given.' },
+  cancel: { id: 'form.cancel', defaultMessage: 'Cancel' },
+  step: { id: 'form.step', defaultMessage: 'Step {current} of {total}' },
+  back: { id: 'form.back', defaultMessage: 'Back' },
+  next: { id: 'form.next', defaultMessage: 'Next' },
+  submit: { id: 'form.submit', defaultMessage: 'Send' },
+  thanksHeadline: { id: 'form.thanksHeadline', defaultMessage: 'Thank you for your contribution!' },
+  thanksLead: {
+    id: 'form.thanksLead',
+    defaultMessage:
+      'Your contribution goes into the investigation. The newsroom reviews every tip. We will get in touch if anything is unclear.',
+  },
+  contributors: {
+    id: 'form.contributors',
+    defaultMessage:
+      '{count, plural, one {One person has} other {{count, number} people have}} contributed so far.',
+  },
+  moreCallouts: { id: 'form.moreCallouts', defaultMessage: 'See more ways to take part' },
+});
 
 /**
  * The participation flow: a multi-step form following the callout's schema, then
@@ -24,6 +56,7 @@ import { sizes, useColors } from '@/lib/theme';
  * filled-in form again.
  */
 export default function FormularScreen() {
+  const intl = useIntl();
   const actions = useCoreActions();
   const { slug } = useLocalSearchParams<{ slug?: string }>();
   const callout = useMemo(() => callouts.find((c) => c.slug === slug) ?? null, [slug]);
@@ -37,13 +70,15 @@ export default function FormularScreen() {
   if (!callout) {
     return (
       <View className="flex-1 bg-canvas">
-        <ScreenHeader title="Mitmach-Formular" drawnBar />
+        <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} drawnBar />
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="headline-s" className="text-center">
-            Dieses Formular gibt es nicht
+            {intl.formatMessage(COPY.unknownHeadline)}
           </Typo>
           <Typo variant="text-m" color="on-canvas-muted" className="mt-2xs text-center">
-            {slug ? `Unbekannter Aufruf „${slug}“.` : 'Es wurde kein Aufruf übergeben.'}
+            {slug
+              ? intl.formatMessage(COPY.unknownSlug, { slug })
+              : intl.formatMessage(COPY.noSlug)}
           </Typo>
         </View>
       </View>
@@ -92,11 +127,15 @@ export default function FormularScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      {/* The second named exception in ADR 0030. "Abbrechen" exists so that two
-          controls called "Zurück" cannot mean two things, and `headerBackTitle`
+      {/* The second named exception in ADR 0030. `COPY.cancel` exists so that two
+          controls carrying `COPY.back` cannot mean two things, and `headerBackTitle`
           is iOS-only — an Android stack header shows no back title at all, so the
           label would simply disappear there. */}
-      <ScreenHeader title="Mitmach-Formular" drawnBar backLabel="Abbrechen" />
+      <ScreenHeader
+        title={intl.formatMessage(COPY.screenTitle)}
+        drawnBar
+        backLabel={intl.formatMessage(COPY.cancel)}
+      />
 
       {/* Step indicator: one bar per slide, filled up to the current one. */}
       <View className="flex-row gap-3xs px-m pt-2xs">
@@ -111,7 +150,7 @@ export default function FormularScreen() {
 
       {/* The scroller and the action footer in ONE avoiding view. The footer used
           to be a sibling of the `ScrollView`, which left the two to react to the
-          keyboard separately — and "Weiter" is the control a person reaches for
+          keyboard separately — and `COPY.next` is the control a person reaches for
           while the keyboard is still up. */}
       <KeyboardAvoiding className="flex-1">
         <ScrollView
@@ -122,7 +161,7 @@ export default function FormularScreen() {
           keyboardDismissMode="on-drag"
         >
           <Typo variant="text-s" color="grey-500">
-            Schritt {step + 1} von {slides.length}
+            {intl.formatMessage(COPY.step, { current: step + 1, total: slides.length })}
           </Typo>
           <Typo variant="headline-l" className="mt-2xs">
             {slide.title}
@@ -149,14 +188,14 @@ export default function FormularScreen() {
           <View className="flex-row gap-s px-m py-s">
             {step > 0 && (
               <Button
-                title="Zurück"
+                title={intl.formatMessage(COPY.back)}
                 variant="secondary"
                 onPress={() => setStep(step - 1)}
                 className="flex-1"
               />
             )}
             <Button
-              title={isLast ? 'Absenden' : 'Weiter'}
+              title={intl.formatMessage(isLast ? COPY.submit : COPY.next)}
               onPress={next}
               disabled={!stepValid}
               className="flex-1"
@@ -170,6 +209,7 @@ export default function FormularScreen() {
 
 /** The thank-you page, with the counter that already includes this submission. */
 function ThankYou({ callout }: { callout: Callout }) {
+  const intl = useIntl();
   const colors = useColors();
   const extra = useExtraCount(callout.slug);
 
@@ -178,18 +218,17 @@ function ThankYou({ callout }: { callout: Callout }) {
       <View className="flex-1 items-center justify-center px-m">
         <Ionicons name="checkmark-circle" size={64} color={colors.accent} />
         <Typo variant="headline-xl" className="mt-m text-center">
-          Danke für Ihren Beitrag!
+          {intl.formatMessage(COPY.thanksHeadline)}
         </Typo>
         <Typo variant="text-m" color="on-canvas-muted" className="mt-s text-center">
-          Ihr Beitrag fließt in die Recherche ein. Die Redaktion prüft alle Hinweise. Bei Rückfragen
-          melden wir uns.
+          {intl.formatMessage(COPY.thanksLead)}
         </Typo>
         <Typo variant="headline-xs" className="mt-m text-center">
-          {formatNumberDe(callout.responseCount + extra)} Menschen haben bereits beigetragen.
+          {intl.formatMessage(COPY.contributors, { count: callout.responseCount + extra })}
         </Typo>
       </View>
       <View className="px-m pb-l">
-        <Button title="Weitere Mitmach-Aktionen ansehen" fullWidth onPress={backToOverview} />
+        <Button title={intl.formatMessage(COPY.moreCallouts)} fullWidth onPress={backToOverview} />
       </View>
     </View>
   );

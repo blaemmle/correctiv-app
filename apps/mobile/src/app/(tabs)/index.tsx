@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, View } from 'react-native';
 
 import { ArticleHero } from '@/components/feed/ArticleHero';
@@ -17,6 +18,28 @@ import { useFeed } from '@/lib/feeds/useFeed';
 import { openArticle } from '@/lib/openArticle';
 import { useColors } from '@/lib/theme';
 import { useTimedModule } from '@/lib/useTimedModule';
+
+/**
+ * The words Home adds around the feeds, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/home.ts` (ADR 0026 §6). Everything else on this screen
+ * belongs to a card, and each card carries its own.
+ *
+ * The arrows stay out of the messages and beside them at the call site: they are
+ * decoration on a link, not a word anyone translates.
+ */
+const COPY = defineMessages({
+  offlineArticles: {
+    id: 'home.offlineArticles',
+    defaultMessage: 'No connection. You are seeing saved articles.',
+  },
+  latestResearch: { id: 'home.latestResearch', defaultMessage: 'Latest investigations' },
+  factChecks: { id: 'home.factChecks', defaultMessage: 'Fact checks' },
+  viewAll: { id: 'home.viewAll', defaultMessage: 'See all' },
+  viewEverything: { id: 'home.viewEverything', defaultMessage: 'See everything' },
+});
+
+/** A mark, not a sentence: the shelf keeps its name in every language. */
+const MEDIATHEK = 'Mediathek';
 
 /**
  * Home — a curated cross-section of the ecosystem, in the draft's order: lead
@@ -38,6 +61,7 @@ function openCallout(entry: { slug: string }): void {
 }
 
 export default function HomeScreen() {
+  const intl = useIntl();
   const colors = useColors();
   const recherchen = useFeed('recherchen');
   const faktenchecks = useFeed('faktencheck');
@@ -53,7 +77,7 @@ export default function HomeScreen() {
 
       {(recherchen.offline || faktenchecks.offline) && (
         <Typo variant="text-s" color="on-canvas-muted" className="mt-2xs">
-          Ohne Verbindung. Sie sehen gespeicherte Artikel.
+          {intl.formatMessage(COPY.offlineArticles)}
         </Typo>
       )}
 
@@ -84,7 +108,7 @@ export default function HomeScreen() {
 
       {neueste.length > 0 && (
         <View className="mt-l">
-          <SectionHeader title="Neueste Recherchen" />
+          <SectionHeader title={intl.formatMessage(COPY.latestResearch)} />
           <View className="mt-2xs">
             {neueste.map((item, i) => (
               <View key={item.id}>
@@ -99,9 +123,9 @@ export default function HomeScreen() {
       {(faktenchecks.data?.length ?? 0) > 0 && (
         <View className="mt-l">
           <SectionHeader
-            title="Faktenchecks"
+            title={intl.formatMessage(COPY.factChecks)}
             className="mb-s"
-            actionLabel="Alle ansehen →"
+            actionLabel={`${intl.formatMessage(COPY.viewAll)} →`}
             onAction={() => router.push('/(tabs)/entdecken')}
           />
           <FaktencheckRail items={faktenchecks.data!.slice(0, 8)} onPress={openArticle} />
@@ -116,9 +140,9 @@ export default function HomeScreen() {
 
       <View className="mt-l">
         <SectionHeader
-          title="Mediathek"
+          title={MEDIATHEK}
           className="mb-s"
-          actionLabel="Alles ansehen →"
+          actionLabel={`${intl.formatMessage(COPY.viewEverything)} →`}
           onAction={() => router.push('/(tabs)/mediathek')}
         />
         <MediathekReihe onOpenMediathek={() => router.push('/(tabs)/mediathek')} />

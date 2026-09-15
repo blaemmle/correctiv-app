@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ProgressBar } from '@/components/player/ProgressBar';
@@ -13,13 +14,38 @@ import { sizes, useColors } from '@/lib/theme';
 const SPEEDS = [1, 1.2, 1.5];
 
 /**
+ * Everything the full player says, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/player.ts` (ADR 0026 §6).
+ *
+ * `pause` and `play` are declared here AND in `components/player/MiniPlayer.tsx`
+ * under the same ids: the two surfaces are one player, so the button is spoken
+ * with one word. Declared twice rather than imported so each file reads on its
+ * own, and it cannot drift — `npm run i18n:extract` runs with `--throws` and
+ * fails on one id carrying two different defaults.
+ */
+const COPY = defineMessages({
+  documentTitle: { id: 'player.documentTitle', defaultMessage: 'Player' },
+  close: { id: 'player.close', defaultMessage: 'Close the player' },
+  nothingPlaying: { id: 'player.nothingPlaying', defaultMessage: 'Nothing is playing.' },
+  liveSubtitle: { id: 'player.liveSubtitle', defaultMessage: '● LIVE · 24/7 from Bottrop' },
+  liveNote: {
+    id: 'player.liveNote',
+    defaultMessage: 'Live stream. Salon5 is on air around the clock.',
+  },
+  changeSpeed: { id: 'player.changeSpeed', defaultMessage: 'Change the speed' },
+  pause: { id: 'player.pause', defaultMessage: 'Pause' },
+  play: { id: 'player.play', defaultMessage: 'Play' },
+});
+
+/**
  * The full player, as a modal. It shows the same singleton as the mini bar — there
  * is no second state and no second instance; the modal is only a larger view of it.
  */
 export default function PlayerScreen() {
+  const intl = useIntl();
   // A modal over whatever it was opened from, and therefore a route with a tab of
   // its own on the web target. It has no `ScreenHeader` to name it (ADR 0030).
-  useDocumentTitle('Player');
+  useDocumentTitle(intl.formatMessage(COPY.documentTitle));
   const colors = useColors();
   const { track, status, positionSec, durationSec, speed, errorMessage } = useAudio();
   const live = track?.kind === 'radio';
@@ -29,7 +55,7 @@ export default function PlayerScreen() {
       <View className="flex-row px-s py-2xs">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Player schließen"
+          accessibilityLabel={intl.formatMessage(COPY.close)}
           onPress={goBack}
           hitSlop={8}
           className="items-center justify-center active:opacity-70"
@@ -42,7 +68,7 @@ export default function PlayerScreen() {
       {!track ? (
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="text-m" color="on-canvas-muted">
-            Es läuft gerade nichts.
+            {intl.formatMessage(COPY.nothingPlaying)}
           </Typo>
         </View>
       ) : (
@@ -62,7 +88,7 @@ export default function PlayerScreen() {
               {track.title}
             </Typo>
             <Typo variant="text-s" color={live ? 'accent' : 'on-canvas-muted'} className="mt-2xs">
-              {live ? '● LIVE · 24/7 aus Bottrop' : (track.subtitle ?? '')}
+              {live ? intl.formatMessage(COPY.liveSubtitle) : (track.subtitle ?? '')}
             </Typo>
             {status === 'error' && (
               <Typo variant="text-s" color="accent" className="mt-s">
@@ -74,7 +100,7 @@ export default function PlayerScreen() {
           <View className="px-m pb-m">
             {live ? (
               <Typo variant="text-s" color="on-canvas-muted" className="mb-s">
-                Livestream. Salon5 sendet rund um die Uhr.
+                {intl.formatMessage(COPY.liveNote)}
               </Typo>
             ) : (
               <>
@@ -98,7 +124,7 @@ export default function PlayerScreen() {
               {!live && (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Geschwindigkeit wechseln"
+                  accessibilityLabel={intl.formatMessage(COPY.changeSpeed)}
                   onPress={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
                   hitSlop={8}
                   className="absolute left-0 active:opacity-70"
@@ -110,7 +136,9 @@ export default function PlayerScreen() {
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={status === 'playing' ? 'Pausieren' : 'Abspielen'}
+                accessibilityLabel={intl.formatMessage(
+                  status === 'playing' ? COPY.pause : COPY.play,
+                )}
                 onPress={togglePlay}
                 className="items-center justify-center rounded-full bg-accent active:opacity-80"
                 style={{ width: sizes.playButtonLarge, height: sizes.playButtonLarge }}

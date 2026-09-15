@@ -112,8 +112,9 @@ const NO_ACCESS = defineMessages({
  *
  * A mark is not a sentence: it is the same eleven letters in every language, and a
  * catalogue entry mapping CORRECTIV to CORRECTIV would be a line for a translator
- * to wonder about. The tier names are the same kind of exception one level up —
- * see `lib/membership/tierLabel.ts`, which the profile prints too.
+ * to wonder about. The tier names are messages, but they are not this screen's:
+ * they name a domain enum the profile prints too, so their descriptors sit one
+ * level up in `lib/membership/tierLabel.ts` and are formatted here.
  */
 const WORDMARK = 'CORRECTIV';
 
@@ -348,7 +349,7 @@ function NoAccess({ shortfall }: { shortfall: AccessShortfall }) {
           value={
             shortfall === 'lapsed'
               ? intl.formatMessage(NO_ACCESS.tierTrial)
-              : TIER_LABELS[entitlement?.tier ?? 'free']
+              : intl.formatMessage(TIER_LABELS[entitlement?.tier ?? 'free'])
           }
         />
         <Hairline className="my-s" />

@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { defineMessages, useIntl } from 'react-intl';
 import { View } from 'react-native';
 
 import { ProjectRow } from '@/components/discover/ProjectRow';
@@ -10,6 +11,15 @@ import { projectTarget } from '@/lib/discover/target';
 import { openExternal } from '@/lib/openExternal';
 
 /**
+ * The tab's own name, in ENGLISH; the German that ships is
+ * `src/i18n/catalogue/de/discover.ts`. Everything else on this screen is the
+ * catalogue from `@correctiv/app-core/data/projects`, which is content.
+ */
+const COPY = defineMessages({
+  title: { id: 'discover.title', defaultMessage: 'Discover' },
+});
+
+/**
  * Entdecken — the ordered directory of the ecosystem: the search entry point, the
  * topic rail, and the 7 project groups from the concept.
  *
@@ -17,10 +27,11 @@ import { openExternal } from '@/lib/openExternal';
  * only decides what a tap means.
  */
 export default function EntdeckenScreen() {
+  const intl = useIntl();
   return (
     <Screen>
       <Typo variant="headline-xl" className="mb-s">
-        Entdecken
+        {intl.formatMessage(COPY.title)}
       </Typo>
 
       <SearchEntry onPress={() => router.push('/suche')} />

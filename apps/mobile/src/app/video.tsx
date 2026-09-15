@@ -1,13 +1,39 @@
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 
 import { VideoFrame } from '@/components/media/VideoFrame';
 import { Button, Overline, ScreenHeader, Typo } from '@/components/ui';
-import { formatDateDe, formatMinutesDe, formatNumberDe } from '@correctiv/app-core/lib/format';
+import { formatDateDe, formatMinutesDe } from '@correctiv/app-core/lib/format';
 import type { Video } from '@correctiv/app-core/types/models';
 import { useVideo } from '@/lib/store/core';
 import { openExternal } from '@/lib/openExternal';
 import { colors } from '@/lib/theme';
+
+/**
+ * Everything this screen says, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/video.ts` (ADR 0026 §6).
+ *
+ * `views` is an ICU plural. It replaces a `formatNumberDe` call: `#` inside a
+ * plural is formatted by the provider's locale, so the thousands separator is
+ * still the German one and the count now picks its own noun.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'video.screenTitle', defaultMessage: 'Video' },
+  none: { id: 'video.none', defaultMessage: 'No video selected.' },
+  unavailable: { id: 'video.unavailable', defaultMessage: 'Video unavailable' },
+  loading: { id: 'video.loading', defaultMessage: 'Loading …' },
+  today: { id: 'video.today', defaultMessage: 'Today' },
+  yesterday: { id: 'video.yesterday', defaultMessage: 'Yesterday' },
+  views: {
+    id: 'video.views',
+    defaultMessage: '{count, plural, one {# view} other {# views}}',
+  },
+  newEpisode: { id: 'video.newEpisode', defaultMessage: 'New episode' },
+  kicker: { id: 'video.kicker', defaultMessage: 'Video' },
+  watchOn: { id: 'video.watchOn', defaultMessage: 'Watch on {host}' },
+  watchOriginal: { id: 'video.watchOriginal', defaultMessage: 'Watch the original' },
+});
 
 /**
  * One screen for both video sources.
@@ -30,15 +56,16 @@ import { colors } from '@/lib/theme';
  * along.
  */
 export default function VideoScreen() {
+  const intl = useIntl();
   const { current, hlsUrl, status } = useVideo();
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title="Video" />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
       {!current ? (
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="text-m" color="on-canvas-muted">
-            Kein Video ausgewählt.
+            {intl.formatMessage(COPY.none)}
           </Typo>
         </View>
       ) : (
@@ -71,6 +98,8 @@ export default function VideoScreen() {
  *
  * One place for it, because two now need it: the meta block under the stage, and the
  * metadata the system's own media controls display.
+ *
+ * Both are marks rather than sentences, so neither carries a message id.
  */
 const channelOf = (video: Video): string =>
   video.source === 'peertube' ? 'FunFacts' : 'CORRECTIV';
@@ -87,6 +116,7 @@ function PeertubeStage({
   loading: boolean;
   failed: boolean;
 }) {
+  const intl = useIntl();
   /**
    * THE SOURCE CARRIES THE METADATA, and that is the only way the system's media
    * controls learn anything about a video.
@@ -128,7 +158,7 @@ function PeertubeStage({
           <ActivityIndicator color={colors['always-light']} />
         ) : (
           <Typo variant="text-s" color="always-light">
-            {failed ? 'Video nicht verfügbar' : 'Lädt …'}
+            {intl.formatMessage(failed ? COPY.unavailable : COPY.loading)}
           </Typo>
         )}
       </View>
@@ -156,17 +186,26 @@ function PeertubeStage({
 
 /** Kicker, title, source, description, link — the same for both sources. */
 function VideoMeta({ video }: { video: Video }) {
+  const intl = useIntl();
   const days = daysSince(video.publishedAt);
-  const when = days <= 0 ? 'Heute' : days === 1 ? 'Gestern' : formatDateDe(video.publishedAt);
+  const when =
+    days <= 0
+      ? intl.formatMessage(COPY.today)
+      : days === 1
+        ? intl.formatMessage(COPY.yesterday)
+        : formatDateDe(video.publishedAt);
   const duration = video.durationSec ? formatMinutesDe(video.durationSec) : '';
-  const views = video.views != null ? `${formatNumberDe(video.views)} Aufrufe` : '';
+  const views = video.views != null ? intl.formatMessage(COPY.views, { count: video.views }) : '';
   const channel = channelOf(video);
   const host = (video.url || '').replace(/^https?:\/\//, '').split('/')[0];
 
   return (
     <View className="px-m pb-2xl pt-m">
       <View className="flex-row items-center">
-        <Overline label={days <= 7 ? 'Neue Folge' : 'Video'} color="accent" />
+        <Overline
+          label={intl.formatMessage(days <= 7 ? COPY.newEpisode : COPY.kicker)}
+          color="accent"
+        />
         <Typo variant="text-s" color="grey-500" className="ml-s">
           {[when, duration].filter(Boolean).join(' · ')}
         </Typo>
@@ -187,7 +226,11 @@ function VideoMeta({ video }: { video: Video }) {
 
       {video.url ? (
         <Button
-          title={host ? `Auf ${host} ansehen` : 'Original ansehen'}
+          title={
+            host
+              ? intl.formatMessage(COPY.watchOn, { host })
+              : intl.formatMessage(COPY.watchOriginal)
+          }
           variant="outline"
           className="mt-m"
           onPress={() => openExternal(video.url)}

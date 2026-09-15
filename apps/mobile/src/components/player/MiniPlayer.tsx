@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Hairline, Typo } from '@/components/ui';
@@ -7,6 +8,24 @@ import { formatTimeHm } from '@correctiv/app-core/lib/format';
 import { stop, togglePlay } from '@/lib/audio/player';
 import { useAudio } from '@/lib/audio/useAudio';
 import { sizes, useColors } from '@/lib/theme';
+
+/**
+ * The bar's words, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/player.ts` (ADR 0026 §6).
+ *
+ * `pause` and `play` are the same two ids `app/player.tsx` declares, because the
+ * mini bar and the full player are one player and the button is spoken with one
+ * word. See that file for why the declaration is repeated rather than imported.
+ */
+const COPY = defineMessages({
+  loading: { id: 'player.loading', defaultMessage: 'Loading …' },
+  error: { id: 'player.error', defaultMessage: 'Error' },
+  live: { id: 'player.live', defaultMessage: '● LIVE' },
+  pause: { id: 'player.pause', defaultMessage: 'Pause' },
+  play: { id: 'player.play', defaultMessage: 'Play' },
+  open: { id: 'player.open', defaultMessage: 'Open the player' },
+  stop: { id: 'player.stop', defaultMessage: 'Stop playback' },
+});
 
 /**
  * The bar above the tab bar, for as long as audio is playing. It lives inside the
@@ -17,6 +36,7 @@ import { sizes, useColors } from '@/lib/theme';
  * second, but only for this one row.
  */
 export function MiniPlayer() {
+  const intl = useIntl();
   const colors = useColors();
   const { track, status, positionSec, durationSec, errorMessage } = useAudio();
   if (!track) return null;
@@ -25,9 +45,9 @@ export function MiniPlayer() {
   const playing = status === 'playing';
 
   const subtitle = () => {
-    if (status === 'loading') return 'Lädt …';
-    if (status === 'error') return errorMessage ?? 'Fehler';
-    if (live) return track.subtitle ?? '● LIVE';
+    if (status === 'loading') return intl.formatMessage(COPY.loading);
+    if (status === 'error') return errorMessage ?? intl.formatMessage(COPY.error);
+    if (live) return track.subtitle ?? intl.formatMessage(COPY.live);
     const total = durationSec > 0 ? ` / ${formatTimeHm(durationSec)}` : '';
     return `${formatTimeHm(positionSec)}${total}`;
   };
@@ -38,7 +58,7 @@ export function MiniPlayer() {
       <View className="flex-row items-center px-s py-2xs">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={playing ? 'Pausieren' : 'Abspielen'}
+          accessibilityLabel={intl.formatMessage(playing ? COPY.pause : COPY.play)}
           onPress={togglePlay}
           className="items-center justify-center rounded-full bg-accent active:opacity-80"
           style={{ width: sizes.iconButton, height: sizes.iconButton }}
@@ -53,7 +73,7 @@ export function MiniPlayer() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Player öffnen"
+          accessibilityLabel={intl.formatMessage(COPY.open)}
           onPress={() => router.push('/player')}
           className="ml-s flex-1 active:opacity-70"
         >
@@ -67,7 +87,7 @@ export function MiniPlayer() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Wiedergabe beenden"
+          accessibilityLabel={intl.formatMessage(COPY.stop)}
           onPress={stop}
           hitSlop={8}
           className="ml-2xs items-center justify-center active:opacity-70"

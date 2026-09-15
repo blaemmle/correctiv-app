@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
 import { useMemo } from 'react';
+import { useIntl } from 'react-intl';
 
-import { ScreenHeaderBar } from './ScreenHeaderBar';
+import { HEADER_COPY, ScreenHeaderBar } from './ScreenHeaderBar';
 import type { ScreenHeaderProps } from './screenHeaderTypes';
 import { useColors } from '@/lib/theme';
 
@@ -38,6 +39,7 @@ import { useColors } from '@/lib/theme';
  * rather than a line here (ADR 0030).
  */
 export function ScreenHeader({ title, drawnBar, backLabel, children }: ScreenHeaderProps) {
+  const intl = useIntl();
   const colors = useColors();
 
   // Keyed on the values rather than rebuilt per render: `Stack.Screen` calls
@@ -60,16 +62,19 @@ export function ScreenHeader({ title, drawnBar, backLabel, children }: ScreenHea
             // then to the route's name, so leaving it out puts the duplicate
             // back. See the paragraph above for why there is no title at all.
             headerTitle: '',
-            // "Zurück", not the platform's default. On iOS that default is the
-            // previous route's title, and the tab routes have none, so the back
-            // control would read whatever the router calls them.
-            headerBackTitle: 'Zurück',
+            // Our own back label, not the platform's default. On iOS that
+            // default is the previous route's title, and the tab routes have
+            // none, so the back control would read whatever the router calls
+            // them. `ui.back` is declared once, in `ScreenHeaderBar`, because
+            // the drawn bar says the same word — a native header takes a string
+            // and not JSX, so it is formatted here rather than rendered.
+            headerBackTitle: intl.formatMessage(HEADER_COPY.back),
             headerStyle: { backgroundColor: colors.canvas },
             // Colours the back chevron and its label. There is no `headerTitleStyle`
             // here because there is no title to style.
             headerTintColor: colors['on-canvas'],
           },
-    [colors, drawnBar, title],
+    [colors, drawnBar, intl, title],
   );
 
   return (

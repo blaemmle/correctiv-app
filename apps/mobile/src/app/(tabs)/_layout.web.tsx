@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router/js-tabs';
+import { defineMessages, useIntl } from 'react-intl';
 import { View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,6 +29,26 @@ import { useColors } from '@/lib/theme';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 /**
+ * The five tab labels, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/ui.ts` (ADR 0026 §6).
+ *
+ * **The same five ids are declared in `_layout.tsx`, with the same defaults.** The two
+ * files draw the bar differently and share nothing they could import a constant
+ * through, so the agreement is enforced instead of arranged: `npm run
+ * i18n:extract` runs with `--throws`, which fails on one id carrying two
+ * different English defaults, and `__tests__/localisation-seam.test.ts` fails if
+ * an id loses its German. One set of ids, one German word per tab, on both
+ * targets.
+ */
+const TABS = defineMessages({
+  home: { id: 'ui.tabHome', defaultMessage: 'Home' },
+  discover: { id: 'ui.tabDiscover', defaultMessage: 'Discover' },
+  mediathek: { id: 'ui.tabMediathek', defaultMessage: 'Mediathek' },
+  participate: { id: 'ui.tabParticipate', defaultMessage: 'Take part' },
+  profile: { id: 'ui.tabProfile', defaultMessage: 'Profile' },
+});
+
+/**
  * An explicit height, because the mini player has to sit exactly on top of the tab
  * bar and needs a value both sides agree on. Left unset, react-navigation adds the
  * safe area itself — here both are done by hand.
@@ -52,6 +73,7 @@ function tabIcon(active: IoniconName, inactive: IoniconName) {
 }
 
 export default function TabsLayout() {
+  const intl = useIntl();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const barHeight = TAB_BAR_HEIGHT + insets.bottom;
@@ -84,26 +106,38 @@ export default function TabsLayout() {
       >
         <Tabs.Screen
           name="index"
-          options={{ title: 'Home', tabBarIcon: tabIcon('home', 'home-outline') }}
+          options={{
+            title: intl.formatMessage(TABS.home),
+            tabBarIcon: tabIcon('home', 'home-outline'),
+          }}
         />
         <Tabs.Screen
           name="entdecken"
-          options={{ title: 'Entdecken', tabBarIcon: tabIcon('compass', 'compass-outline') }}
+          options={{
+            title: intl.formatMessage(TABS.discover),
+            tabBarIcon: tabIcon('compass', 'compass-outline'),
+          }}
         />
         <Tabs.Screen
           name="mediathek"
           options={{
-            title: 'Mediathek',
+            title: intl.formatMessage(TABS.mediathek),
             tabBarIcon: tabIcon('play-circle', 'play-circle-outline'),
           }}
         />
         <Tabs.Screen
           name="mitmachen"
-          options={{ title: 'Mitmachen', tabBarIcon: tabIcon('people', 'people-outline') }}
+          options={{
+            title: intl.formatMessage(TABS.participate),
+            tabBarIcon: tabIcon('people', 'people-outline'),
+          }}
         />
         <Tabs.Screen
           name="profil"
-          options={{ title: 'Profil', tabBarIcon: tabIcon('person', 'person-outline') }}
+          options={{
+            title: intl.formatMessage(TABS.profile),
+            tabBarIcon: tabIcon('person', 'person-outline'),
+          }}
         />
       </Tabs>
 

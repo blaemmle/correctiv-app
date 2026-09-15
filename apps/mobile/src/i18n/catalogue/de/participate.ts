@@ -1,2 +1,22 @@
-/** German for the `participate.*` ids: the participate tab. Empty until those strings are lifted. */
-export const participate: Record<string, string> = {};
+/** German for the `participate.*` ids: the participate tab. */
+export const participate: Record<string, string> = {
+  'participate.title': 'Mitmachen',
+  'participate.lead':
+    'Recherchen entstehen mit Ihnen. Ihre Hinweise, Beobachtungen und Prüfungen machen sie erst möglich.',
+  'participate.activeCallouts': 'Aktive Aufrufe',
+  'participate.forumHeading': 'Behauptungen gemeinsam prüfen',
+  'participate.forumLead':
+    'Die Community prüft Behauptungen aus dem Netz, angeleitet von der Redaktion. Gerade {count, plural, one {ist eine Behauptung} other {sind {count, number} Behauptungen}} in Arbeit.',
+  'participate.forumAction': 'Behauptungen ansehen',
+  'participate.atlasHeading': 'Abrisse dokumentieren',
+  'participate.atlasLead':
+    'Welche Gebäude verschwinden? {reports, plural, one {Eine Meldung} other {{reports, number} Meldungen}} aus {cities, plural, one {einer Stadt} other {{cities, number} Städten}} in Deutschland und der Schweiz.',
+  'participate.atlasAction': 'Atlas ansehen',
+  'participate.tipLabel': 'Tipp geben',
+  'participate.tipHeading': 'Faktencheck-Tipp per WhatsApp',
+  'participate.tipLead':
+    'Verdächtige Behauptung gesehen? Schicken Sie sie direkt der Faktencheck-Redaktion.',
+  'participate.tipAction': 'WhatsApp öffnen',
+  'participate.communityNote':
+    'Im Community-Bereich diskutieren Sie Recherchen mit anderen Mitgliedern, bald auch in der App.',
+};
