@@ -201,6 +201,30 @@ jobs:
             exit 1
           fi
 
+          # And it must carry no Rozenite. That tooling is development-only by
+          # decision (ADR 0026 §1), and — unlike the debugger it replaced — nothing
+          # in the toolchain enforces it: `@rozenite/metro` 2.4.0 switches itself on
+          # when `enabled` is left undefined, and an explicit `enabled` skips its own
+          # `isBundling()` check, so `true` would reach an `expo export` exactly as it
+          # reaches `expo start`. What keeps it out here is metro.config.js reading
+          # ROZENITE from the environment and nothing in this workflow setting it,
+          # which is a discipline rather than a property — so it gets a check.
+          #
+          # It covers both halves at once, and it greps for the word rather than
+          # for an import path because Metro rewrites paths to numeric ids and
+          # they do not survive. What survives minification is export names and
+          # string literals, and all three packages carry the word in both:
+          # `rozeniteDevToolsEnhancer`, `useReduxDevToolsAgentTools`, and the
+          # plugin ids `@rozenite/mmkv-plugin` and
+          # `@rozenite/react-navigation-plugin`. Measured 2026-09-15 by running
+          # this same grep over a `--dev` export with ROZENITE=1, where it hits,
+          # and over the production export, where it does not.
+          if grep -riq 'rozenite' site/app/_expo/; then
+            echo "::error::the app bundle carries Rozenite. It is development-only tooling: check that metro.config.js still passes an explicit enabled, that ROZENITE is unset here, and that app/_layout.tsx still selects lib/devtools/AgentTools at MODULE scope — a require inside a function keeps its module whatever guards the call."
+            grep -ril 'rozenite' site/app/_expo/ | head
+            exit 1
+          fi
+
           echo "deployable OK — handbook at $BASE_PATH/, app at $BASE_PATH/app/, $(find site -name '*.html' | wc -l) pages"
 
       - name: Upload Pages artifact

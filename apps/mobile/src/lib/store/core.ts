@@ -81,33 +81,60 @@ import { videoActions } from '@correctiv/app-core/stores/video';
 /**
  * Redux DevTools, in development only.
  *
- * `redux-devtools-expo-dev-plugin` is an Expo dev plugin: the full DevTools from
- * the Chrome extension, reachable from the Expo dev menu, with the action list,
- * the state diff, and rewind. On a state tree that takes an audio position tick
- * twice a second and runs four network cascades, a named action history is the
- * difference between reading logs and seeing what happened.
+ * `@rozenite/redux-devtools-plugin` is a Rozenite plugin: the full DevTools from
+ * the Chrome extension, a panel in React Native DevTools, with the action list,
+ * the state diff and rewind — and, unlike the Expo dev plugin it replaced, the
+ * same history readable by an agent over Rozenite's tool bridge (see
+ * `lib/devtools/AgentTools.tsx`). On a state tree that takes an audio position
+ * tick twice a second and runs four network cascades, a named action history is
+ * the difference between reading logs and seeing what happened, and that argument
+ * does not stop applying because the reader is an agent.
  *
- * `require` inside the `__DEV__` branch rather than a top-level import, so a
- * release build never runs the enhancer. It does still BUNDLE it: Metro collects
- * a `require` from the syntax tree whatever condition stands around it, and only
- * a module-scope guard folds one away, measured on 2026-09-10 in
- * [ADR 0025](../../../../../adr/0025-the-published-app-is-a-production-bundle.md).
- * What keeps the debugger itself out of the export is the package's own such
- * guard: its entry resolves `./devtools` only when `NODE_ENV` is not production,
- * so what arrives in the export is the no-op branch. RTK's own `devTools`
- * integration is switched off in the same breath — the plugin replaces it, and
- * two of them fight over one connection.
+ * **A swap, not an addition.** This seat held `redux-devtools-expo-dev-plugin`,
+ * and two debuggers fight over one connection, so one of them had to go
+ * ([ADR 0026](../../../../../adr/0026-react-native-review-and-hardening.md) §1).
+ * RTK's own `devTools` integration is switched off in the same breath, for the
+ * same reason. Only one debugger connection exists at a time on the platform at
+ * all: React Native DevTools disconnects when an agent session begins, so plan
+ * for alternating rather than for both at once.
+ *
+ * **Selected at MODULE scope, which is a change from how this used to be written.**
+ * The predecessor's `require` sat inside the function below, on the belief that a
+ * `__DEV__` branch around the call keeps the module out of a release bundle. It
+ * does not: Metro collects a `require` from the syntax tree however unreachable
+ * the call is, and only a module-scope guard folds one away, measured on
+ * 2026-09-10 in
+ * [ADR 0025](../../../../../adr/0025-the-published-app-is-a-production-bundle.md)
+ * and again in ADR 0026 §1. Both packages guard themselves as well, so the
+ * function-scope shape would still ship no debugger — but it ships the package's
+ * NO-OP module, and a no-op still carries its export names. Measured here on
+ * 2026-09-15: written that way, `rozeniteDevToolsEnhancer`,
+ * `composeWithRozeniteDevTools` and `useReduxDevToolsAgentTools` all survived
+ * minification into the web export, which is enough to trip any grep for
+ * "rozenite" over the published bundle. The check `pages.yml` runs is only worth
+ * having if a hit means something is wrong, so the require moved up here and the
+ * bundle now carries no Rozenite at all.
+ *
+ * The enhancer still arrives through `devToolsEnhancers()`, which is the seam
+ * [ADR 0023](../../../../../adr/0023-the-host-constructs-the-store.md) built and
+ * where the store expects to find it. Only the `require` moved.
  */
-function devToolsEnhancers(): StoreEnhancer[] {
+const rozeniteDevToolsEnhancer: (() => StoreEnhancer) | null =
   // `__DEV__` is true under jest too, and the plugin ships ESM the test transform
   // does not cover — so a bare `__DEV__` check fails every suite that imports this
   // file with "Unexpected token 'export'". Excluding the test runner is also just
   // true: there is no dev client for it to talk to, and a debugger has no business
-  // being loaded 15 times per `npm run check`.
-  if (!__DEV__ || process.env.NODE_ENV === 'test') return [];
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const devToolsEnhancer = require('redux-devtools-expo-dev-plugin').default as () => StoreEnhancer;
-  return [devToolsEnhancer()];
+  // being loaded 15 times per `npm run check`. Both operands fold to constants at
+  // build time, so the require goes with them.
+  __DEV__ && process.env.NODE_ENV !== 'test'
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+      (
+        require('@rozenite/redux-devtools-plugin') as typeof import('@rozenite/redux-devtools-plugin')
+      ).rozeniteDevToolsEnhancer
+    : null;
+
+function devToolsEnhancers(): StoreEnhancer[] {
+  return rozeniteDevToolsEnhancer ? [rozeniteDevToolsEnhancer()] : [];
 }
 
 /**
