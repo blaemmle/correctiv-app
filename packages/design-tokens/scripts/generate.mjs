@@ -470,8 +470,20 @@ const paletteLines = (palette) => Object.entries(palette).map(([k, v]) => `  --c
  * file — switches correctly. That split is issue #138: the same token answering
  * two ways in the same second, depending on whether a class or TypeScript asked.
  *
- * `:root` inside `@layer theme` gives the variant something to attach to, and the
- * rule survives into the native table. The browser output is unchanged in meaning.
+ * `:root` inside `@layer theme` is what the native processor accepts, and it checks
+ * BOTH halves: `css-visitor/rule-visitor.js:14` gates on `currentLayerName ===
+ * "theme"` and on the first selector's `kind === "root"`. `@layer base { :root { … } }`
+ * compiles identically under Tailwind and is discarded just the same, so neither
+ * half of this shape is decoration.
+ *
+ * The browser output is NOT unchanged in meaning, and an earlier version of this
+ * comment said it was. The dark block used to be emitted outside any layer and now
+ * sits in `theme`, the lowest one this package declares; unlayered CSS beats every
+ * layer whatever its specificity. For this repo's own consumers nothing moves,
+ * because their competing `--color-*` live in the same layer later in source order.
+ * For the CMS consumer it does: a plain `:root` override of one of our variables
+ * now wins in both schemes where it used to lose in the dark one. That is written
+ * down in the package README, which is where that consumer reads.
  */
 const variantBlock = (name, palette) =>
   [
