@@ -36,6 +36,10 @@ import type { ReactTestInstance, ReactTestRenderer } from 'react-test-renderer';
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => true },
   useLocalSearchParams: jest.fn(() => ({})),
+  // `ScreenHeader` configures the platform's stack header through `Stack.Screen` on
+  // native, so a screen with a header reaches expo-router for more than `router`
+  // now (ADR 0030). Both screens rendered here have one.
+  Stack: { Screen: () => null },
 }));
 
 import { useLocalSearchParams } from 'expo-router';
