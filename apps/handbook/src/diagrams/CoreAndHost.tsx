@@ -152,10 +152,10 @@ export function CoreAndHostDrawing({ alt = false }: { alt?: boolean } = {}) {
           this host answers with
         </text>
         <text x="150" y="408" textAnchor="middle">
-          AsyncStorage, one prefixed
+          MMKV, one store the
         </text>
         <text x="150" y="425" textAnchor="middle">
-          key per setting
+          cache cannot reach
         </text>
 
         <rect x="275" y="258" width="190" height="198" rx="8" className={CARD} />
@@ -176,7 +176,10 @@ export function CoreAndHostDrawing({ alt = false }: { alt?: boolean } = {}) {
           this host answers with
         </text>
         <text x="370" y="408" textAnchor="middle">
-          AsyncStorage
+          a second MMKV store,
+        </text>
+        <text x="370" y="425" textAnchor="middle">
+          bounded and evictable
         </text>
 
         <rect x="495" y="258" width="190" height="198" rx="8" className={CARD} />
@@ -320,11 +323,12 @@ export function CoreAndHost({ alt = true }: { alt?: boolean }) {
               <ul>
                 <li>
                   <code>KeyValueStore</code>: the core needs small settings, asynchronously. This
-                  host answers with AsyncStorage, one prefixed key per setting.
+                  host answers with MMKV, in the store that holds what the reader chose.
                 </li>
                 <li>
                   <code>BlobStore</code>: the core needs the HTTP cache, asynchronously. This host
-                  answers with AsyncStorage.
+                  answers with a second MMKV store, which the core's cache bounds and evicts from.
+                  Two stores rather than one is what makes eviction unable to reach a bookmark.
                 </li>
                 <li>
                   <code>ContentBundle</code>: the core needs what shipped inside the app. This host

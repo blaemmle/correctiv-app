@@ -10,8 +10,10 @@ layer plus one adapter ([ADR 0006](../../adr/0006-one-core-two-hosts.md)).
 
 - **Expo SDK 57** (React Native 0.86, New Architecture), TypeScript,
   **expo-router** (tabs and stack), **Uniwind** (Tailwind v4 for React Native)
-- **react-redux** binds the core's Redux store. **AsyncStorage** backs the core's two
-  storage ports, unchanged on web, where it is localStorage
+- **react-redux** binds the core's Redux store. **react-native-mmkv** (on
+  **react-native-nitro-modules**) backs the core's two storage ports, in two separate
+  instances so the bounded cache cannot evict what the reader chose; unchanged on
+  web, where MMKV's own build is localStorage
 - **expo-audio** behind the core's `AudioBackend` port. Not react-native-track-player:
   it needs a Kotlin patch to compile under RN 0.85 and then crashes at runtime under
   the New Architecture, and RN 0.85 offers no old-architecture option. expo-audio
