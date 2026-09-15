@@ -360,16 +360,6 @@ export const stop = (): AppThunk => (dispatch) => {
   dispatch(stopped()); // stands the watchdog down — see the entry above
 };
 
-export const audioActions = {
-  ...slice.actions,
-  playRadio,
-  playEpisode,
-  togglePlay,
-  seekTo,
-  setSpeed,
-  stop,
-};
-
 /**
  * Test helper — cancels the watchdog and drops the listener registration.
  *

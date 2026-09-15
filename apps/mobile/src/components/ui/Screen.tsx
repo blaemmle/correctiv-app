@@ -4,7 +4,7 @@ import { SafeAreaView } from './SafeAreaView';
 
 export type ScreenProps = {
   children: ReactNode;
-  /** Scrollender Inhalt (Default) oder fester Bildschirm. */
+  /** Scrolling content (the default), or a fixed screen. */
   scroll?: boolean;
   /** Drop the default horizontal padding (px-m) — for edge-to-edge lists and heroes. */
   noPadding?: boolean;

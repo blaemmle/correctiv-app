@@ -2,6 +2,8 @@ import { posix } from 'node:path';
 
 import { Marked, type Token, type Tokens } from 'marked';
 
+import { slug } from '../src/lib/slug.ts';
+
 import { adrNumber, adrRoute, DOCUMENTS } from './registry.ts';
 
 export interface Heading {
@@ -115,15 +117,6 @@ function prefix(base: string): string {
 function splitHash(href: string): [string, string] {
   const i = href.indexOf('#');
   return i === -1 ? [href, ''] : [href.slice(0, i), href.slice(i)];
-}
-
-/** GitHub's own heading slugs, closely enough that hand-written anchors keep working. */
-export function slug(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
-    .trim()
-    .replace(/\s+/g, '-');
 }
 
 /**

@@ -298,8 +298,12 @@ fixtures, the console, the palette and the checks need neither and hold on Pages
 ## Checks
 
 `npm run check` at the root is the fast inner loop: typecheck, oxlint, oxfmt, tests,
-in about ten seconds without a device. It covers the parsers, the German formatters,
-every cascade, the platform adapter and the architectural guards.
+in about nineteen seconds without a device — 18.9 s, 19.0 s and 19.9 s over three
+warm runs on 2026-09-15. This line said ten for months, which is what a duration
+typed into prose does: it is taken once, the suite only grows, and nothing reads the
+sentence back. Re-take it rather than trust it, and read it as wall clock on one
+machine. It covers the parsers, the German formatters, every cascade, the platform
+adapter and the architectural guards.
 
 Linter and formatter are [oxlint](https://oxc.rs) and oxfmt rather than
 ESLint/Prettier, so there is no plugin or parser config to maintain. Markdown and

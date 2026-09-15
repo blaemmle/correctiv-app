@@ -84,10 +84,6 @@ const initialState: FeedsState = { byKey: emptySlices() };
 
 // --- pure selectors (see stores/interests.ts for why not part of the slice) ---
 
-export function feedItems(state: FeedsState, key: FeedKey): FeedItem[] {
-  return state.byKey[key].items;
-}
-
 /**
  * Newest first, by the item's own timestamp.
  *
@@ -390,11 +386,3 @@ export const enrichImage =
     dispatch(patch(key, { items }));
     await setCached(CACHE_NS, key, items);
   };
-
-export const feedsActions = {
-  ...slice.actions,
-  fetch: fetchFeedKey,
-  fetchMany,
-  loadMore,
-  enrichImage,
-};

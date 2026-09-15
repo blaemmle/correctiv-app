@@ -25,6 +25,7 @@ import { Segmented } from '../ui/kit/segmented';
 import { Button } from '../ui/kit/button';
 import { cn } from '../lib/cn';
 import { ageInWords, isStale, STALE_AFTER_DAYS } from '../lib/measured';
+import { slug } from '../lib/slug';
 import { Slot } from '../shell/slots';
 import { Page } from '../ui/Page';
 import { Toc } from '../ui/Toc';
@@ -166,14 +167,6 @@ function prose(text: string): ReactNode[] {
       <Fragment key={key}>{part}</Fragment>
     );
   });
-}
-
-/** An anchor fragment for a label, so a link and its target cannot be typed apart. */
-function slug(text: string): string {
-  return text
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-|-$/g, '');
 }
 
 const KIND_LABEL: Record<Kind, string> = {
