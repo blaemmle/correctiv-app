@@ -56,8 +56,11 @@ export type KeyboardAvoidingProps = {
  * React Native 0.86 is the first release where that actually works. It carries
  * facebook/react-native#55855, which rebuilt the Android keyboard events on
  * `WindowInsetsCompat` and stopped `keyboardDidHide` re-entering the measurement
- * with stale coordinates. On 0.85 this component would have moved nothing on
- * Android 15 and looped on `behavior="height"`.
+ * with stale coordinates; the `behavior="height"` render loop is one of the three
+ * things that pull request names. 0.85's `ReactRootView` has no `WindowInsetsCompat`
+ * path and takes the coordinate from `mVisibleViewArea.height()` instead, which is
+ * why the version is worth naming. What this component would have done there was
+ * never run, and is not claimed here.
  *
  * **It goes inside the safe area, never around it.** `padding` adds the overlap
  * between this view's own frame and the top of the keyboard. A bottom inset applied
