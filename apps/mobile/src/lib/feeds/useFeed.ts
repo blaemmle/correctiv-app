@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import {
   fetchFeedKey,
   fetchMany,
+  investigations,
   mergedFeedItems,
   mergedFeedStatus,
   type FeedStatus,
@@ -101,4 +102,25 @@ export function useMergedFeeds(feeds: FeedKey[]): AsyncState<FeedItem[]> {
     status,
     () => void Promise.all(feeds.map((key) => dispatch(fetchFeedKey(key, { force: true })))),
   );
+}
+
+/**
+ * The site-wide stream with its fact checks taken out, loaded on first use.
+ *
+ * `investigations` is the core's selector rather than a `.filter().slice()` in a
+ * screen, and it is memoised because it builds a fresh array: handed straight to
+ * `useSelector` it would compare unequal on every unrelated dispatch. Same shape
+ * and the same reason as `useSpotlight` in `lib/store/core.ts`.
+ *
+ * It selects the whole feeds slice rather than one key, because the selector reads
+ * `FeedsState` like every other pure query in that module. `s.feeds` is a stable
+ * reference while no feed changes, so the cost is a re-filter when some other feed
+ * lands, not a render on every dispatch.
+ */
+export function useInvestigations(limit: number): FeedItem[] {
+  const feeds = useAppSelector((s) => s.feeds);
+
+  useLazyLoad(feeds.byKey.recherchen.status, fetchFeedKey, 'recherchen');
+
+  return useMemo(() => investigations(feeds, limit), [feeds, limit]);
 }

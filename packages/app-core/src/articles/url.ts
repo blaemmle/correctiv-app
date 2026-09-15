@@ -1,4 +1,15 @@
 /**
+ * What a correctiv.org URL says about the page behind it.
+ *
+ * Two rules, both read off a permalink and neither of them a screen's: whether a
+ * link is an article this app can render, and whether that article is a fact
+ * check. `services/wp.service.ts` argues from the first one to explain why it
+ * checks the post it got back against the URL it asked for, which is the tell that
+ * these belong beside it rather than in a host — a rule the core reasons about
+ * cannot live somewhere the core cannot read.
+ */
+
+/**
  * Paths on correctiv.org that list or serve rather than read: taxonomy pages, the
  * WordPress plumbing, and file downloads. Everything else with at least a section
  * and a slug is an article.

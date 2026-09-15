@@ -10,8 +10,7 @@ import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 import type { NewsletterKey } from '@correctiv/app-core/stores/settings';
 import type { Entitlement } from '@correctiv/app-core/types/models';
 import { quarterlyReport } from '@correctiv/app-core/data/quartalsbericht';
-import { isFactCheckUrl } from '@/lib/articles/articleUrl';
-import { useFeed } from '@/lib/feeds/useFeed';
+import { useInvestigations } from '@/lib/feeds/useFeed';
 import { TIER_LABELS } from '@/lib/membership/tierLabel';
 import { openArticle } from '@/lib/openArticle';
 import { openExternal } from '@/lib/openExternal';
@@ -191,13 +190,10 @@ export default function ProfilScreen() {
    * through the port, which is the arrangement every other list in the app has had
    * since ADR 0015. `web-target.test.ts` keeps the direct import from coming back.
    *
-   * `recherchen` is the site-wide stream, so it carries fact checks too — they are
-   * not impact investigations, which is why `isFactCheckUrl` filters them out.
+   * That `recherchen` is the site-wide stream and carries fact checks too is the
+   * core's to know: this screen asks for investigations and gets them.
    */
-  const recherchen = useFeed('recherchen');
-  const impactArticles = (recherchen.data ?? [])
-    .filter((item) => !isFactCheckUrl(item.url))
-    .slice(0, IMPACT_COUNT);
+  const impactArticles = useInvestigations(IMPACT_COUNT);
 
   const tierLabel = intl.formatMessage(TIER_LABELS[entitlement?.tier ?? 'paid']);
 

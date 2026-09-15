@@ -5,7 +5,8 @@ import { classifyReaderLink } from '@/lib/articles/readerNavigation';
  * with no test at all — the only pure rule in that screen, and the one that decides
  * whether tapping a citation keeps you in the app or throws you out of it.
  *
- * `isInternalArticleUrl` has its own suite next door; what is pinned here is the
+ * `isInternalArticleUrl` has its own suite in the core, where the rule itself now
+ * lives (`packages/app-core/test/article-url.test.ts`); what is pinned here is the
  * dispatch around it, and especially the two branches that are not about articles:
  * the document's own machinery must never be intercepted, and an unrecognised
  * scheme must never be forced through the system browser.

@@ -34,9 +34,14 @@ jest.mock('expo-router', () => ({
  * plain value because the screen dispatches it through the store binding, and a
  * mock that returns undefined would blow up inside redux-thunk rather than in a
  * readable assertion.
+ *
+ * ONE export is replaced and the rest of the module is real. `searchProjectHits`
+ * lives beside the cascade since issue #107 and needs no network, so stubbing it
+ * out with the module around it would leave "finds project content that is in no
+ * feed" asserting a mock.
  */
 jest.mock('@correctiv/app-core/stores/search', () => ({
-  MIN_SEARCH_QUERY: 2,
+  ...jest.requireActual('@correctiv/app-core/stores/search'),
   searchWithFallback: jest.fn(() => () => Promise.resolve([])),
 }));
 jest.mock('@/lib/feeds/useFeed', () => ({

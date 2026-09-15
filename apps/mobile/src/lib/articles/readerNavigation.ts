@@ -1,4 +1,4 @@
-import { isInternalArticleUrl } from './articleUrl';
+import { isInternalArticleUrl } from '@correctiv/app-core/articles/url';
 
 /**
  * What the reader should do with a target the document tried to open.
@@ -17,7 +17,9 @@ export type ReaderLinkAction = 'allow' | 'internal' | 'external';
  * they are checked first and by scheme rather than by URL shape.
  *
  * What is left splits on `isInternalArticleUrl`, whose own rules and their history
- * are worth reading before changing anything here.
+ * are worth reading before changing anything here. That rule is the core's, because
+ * it is a fact about correctiv.org; this dispatch is the host's, because the set of
+ * navigations it sorts is a WebView's and an iframe's rather than the domain's.
  *
  * The final `allow` is for a scheme that is neither: `mailto:`, `tel:`, or an app
  * link. Handing those to the webview is what the reader has always done, and it is

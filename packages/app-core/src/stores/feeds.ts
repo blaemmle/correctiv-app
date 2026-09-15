@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { loadPageMeta } from '../articles/load';
+import { isFactCheckUrl } from '../articles/url';
 import { FEEDS } from '../data/feeds.config';
 import { byPublishedAt } from '../lib/sort';
 import { platform } from '../ports';
@@ -116,6 +117,30 @@ export function mergedFeedItems(state: FeedsState, keys: FeedKey[]): FeedItem[] 
     }
   }
   return sortNewestFirst(items);
+}
+
+/**
+ * The investigations in the site-wide stream: `recherchen` without its fact checks.
+ *
+ * `recherchen` is `correctiv.org/feed/`, which carries both and stamps every item
+ * `feed: 'recherchen'` on purpose, so that Home's "Neueste Recherchen" does not
+ * sprout Faktencheck badges (`services/wp.service.ts` → `fetchWpFeed`). The price
+ * of that is that "an investigation" is not a field anywhere and has to be read off
+ * the permalink — `articles/url.ts`, where the reasons the other two candidate
+ * fields cannot answer it are written down.
+ *
+ * Which is why this is here and not in the screen that wants it. The profile's
+ * impact card did the filter itself, so the one screen that must not list a fact
+ * check was also the only place that knew the stream contains them; a second reader
+ * of the same feed would have had to learn it again from the same paragraph.
+ *
+ * `limit` is the caller's, like `recentIssues` in `stores/spotlight.ts`: how many
+ * a card has room for is a layout decision and this slice has no business knowing
+ * it.
+ */
+export function investigations(state: FeedsState, limit?: number): FeedItem[] {
+  const items = feedItems(state, 'recherchen').filter((item) => !isFactCheckUrl(item.url));
+  return limit === undefined ? items : items.slice(0, limit);
 }
 
 /** The worst status among `keys` — what a merged list should show. */

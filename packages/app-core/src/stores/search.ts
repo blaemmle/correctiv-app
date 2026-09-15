@@ -1,4 +1,5 @@
 import { CONTENT_FEEDS } from '../data/feeds.config';
+import { searchSamples, type SearchSample } from '../data/search-samples';
 import { searchArticles } from '../services/search.service';
 import type { FeedItem } from '../types/models';
 import { fetchMany, type FeedsState, mergedFeedItems } from './feeds';
@@ -28,6 +29,29 @@ export function searchLocalFeeds(state: FeedsState, query: string, limit = 12): 
         item.title.toLowerCase().includes(needle) || item.teaser.toLowerCase().includes(needle),
     )
     .slice(0, limit);
+}
+
+/**
+ * Title and subtitle over the project hits: the podcasts, callouts, backstage and
+ * publishing entries that are not articles and therefore never reach a feed.
+ *
+ * The same match `searchLocalFeeds` makes, over the other half of what the app can
+ * find. It took its corpus from a module constant rather than from state, which is
+ * why it sat in `app/suche.tsx` for as long as it did: nothing forced it through
+ * the store, so nobody noticed it was a rule and not a render. It is not a selector
+ * for the same reason — there is no state to take — but it is behaviour, so it
+ * belongs beside the search it is half of.
+ *
+ * No limit, unlike `searchLocalFeeds`: the whole catalogue is nine entries, so a
+ * cap would be a number with nothing behind it.
+ */
+export function searchProjectHits(query: string): SearchSample[] {
+  const needle = query.trim().toLowerCase();
+  if (needle.length < MIN_SEARCH_QUERY) return [];
+  return searchSamples.filter(
+    (sample) =>
+      sample.title.toLowerCase().includes(needle) || sample.subtitle.toLowerCase().includes(needle),
+  );
 }
 
 /**

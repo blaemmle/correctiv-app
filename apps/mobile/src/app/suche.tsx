@@ -7,8 +7,7 @@ import { SampleHitRow, sampleTarget } from '@/components/discover/SampleHitRow';
 import { ArticleRow } from '@/components/feed/ArticleRow';
 import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
 import { Hairline, Overline, ScreenHeader, Typo } from '@/components/ui';
-import { searchSamples } from '@correctiv/app-core/data/search-samples';
-import { MIN_SEARCH_QUERY } from '@correctiv/app-core/stores/search';
+import { MIN_SEARCH_QUERY, searchProjectHits } from '@correctiv/app-core/stores/search';
 import type { FeedItem } from '@correctiv/app-core/types/models';
 import { openArticle } from '@/lib/openArticle';
 import { useCoreActions } from '@/lib/store/core';
@@ -48,7 +47,8 @@ const COPY = defineMessages({
  * three empty states to show.
  *
  * The project hits (podcasts, callouts, backstage, publishing) are not in the feeds
- * and are filtered locally — without a debounce, because that costs nothing.
+ * and are matched locally by `searchProjectHits`, in the same module — without a
+ * debounce, because that costs nothing.
  */
 export default function SucheScreen() {
   const intl = useIntl();
@@ -87,13 +87,9 @@ export default function SucheScreen() {
     };
   }, [debounced, actions]);
 
-  const sampleHits = useMemo(() => {
-    if (trimmed.length < MIN_SEARCH_QUERY) return [];
-    const needle = trimmed.toLowerCase();
-    return searchSamples.filter(
-      (s) => s.title.toLowerCase().includes(needle) || s.subtitle.toLowerCase().includes(needle),
-    );
-  }, [trimmed]);
+  // Memoised because it builds a fresh array and the list below is keyed off it;
+  // the match itself is the core's, tested there beside the feed search.
+  const sampleHits = useMemo(() => searchProjectHits(trimmed), [trimmed]);
 
   const tooShort = debounced.length < MIN_SEARCH_QUERY;
   const nothingFound = !tooShort && !searching && articles.length === 0 && sampleHits.length === 0;
