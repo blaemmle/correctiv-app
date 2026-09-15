@@ -89,7 +89,16 @@
       // wired up: `import 'expo-router/entry'` registers the root component,
       // `import '@/global.css'` is the CSS entry Uniwind's Metro transform reads.
       // There is nothing to assign.
-      "files": ["apps/mobile/index.js", "apps/mobile/src/app/_layout.tsx"],
+      //
+      // The last two are the same thing for `Intl`: a polyfill's whole job is the
+      // global it installs, and the `require` spelling is what makes it
+      // conditional — the file says why it must be.
+      "files": [
+        "apps/mobile/index.js",
+        "apps/mobile/src/app/_layout.tsx",
+        "apps/mobile/src/i18n/Localisation.tsx",
+        "apps/mobile/src/i18n/polyfills.ts"
+      ],
       "rules": {
         "import/no-unassigned-import": "off"
       }

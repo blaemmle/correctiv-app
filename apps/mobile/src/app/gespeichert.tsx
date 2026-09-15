@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { defineMessages, useIntl } from 'react-intl';
 import { FlatList, Pressable, View, type ListRenderItemInfo } from 'react-native';
 
 import { Overline, ScreenHeader, Typo } from '@/components/ui';
@@ -8,15 +9,42 @@ import { openArticle } from '@/lib/openArticle';
 import { useCoreActions, useSavedArticles } from '@/lib/store/core';
 import { sizes, useColors } from '@/lib/theme';
 
+/**
+ * Everything this screen says, in one place.
+ *
+ * The two rows below carry a placeholder each rather than a join: an article's
+ * title and the day it was saved are data, and where they sit in the sentence is
+ * the language's business. The day itself is still `formatDateShortDe`, which pins
+ * the German pattern on purpose.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'profile.saved.title', defaultMessage: 'Saved articles' },
+  empty: {
+    id: 'profile.saved.empty',
+    defaultMessage: 'Nothing saved yet. Tap the bookmark in an article to keep it here.',
+  },
+  savedOn: { id: 'profile.saved.savedOn', defaultMessage: 'saved {date}' },
+  remove: { id: 'profile.saved.remove', defaultMessage: 'Remove {title}' },
+});
+
 const keyExtractor = (article: SavedArticle) => article.url;
 
 const renderSavedRow = ({ item }: ListRenderItemInfo<SavedArticle>) => <SavedRow article={item} />;
 
-const EMPTY = (
-  <Typo variant="text-m" color="on-canvas-muted" className="mt-m">
-    Noch nichts gespeichert. Tippen Sie im Artikel auf das Lesezeichen, um ihn hier abzulegen.
-  </Typo>
-);
+/**
+ * The empty notice — a component now, where it used to be an element held in a
+ * constant. Its sentence is a message, formatting one needs a hook, and only a
+ * component may hold one. Still at module scope, so `FlatList` sees the same type
+ * on every render just as it saw the same element before.
+ */
+function Empty() {
+  const intl = useIntl();
+  return (
+    <Typo variant="text-m" color="on-canvas-muted" className="mt-m">
+      {intl.formatMessage(COPY.empty)}
+    </Typo>
+  );
+}
 
 /**
  * Saved articles — the same list the bookmark in the reader fills. `savedArticles`
@@ -31,10 +59,11 @@ const EMPTY = (
  */
 export default function GespeichertScreen() {
   const items = useSavedArticles();
+  const intl = useIntl();
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title="Gespeicherte Artikel" />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
       <FlatList
         className="flex-1"
         data={items}
@@ -46,10 +75,10 @@ export default function GespeichertScreen() {
         // respectively, which is why it is still two different sizes.
         ListHeaderComponent={
           <Typo variant="headline-l" className={items.length > 0 ? 'mb-s' : ''}>
-            Gespeicherte Artikel
+            {intl.formatMessage(COPY.screenTitle)}
           </Typo>
         }
-        ListEmptyComponent={EMPTY}
+        ListEmptyComponent={Empty}
         contentContainerClassName="px-m pt-m pb-2xl"
         showsVerticalScrollIndicator={false}
       />
@@ -60,6 +89,7 @@ export default function GespeichertScreen() {
 function SavedRow({ article }: { article: SavedArticle }) {
   const actions = useCoreActions();
   const colors = useColors();
+  const intl = useIntl();
   return (
     <View className="flex-row items-start border-b border-stroke py-s">
       <Pressable
@@ -73,12 +103,12 @@ function SavedRow({ article }: { article: SavedArticle }) {
           {article.title}
         </Typo>
         <Typo variant="text-s" color="grey-500" className="mt-2xs">
-          gespeichert {formatDateShortDe(article.savedAt)}
+          {intl.formatMessage(COPY.savedOn, { date: formatDateShortDe(article.savedAt) })}
         </Typo>
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${article.title} entfernen`}
+        accessibilityLabel={intl.formatMessage(COPY.remove, { title: article.title })}
         hitSlop={8}
         onPress={() => actions.savedArticles.remove(article.url)}
         className="items-center justify-center active:opacity-70"

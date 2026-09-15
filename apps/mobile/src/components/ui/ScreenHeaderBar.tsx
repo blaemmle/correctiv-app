@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
+import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, View } from 'react-native';
 
 import { Hairline } from './Hairline';
@@ -7,6 +8,21 @@ import { SafeAreaView } from './SafeAreaView';
 import { Typo } from './Typo';
 import { goBack } from '@/lib/navigation/goBack';
 import { useColors } from '@/lib/theme';
+
+/**
+ * The back control's word, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/ui.ts` (ADR 0026 §6).
+ *
+ * **Exported, and this is the only declaration of `ui.back` in the app.** Three
+ * places say it: this bar, `ScreenHeader.tsx` — which hands the same word to the
+ * PLATFORM's header as `headerBackTitle`, where there is no JSX to put a message
+ * in — and the article reader's floating chrome, which draws a chevron of its
+ * own. They import it from here rather than declaring it three times, so the
+ * drawn bar and the native header cannot come to say different words.
+ */
+export const HEADER_COPY = defineMessages({
+  back: { id: 'ui.back', defaultMessage: 'Back' },
+});
 
 export type ScreenHeaderBarProps = {
   /**
@@ -26,8 +42,8 @@ export type ScreenHeaderBarProps = {
 };
 
 /**
- * Back bar with a hairline, as in the design draft: chevron plus "Zurück", no
- * title row.
+ * Back bar with a hairline, as in the design draft: chevron plus the back label,
+ * no title row.
  *
  * Not a screen's header on its own. `ScreenHeader` decides where this is drawn —
  * always on web, and on the two screens that keep it everywhere — and this file
@@ -35,8 +51,12 @@ export type ScreenHeaderBarProps = {
  * one. The gallery shows it under `ScreenHeader`, because on web that is exactly
  * what `ScreenHeader` draws.
  */
-export function ScreenHeaderBar({ onBack, backLabel = 'Zurück', children }: ScreenHeaderBarProps) {
+export function ScreenHeaderBar({ onBack, backLabel, children }: ScreenHeaderBarProps) {
+  const intl = useIntl();
   const colors = useColors();
+  // The default used to sit on the parameter; a default cannot call a hook, so
+  // the fallback is chosen here instead. Same word, same two call sites.
+  const label = backLabel ?? intl.formatMessage(HEADER_COPY.back);
   return (
     <SafeAreaView edges={['top']} className="bg-canvas">
       <View className="flex-row items-center px-s py-2xs">
@@ -44,13 +64,13 @@ export function ScreenHeaderBar({ onBack, backLabel = 'Zurück', children }: Scr
           onPress={onBack ?? goBack}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={backLabel}
+          accessibilityLabel={label}
           className="flex-row items-center py-2xs active:opacity-60"
         >
           <Ionicons name="chevron-back" size={20} color={colors['on-canvas']} />
           {!children && (
             <Typo variant="text-m" weight="semibold" className="ml-4xs">
-              {backLabel}
+              {label}
             </Typo>
           )}
         </Pressable>

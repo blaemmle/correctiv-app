@@ -62,6 +62,10 @@ describe('the app’s environment, borrowed rather than reproduced', () => {
     expect(code(PREVIEW)).not.toMatch(/from 'react-native-safe-area-context'/);
     expect(code(PREVIEW)).not.toMatch(/Uniwind\.setTheme/);
     expect(code(PREVIEW)).not.toMatch(/import '@\/global\.css'/);
+    // Never this one either: a second `IntlProvider` here would draw specimens
+    // against a catalogue of the handbook's own, and the first missing German
+    // string would look like the app's bug rather than this file's.
+    expect(code(PREVIEW)).not.toMatch(/from 'react-intl'/);
   });
 
   it('is the same environment the app itself starts in', () => {
@@ -72,13 +76,16 @@ describe('the app’s environment, borrowed rather than reproduced', () => {
   });
 
   it('supplies the whole environment from one place', () => {
-    // The five things a component of this app needs before it draws correctly.
-    // Written out because each one was found by a component failing without it.
+    // The six things a component of this app needs before it draws correctly.
+    // Written out because each one was found by a component failing without it —
+    // the language last, where a component calling `formatMessage` throws outright
+    // (ADR 0026 §6).
     expect(ENVIRONMENT).toMatch(/import '@\/global\.css'/);
     expect(ENVIRONMENT).toMatch(/useAppFonts\(\)/);
     expect(ENVIRONMENT).toMatch(/<Provider store=\{coreStore\}>/);
     expect(ENVIRONMENT).toMatch(/<SafeAreaProvider initialMetrics=\{insets\}>/);
     expect(ENVIRONMENT).toMatch(/<GestureHandlerRootView/);
+    expect(ENVIRONMENT).toMatch(/<Localisation>/);
     // And the handbook has to ask for the safe area, because it is the host with
     // no router to measure one. Zero, because a page has no notch.
     expect(PREVIEW).toMatch(/insets=\{NO_INSETS\}/);

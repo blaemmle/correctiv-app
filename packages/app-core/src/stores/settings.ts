@@ -3,6 +3,13 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 export type TabId = 'home' | 'discover' | 'media' | 'participate' | 'profile';
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/**
+ * The languages this app can be in. One, and adding a second is a catalogue plus
+ * a member here — never a string in a screen
+ * ([ADR 0026](../../../../adr/0026-react-native-review-and-hardening.md) §6).
+ */
+export type Locale = 'de';
+
 export interface SettingsState {
   onboardingDone: boolean;
   pushOptIn: boolean;
@@ -15,6 +22,12 @@ export interface SettingsState {
   };
   /** Theme preference (Profile → Darstellung). 'system' follows the OS. */
   theme: ThemePreference;
+  /**
+   * The language every user-facing string is rendered in. Fixed, and read from
+   * here rather than from the device: German is what ships, and a phone set to
+   * English must not get an app half in English.
+   */
+  locale: Locale;
   // Ephemeral shell state (not persisted)
   activeTab: TabId;
   visitedTabs: TabId[];
@@ -22,7 +35,15 @@ export interface SettingsState {
 
 export type NewsletterKey = keyof SettingsState['newsletter'];
 
-/** What survives a restart. The rest of the slice is shell state. */
+/**
+ * What survives a restart. The rest of the slice is shell state.
+ *
+ * `locale` is deliberately absent, and not because it is unimportant: it is a
+ * constant with no action that writes it, so persisting it would only let a value
+ * written to a device in 2026 outlive the day the constant changes — stale
+ * storage quietly beating the code. Nothing here is worth storing that the source
+ * already states.
+ */
 export const PERSISTED_KEYS = [
   'onboardingDone',
   'pushOptIn',
@@ -41,6 +62,7 @@ const initialState: SettingsState = {
     klima: false,
   },
   theme: 'system',
+  locale: 'de',
   activeTab: 'home',
   visitedTabs: ['home'],
 };
@@ -96,6 +118,15 @@ const slice = createSlice({
     },
   },
 });
+
+/**
+ * The language to render in, as a selector rather than a constant, because that
+ * is the one shape a second language would not have to rewrite: the provider
+ * already asks the store, so switching becomes an action and not a refactor.
+ * There is no such action today, and no user-facing switch — a developer-only one
+ * belongs in the workbench.
+ */
+export const locale = (state: SettingsState): Locale => state.locale;
 
 export const settingsReducer = slice.reducer;
 export const settingsActions = slice.actions;

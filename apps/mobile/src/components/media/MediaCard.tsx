@@ -1,10 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
+import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, View } from 'react-native';
 
 import { Thumbnail, Typo } from '@/components/ui';
 import { formatDateShortDe, formatTimeHm } from '@correctiv/app-core/lib/format';
 import type { Video } from '@correctiv/app-core/types/models';
 import { colors, sizes } from '@/lib/theme';
+
+/**
+ * The card's spoken name, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/video.ts` (ADR 0026 §6). The title is interpolated, so
+ * this is one message and not a word glued to a headline.
+ */
+const COPY = defineMessages({
+  label: { id: 'video.cardLabel', defaultMessage: 'Video: {title}' },
+});
 
 /**
  * Video tile in a media rail: 16:9 preview with a play mark, title and date
@@ -15,6 +25,7 @@ import { colors, sizes } from '@/lib/theme';
  * appearance setting lightens.
  */
 export function MediaCard({ video, onPress }: { video: Video; onPress: (video: Video) => void }) {
+  const intl = useIntl();
   const duration = video.durationSec ? formatTimeHm(video.durationSec) : null;
 
   return (
@@ -27,7 +38,7 @@ export function MediaCard({ video, onPress }: { video: Video; onPress: (video: V
       // card: the tour used to tap one by name, and the name scrolled out of the rail
       // the next time FunFacts published, which is a MISS and a shot of the wrong
       // screen.
-      accessibilityLabel={`Video: ${video.title}`}
+      accessibilityLabel={intl.formatMessage(COPY.label, { title: video.title })}
       className="active:opacity-80"
       style={{ width: sizes.railCardMedia }}
     >

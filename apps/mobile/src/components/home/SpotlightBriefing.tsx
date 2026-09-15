@@ -1,3 +1,4 @@
+import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, View } from 'react-native';
 
 import type { SpotlightIssue } from '@correctiv/app-core/data/spotlight';
@@ -6,6 +7,28 @@ import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 import { Card, Hairline, Overline, Typo } from '@/components/ui';
 import { openExternal } from '@/lib/openExternal';
 import { useSpotlight } from '@/lib/store/core';
+
+/**
+ * The card's own words, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/home.ts` (ADR 0026 §6). `Spotlight` is the overline and
+ * is a mark, so it carries no id.
+ *
+ * The link says its words twice, once seen and once spoken, and they differ: the
+ * eye has the overline beside it and needs no more than `allIssues`, a screen
+ * reader arrives at the control alone and is told which issues. Two messages,
+ * deliberately — and the arrow is decoration and stays out of both.
+ */
+const COPY = defineMessages({
+  allIssues: { id: 'home.allIssues', defaultMessage: 'All issues' },
+  allSpotlightIssues: {
+    id: 'home.allSpotlightIssues',
+    defaultMessage: 'All Spotlight issues',
+  },
+  offline: {
+    id: 'home.spotlightOffline',
+    defaultMessage: 'No connection. You are seeing saved issues.',
+  },
+});
 
 /**
  * Spotlight on Home: the last three issues, by date and subject.
@@ -22,6 +45,7 @@ import { useSpotlight } from '@/lib/store/core';
  * `data/spotlight.ts`.
  */
 export function SpotlightBriefing({ onOpenArchive }: { onOpenArchive: () => void }) {
+  const intl = useIntl();
   const { recent, status } = useSpotlight(3);
 
   // Nothing to show and nothing said: the card would be an empty box. The first
@@ -36,11 +60,11 @@ export function SpotlightBriefing({ onOpenArchive }: { onOpenArchive: () => void
           onPress={onOpenArchive}
           hitSlop={8}
           accessibilityRole="link"
-          accessibilityLabel="Alle Spotlight-Ausgaben"
+          accessibilityLabel={intl.formatMessage(COPY.allSpotlightIssues)}
           className="active:opacity-60"
         >
           <Typo variant="text-s" weight="bold" color="accent">
-            Alle Ausgaben →
+            {intl.formatMessage(COPY.allIssues)} →
           </Typo>
         </Pressable>
       </View>
@@ -51,7 +75,7 @@ export function SpotlightBriefing({ onOpenArchive }: { onOpenArchive: () => void
 
       {status === 'offline' && (
         <Typo variant="text-s" color="grey-500" className="mt-s">
-          Ohne Verbindung. Sie sehen gespeicherte Ausgaben.
+          {intl.formatMessage(COPY.offline)}
         </Typo>
       )}
     </Card>

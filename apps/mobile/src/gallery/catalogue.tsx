@@ -269,7 +269,7 @@ export const CATALOGUE: Folder[] = [
           { label: 'title only', node: <SectionHeader title="Aus dem Backstage" /> },
           {
             label: 'with actionLabel',
-            node: <SectionHeader title="Aus dem Backstage" actionLabel="Alles →" onAction={noop} />,
+            node: <SectionHeader title="Aus dem Backstage" actionLabel="Alles" onAction={noop} />,
           },
         ],
       },

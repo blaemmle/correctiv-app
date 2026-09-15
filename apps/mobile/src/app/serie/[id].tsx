@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
+import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, FlatList, View, type ListRenderItemInfo } from 'react-native';
 
 import { EpisodeRow } from '@/components/media/EpisodeRow';
@@ -23,6 +24,31 @@ export function generateStaticParams(): { id: string }[] {
 const keyExtractor = (episode: PodcastEpisode) => episode.id;
 
 /**
+ * Everything this screen says, in ENGLISH; the German ships in
+ * `src/i18n/catalogue/de/series.ts` (ADR 0026 §6).
+ *
+ * `offlineEpisodes` is the Mediathek's id, not a second one, because it is
+ * literally the same note (see where it is rendered below). It is declared there
+ * too, with the same default; `npm run i18n:extract --throws` fails if the two
+ * ever disagree.
+ *
+ * `unknownId` carries the quotation marks INSIDE the message rather than around
+ * it in the markup. They are part of the sentence, and a language that quotes
+ * differently should get its own pair rather than inherit another language's from
+ * a template.
+ */
+const COPY = defineMessages({
+  screenTitle: { id: 'series.screenTitle', defaultMessage: 'Podcast series' },
+  notFound: { id: 'series.notFound', defaultMessage: 'This series does not exist' },
+  unknownId: { id: 'series.unknownId', defaultMessage: 'Unknown identifier "{id}".' },
+  noId: { id: 'series.noId', defaultMessage: 'No identifier was passed.' },
+  offlineEpisodes: {
+    id: 'mediathek.offlineEpisodes',
+    defaultMessage: 'No connection. You are seeing sample episodes.',
+  },
+});
+
+/**
  * One podcast series with its episodes.
  *
  * A FlatList, because an RSS podcast feed has no ceiling — a long-running show
@@ -33,13 +59,14 @@ const keyExtractor = (episode: PodcastEpisode) => episode.id;
  * scrolled to. See ADR 0012.
  */
 export default function SerieScreen() {
+  const intl = useIntl();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { series, status } = usePodcastSeries(id ?? '');
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title="Podcast-Serie" />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
 
       {!series ? (
         <View className="flex-1 items-center justify-center px-m">
@@ -48,10 +75,10 @@ export default function SerieScreen() {
           ) : (
             <>
               <Typo variant="headline-s" className="text-center">
-                Diese Serie gibt es nicht
+                {intl.formatMessage(COPY.notFound)}
               </Typo>
               <Typo variant="text-m" color="on-canvas-muted" className="mt-2xs text-center">
-                {id ? `Unbekannte Kennung „${id}“.` : 'Es wurde keine Kennung übergeben.'}
+                {id ? intl.formatMessage(COPY.unknownId, { id }) : intl.formatMessage(COPY.noId)}
               </Typo>
             </>
           )}
@@ -84,7 +111,7 @@ export default function SerieScreen() {
                   this is the normal case, not an edge one. */}
               {status === 'offline' && (
                 <Typo variant="text-s" color="on-canvas-muted" className="mt-s">
-                  Ohne Verbindung. Sie sehen Beispielfolgen.
+                  {intl.formatMessage(COPY.offlineEpisodes)}
                 </Typo>
               )}
             </View>

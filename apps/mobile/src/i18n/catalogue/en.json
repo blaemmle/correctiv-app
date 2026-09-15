@@ -1,0 +1,890 @@
+{
+  "article.documentTitle": {
+    "defaultMessage": "Article"
+  },
+  "article.frameTitle": {
+    "defaultMessage": "Article"
+  },
+  "article.kickerFallback": {
+    "defaultMessage": "Investigation"
+  },
+  "article.loadFailed": {
+    "defaultMessage": "The article could not be loaded"
+  },
+  "article.openInBrowser": {
+    "defaultMessage": "Open in the browser"
+  },
+  "article.readingTime": {
+    "defaultMessage": "{count, plural, one {# min read} other {# min read}}"
+  },
+  "article.removeSaved": {
+    "defaultMessage": "Saved, remove"
+  },
+  "article.retry": {
+    "defaultMessage": "Try again"
+  },
+  "article.retryHint": {
+    "defaultMessage": "A second attempt may help."
+  },
+  "article.save": {
+    "defaultMessage": "Save the article"
+  },
+  "article.share": {
+    "defaultMessage": "Share the article"
+  },
+  "atlas.mapPlaceholder": {
+    "defaultMessage": "Map detail (static)"
+  },
+  "atlas.recentHeading": {
+    "defaultMessage": "Most recently reported"
+  },
+  "atlas.report": {
+    "defaultMessage": "Report a demolition on abriss-atlas.de"
+  },
+  "atlas.stats": {
+    "defaultMessage": "{reports, plural, one {One reported demolition} other {# reported demolitions}} in {cities, plural, one {one city} other {# cities}} (DE/CH)"
+  },
+  "backstage.allFromBackstage": {
+    "defaultMessage": "Everything from Backstage"
+  },
+  "backstage.diaryLabel": {
+    "defaultMessage": "Research diary"
+  },
+  "backstage.earlyAccessBadge": {
+    "defaultMessage": "Backstage · read it earlier"
+  },
+  "backstage.earlyAccessLabel": {
+    "defaultMessage": "Read it earlier"
+  },
+  "backstage.eventsLabel": {
+    "defaultMessage": "Dates"
+  },
+  "backstage.letterLabel": {
+    "defaultMessage": "Backstage letter"
+  },
+  "backstage.publicFrom": {
+    "defaultMessage": "Public from {date}"
+  },
+  "backstage.publisherLabel": {
+    "defaultMessage": "Publishing house"
+  },
+  "backstage.qaLabel": {
+    "defaultMessage": "Questions and answers"
+  },
+  "backstage.readNow": {
+    "defaultMessage": "Read it now"
+  },
+  "backstage.reportTitle": {
+    "defaultMessage": "Quarterly report"
+  },
+  "backstage.shop": {
+    "defaultMessage": "To the shop"
+  },
+  "callout.card.contributed": {
+    "defaultMessage": "✓ You have contributed"
+  },
+  "callout.contributeAgain": {
+    "defaultMessage": "Send another tip"
+  },
+  "callout.crowdnewsroom.count": {
+    "defaultMessage": "{count, plural, one {One contribution} other {# contributions}}"
+  },
+  "callout.crowdnewsroom.countSoFar": {
+    "defaultMessage": "{count, plural, one {One contribution} other {# contributions}} so far"
+  },
+  "callout.crowdnewsroom.cta": {
+    "defaultMessage": "Take part"
+  },
+  "callout.detail.contributed": {
+    "defaultMessage": "✓ You have contributed already, thank you! More tips are welcome."
+  },
+  "callout.detail.cta": {
+    "defaultMessage": "Take part"
+  },
+  "callout.detail.dataUse": {
+    "defaultMessage": "What happens to your data?"
+  },
+  "callout.detail.noSlug": {
+    "defaultMessage": "No identifier was passed."
+  },
+  "callout.detail.responses": {
+    "defaultMessage": "{count, plural, one {One contribution} other {# contributions}} so far"
+  },
+  "callout.detail.unknownHeadline": {
+    "defaultMessage": "This callout does not exist"
+  },
+  "callout.detail.unknownSlug": {
+    "defaultMessage": "Unknown identifier \"{slug}\"."
+  },
+  "callout.detail.whoAsks": {
+    "defaultMessage": "Who is asking?"
+  },
+  "callout.screenTitle": {
+    "defaultMessage": "Callout"
+  },
+  "callout.survey.count": {
+    "defaultMessage": "{count, plural, one {One response} other {# responses}}"
+  },
+  "callout.survey.countSoFar": {
+    "defaultMessage": "{count, plural, one {One response} other {# responses}} so far"
+  },
+  "callout.survey.cta": {
+    "defaultMessage": "Take part"
+  },
+  "callout.survey.kicker": {
+    "defaultMessage": "Survey"
+  },
+  "callout.teaser.ctaAccessibility": {
+    "defaultMessage": "{cta}: {title}"
+  },
+  "callout.teaser.kicker": {
+    "defaultMessage": "Take part · {kicker}"
+  },
+  "claim.credibility": {
+    "defaultMessage": "Reliability: {level}"
+  },
+  "claim.noId": {
+    "defaultMessage": "No identifier was passed."
+  },
+  "claim.noSources": {
+    "defaultMessage": "No sources yet. The community is gathering them."
+  },
+  "claim.quote": {
+    "defaultMessage": "\"{quote}\""
+  },
+  "claim.screenTitle": {
+    "defaultMessage": "Claim"
+  },
+  "claim.sourcesHeading": {
+    "defaultMessage": "Source assessment"
+  },
+  "claim.stage.checked": {
+    "defaultMessage": "Checked"
+  },
+  "claim.stage.checking": {
+    "defaultMessage": "Being checked"
+  },
+  "claim.stage.submitted": {
+    "defaultMessage": "Submitted"
+  },
+  "claim.submitOwn": {
+    "defaultMessage": "Submit a tip of your own (in the Faktenforum)"
+  },
+  "claim.unknownHeadline": {
+    "defaultMessage": "This claim does not exist"
+  },
+  "claim.unknownId": {
+    "defaultMessage": "Unknown identifier \"{id}\"."
+  },
+  "diary.noId": {
+    "defaultMessage": "No identifier was passed."
+  },
+  "diary.notFound": {
+    "defaultMessage": "This entry does not exist"
+  },
+  "diary.screenTitle": {
+    "defaultMessage": "Research diary"
+  },
+  "diary.unknownId": {
+    "defaultMessage": "Unknown identifier \"{id}\"."
+  },
+  "discover.openSearch": {
+    "defaultMessage": "Open search"
+  },
+  "discover.searchPlaceholder": {
+    "defaultMessage": "Investigations, fact checks, projects …"
+  },
+  "discover.title": {
+    "defaultMessage": "Discover"
+  },
+  "faktenforum.lead": {
+    "defaultMessage": "The community checks claims together with the CORRECTIV newsroom. Have a look at what is being worked on."
+  },
+  "faktenforum.quote": {
+    "defaultMessage": "\"{quote}\""
+  },
+  "faktenforum.submitted": {
+    "defaultMessage": "{shortId} · submitted {date}"
+  },
+  "form.answerPlaceholder": {
+    "defaultMessage": "Your answer …"
+  },
+  "form.back": {
+    "defaultMessage": "Back"
+  },
+  "form.cancel": {
+    "defaultMessage": "Cancel"
+  },
+  "form.contributors": {
+    "defaultMessage": "{count, plural, one {One person has} other {# people have}} contributed so far."
+  },
+  "form.fileAttached": {
+    "defaultMessage": "{file} attached ✓"
+  },
+  "form.filePick": {
+    "defaultMessage": "Choose a photo or document (simulated)"
+  },
+  "form.moreCallouts": {
+    "defaultMessage": "See more ways to take part"
+  },
+  "form.next": {
+    "defaultMessage": "Next"
+  },
+  "form.noSlug": {
+    "defaultMessage": "No callout was given."
+  },
+  "form.screenTitle": {
+    "defaultMessage": "Participation form"
+  },
+  "form.step": {
+    "defaultMessage": "Step {current} of {total}"
+  },
+  "form.submit": {
+    "defaultMessage": "Send"
+  },
+  "form.thanksHeadline": {
+    "defaultMessage": "Thank you for your contribution!"
+  },
+  "form.thanksLead": {
+    "defaultMessage": "Your contribution goes into the investigation. The newsroom reviews every tip. We will get in touch if anything is unclear."
+  },
+  "form.unknownHeadline": {
+    "defaultMessage": "This form does not exist"
+  },
+  "form.unknownSlug": {
+    "defaultMessage": "Unknown callout \"{slug}\"."
+  },
+  "gate.checking": {
+    "defaultMessage": "Checking your membership …"
+  },
+  "gate.emailHeading": {
+    "defaultMessage": "Email"
+  },
+  "gate.emailLabel": {
+    "defaultMessage": "Email address"
+  },
+  "gate.emailPlaceholder": {
+    "defaultMessage": "name@example.org"
+  },
+  "gate.failure.unreachable": {
+    "defaultMessage": "correctiv.org cannot be reached at the moment. Please try again in a few minutes."
+  },
+  "gate.failure.wrongCredentials": {
+    "defaultMessage": "That email address and password do not match. Please check both."
+  },
+  "gate.forgot": {
+    "defaultMessage": "Forgotten your password?"
+  },
+  "gate.headline": {
+    "defaultMessage": "For everyone who carries CORRECTIV."
+  },
+  "gate.join": {
+    "defaultMessage": "Become a member with a contribution"
+  },
+  "gate.lead": {
+    "defaultMessage": "This app is the place for members who contribute. Your account is the same one you use on correctiv.org."
+  },
+  "gate.noAccess.accessLapsed": {
+    "defaultMessage": "Trial, ended on {date}"
+  },
+  "gate.noAccess.accessNone": {
+    "defaultMessage": "Not included"
+  },
+  "gate.noAccess.accessRow": {
+    "defaultMessage": "App access"
+  },
+  "gate.noAccess.headline": {
+    "defaultMessage": "Good to have you with us."
+  },
+  "gate.noAccess.lapsed": {
+    "defaultMessage": "Your trial ended on {date}. Thank you for trying the app. With a contribution it carries on here, with everything you already know."
+  },
+  "gate.noAccess.lead": {
+    "defaultMessage": "The app is part of membership with a contribution."
+  },
+  "gate.noAccess.recheck": {
+    "defaultMessage": "Check again"
+  },
+  "gate.noAccess.resume": {
+    "defaultMessage": "Set a contribution"
+  },
+  "gate.noAccess.signedInAs": {
+    "defaultMessage": "Signed in as {email}"
+  },
+  "gate.noAccess.simulated": {
+    "defaultMessage": "Nothing is transmitted. After \"{button}\", \"{recheck}\" finds a membership with a contribution."
+  },
+  "gate.noAccess.switchAccount": {
+    "defaultMessage": "Sign in with a different account"
+  },
+  "gate.noAccess.tier": {
+    "defaultMessage": "Your account is on the free tier. It keeps everything on correctiv.org open to you. The app comes with the contribution: it funds the investigations, and in return there is audio, video and formats that exist only here."
+  },
+  "gate.noAccess.tierRow": {
+    "defaultMessage": "Your tier"
+  },
+  "gate.noAccess.tierTrial": {
+    "defaultMessage": "Trial"
+  },
+  "gate.noAccess.upgrade": {
+    "defaultMessage": "Extend membership"
+  },
+  "gate.passwordHeading": {
+    "defaultMessage": "Password"
+  },
+  "gate.passwordLabel": {
+    "defaultMessage": "Enter password"
+  },
+  "gate.passwordPlaceholder": {
+    "defaultMessage": "Your password"
+  },
+  "gate.simulated": {
+    "defaultMessage": "Nothing is transmitted. Every address signs in: with \"frei\" as the free tier without app access, with \"test\" during the trial, with \"lokal\" through the local bundle. A password shorter than four characters fails."
+  },
+  "gate.simulatedHeading": {
+    "defaultMessage": "Simulated"
+  },
+  "gate.submit": {
+    "defaultMessage": "Sign in"
+  },
+  "home.allIssues": {
+    "defaultMessage": "All issues"
+  },
+  "home.allSpotlightIssues": {
+    "defaultMessage": "All Spotlight issues"
+  },
+  "home.factCheckBadge": {
+    "defaultMessage": "Fact check"
+  },
+  "home.factChecks": {
+    "defaultMessage": "Fact checks"
+  },
+  "home.impactBody": {
+    "defaultMessage": "CORRECTIV is non-profit. Your contribution funds the investigations you find here."
+  },
+  "home.impactHeadline": {
+    "defaultMessage": "Made possible by supporters like you"
+  },
+  "home.latestResearch": {
+    "defaultMessage": "Latest investigations"
+  },
+  "home.offlineArticles": {
+    "defaultMessage": "No connection. You are seeing saved articles."
+  },
+  "home.spotlightLead": {
+    "defaultMessage": "The day in brief, every morning in the newsletter."
+  },
+  "home.spotlightOffline": {
+    "defaultMessage": "No connection. You are seeing saved issues."
+  },
+  "home.spotlightOfflineArchive": {
+    "defaultMessage": "No connection. You are seeing saved issues from the end of the summer."
+  },
+  "home.viewAll": {
+    "defaultMessage": "See all"
+  },
+  "home.viewEverything": {
+    "defaultMessage": "See everything"
+  },
+  "mediathek.fromBackstage": {
+    "defaultMessage": "From Backstage"
+  },
+  "mediathek.listeners": {
+    "defaultMessage": "{count, plural, one {# listener} other {# listeners}}"
+  },
+  "mediathek.live": {
+    "defaultMessage": "Live"
+  },
+  "mediathek.liveSubtitle": {
+    "defaultMessage": "24/7 from Bottrop, by young people for young people"
+  },
+  "mediathek.offlineEpisodes": {
+    "defaultMessage": "No connection. You are seeing sample episodes."
+  },
+  "mediathek.pauseEpisode": {
+    "defaultMessage": "Pause {title}"
+  },
+  "mediathek.pauseRadio": {
+    "defaultMessage": "Pause the radio"
+  },
+  "mediathek.playEpisode": {
+    "defaultMessage": "Play {title}"
+  },
+  "mediathek.playRadio": {
+    "defaultMessage": "Play the radio"
+  },
+  "mediathek.podcasts": {
+    "defaultMessage": "Podcasts"
+  },
+  "mediathek.radioPlaying": {
+    "defaultMessage": "Salon5 Radio is on air"
+  },
+  "mediathek.radioTapToListen": {
+    "defaultMessage": "24/7 from Bottrop · tap to listen"
+  },
+  "mediathek.streamUnavailable": {
+    "defaultMessage": "Stream cannot be reached"
+  },
+  "mediathek.videoOfTheDay": {
+    "defaultMessage": "Video of the day"
+  },
+  "mediathek.videosUnavailable": {
+    "defaultMessage": "Videos cannot be reached at the moment."
+  },
+  "notFound.headline": {
+    "defaultMessage": "This page does not exist"
+  },
+  "notFound.home": {
+    "defaultMessage": "To the home screen"
+  },
+  "notFound.lead": {
+    "defaultMessage": "The link leads nowhere. The article may have been moved, or the address may be incomplete."
+  },
+  "notFound.overline": {
+    "defaultMessage": "Error 404"
+  },
+  "notFound.screenTitle": {
+    "defaultMessage": "Page not found"
+  },
+  "onboarding.done": {
+    "defaultMessage": "Done"
+  },
+  "onboarding.interests.headline": {
+    "defaultMessage": "What interests you?"
+  },
+  "onboarding.interests.lead": {
+    "defaultMessage": "Your selection orders the home screen."
+  },
+  "onboarding.mission.donations": {
+    "defaultMessage": "Donation-funded: carried by thousands"
+  },
+  "onboarding.mission.headline": {
+    "defaultMessage": "Investigations for society"
+  },
+  "onboarding.mission.nonprofit": {
+    "defaultMessage": "Non-profit: nobody owns us"
+  },
+  "onboarding.next": {
+    "defaultMessage": "Next"
+  },
+  "onboarding.participate.headline": {
+    "defaultMessage": "Investigations you take part in"
+  },
+  "onboarding.participate.lead": {
+    "defaultMessage": "In the CrowdNewsroom thousands of people contribute to investigations. In the Faktenforum the community checks claims. You find both in the \"Mitmachen\" tab."
+  },
+  "onboarding.push.description": {
+    "defaultMessage": "For new investigations and callouts (simulated)"
+  },
+  "onboarding.push.label": {
+    "defaultMessage": "Notifications"
+  },
+  "onboarding.screenTitle": {
+    "defaultMessage": "Welcome"
+  },
+  "onboarding.skip": {
+    "defaultMessage": "Skip"
+  },
+  "onboarding.start": {
+    "defaultMessage": "Let's go"
+  },
+  "participate.activeCallouts": {
+    "defaultMessage": "Open callouts"
+  },
+  "participate.atlasAction": {
+    "defaultMessage": "See the atlas"
+  },
+  "participate.atlasHeading": {
+    "defaultMessage": "Document demolitions"
+  },
+  "participate.atlasLead": {
+    "defaultMessage": "Which buildings are disappearing? {reports, plural, one {One report} other {# reports}} from {cities, plural, one {one city} other {# cities}} in Germany and Switzerland."
+  },
+  "participate.communityNote": {
+    "defaultMessage": "In the community area you discuss investigations with other members, and soon in the app as well."
+  },
+  "participate.forumAction": {
+    "defaultMessage": "See the claims"
+  },
+  "participate.forumHeading": {
+    "defaultMessage": "Checking claims together"
+  },
+  "participate.forumLead": {
+    "defaultMessage": "The community checks claims from around the web, guided by the newsroom. Right now {count, plural, one {one claim is} other {# claims are}} being worked on."
+  },
+  "participate.lead": {
+    "defaultMessage": "Investigations are made with you. Your tips, your observations and your checks are what make them possible."
+  },
+  "participate.tipAction": {
+    "defaultMessage": "Open WhatsApp"
+  },
+  "participate.tipHeading": {
+    "defaultMessage": "Fact-check tip by WhatsApp"
+  },
+  "participate.tipLabel": {
+    "defaultMessage": "Send a tip"
+  },
+  "participate.tipLead": {
+    "defaultMessage": "Seen a suspicious claim? Send it straight to the fact-checking desk."
+  },
+  "participate.title": {
+    "defaultMessage": "Take part"
+  },
+  "player.changeSpeed": {
+    "defaultMessage": "Change the speed"
+  },
+  "player.close": {
+    "defaultMessage": "Close the player"
+  },
+  "player.documentTitle": {
+    "defaultMessage": "Player"
+  },
+  "player.error": {
+    "defaultMessage": "Error"
+  },
+  "player.live": {
+    "defaultMessage": "● LIVE"
+  },
+  "player.liveNote": {
+    "defaultMessage": "Live stream. Salon5 is on air around the clock."
+  },
+  "player.liveSubtitle": {
+    "defaultMessage": "● LIVE · 24/7 from Bottrop"
+  },
+  "player.loading": {
+    "defaultMessage": "Loading …"
+  },
+  "player.nothingPlaying": {
+    "defaultMessage": "Nothing is playing."
+  },
+  "player.open": {
+    "defaultMessage": "Open the player"
+  },
+  "player.pause": {
+    "defaultMessage": "Pause"
+  },
+  "player.play": {
+    "defaultMessage": "Play"
+  },
+  "player.position": {
+    "defaultMessage": "Playback position"
+  },
+  "player.radioSubtitle": {
+    "defaultMessage": "24/7 from Bottrop"
+  },
+  "player.radioTitle": {
+    "defaultMessage": "Salon5 Radio"
+  },
+  "player.stop": {
+    "defaultMessage": "Stop playback"
+  },
+  "profile.area.section": {
+    "defaultMessage": "Your area"
+  },
+  "profile.club.fallbackName": {
+    "defaultMessage": "Member"
+  },
+  "profile.club.tierSince": {
+    "defaultMessage": "{tier} · since {date}"
+  },
+  "profile.impact.anonymous": {
+    "defaultMessage": "Your contribution makes these investigations possible.{articles, select, some { Among others, these:} other {}}"
+  },
+  "profile.impact.section": {
+    "defaultMessage": "Your impact"
+  },
+  "profile.impact.since": {
+    "defaultMessage": "You have been supporting CORRECTIV {months, plural, one {for a short while} other {for # months}}.{articles, select, some { Among others, these investigations were made possible:} other {}}"
+  },
+  "profile.membership.localAreas": {
+    "defaultMessage": "Local newsletters"
+  },
+  "profile.membership.manageAccount": {
+    "defaultMessage": "Manage account"
+  },
+  "profile.membership.note": {
+    "defaultMessage": "You manage your contribution, your payment method and your data in your account on correctiv.org."
+  },
+  "profile.membership.section": {
+    "defaultMessage": "Your membership"
+  },
+  "profile.membership.source": {
+    "defaultMessage": "Access through"
+  },
+  "profile.membership.tier": {
+    "defaultMessage": "Tier"
+  },
+  "profile.membership.validUntil": {
+    "defaultMessage": "Runs until"
+  },
+  "profile.nav.backstage": {
+    "defaultMessage": "Your Backstage"
+  },
+  "profile.nav.backstageSubtitle": {
+    "defaultMessage": "Diaries, bonus episodes, events"
+  },
+  "profile.nav.clubAccessibility": {
+    "defaultMessage": "{title}, Club"
+  },
+  "profile.nav.reportSubtitle": {
+    "defaultMessage": "Where your contribution goes, broken down transparently."
+  },
+  "profile.nav.saved": {
+    "defaultMessage": "Saved articles"
+  },
+  "profile.nav.savedCount": {
+    "defaultMessage": "{count, plural, =0 {Nothing saved yet} one {# article} other {# articles}}"
+  },
+  "profile.nav.settings": {
+    "defaultMessage": "App settings"
+  },
+  "profile.nav.settingsSubtitle": {
+    "defaultMessage": "Notifications, text size, About CORRECTIV"
+  },
+  "profile.newsletter.klima": {
+    "defaultMessage": "The climate investigations of the week"
+  },
+  "profile.newsletter.section": {
+    "defaultMessage": "Newsletter"
+  },
+  "profile.newsletter.spotlight": {
+    "defaultMessage": "The most important stories, on weekday mornings"
+  },
+  "profile.newsletter.spotlightCh": {
+    "defaultMessage": "Investigations from Switzerland"
+  },
+  "profile.saved.empty": {
+    "defaultMessage": "Nothing saved yet. Tap the bookmark in an article to keep it here."
+  },
+  "profile.saved.remove": {
+    "defaultMessage": "Remove {title}"
+  },
+  "profile.saved.savedOn": {
+    "defaultMessage": "saved {date}"
+  },
+  "profile.saved.title": {
+    "defaultMessage": "Saved articles"
+  },
+  "profile.source.localBundle": {
+    "defaultMessage": "your local subscription"
+  },
+  "profile.source.paid": {
+    "defaultMessage": "your contribution"
+  },
+  "profile.source.trial": {
+    "defaultMessage": "your trial"
+  },
+  "profile.tier.free": {
+    "defaultMessage": "Free membership"
+  },
+  "profile.tier.paid": {
+    "defaultMessage": "Membership with a contribution"
+  },
+  "profile.tier.soli": {
+    "defaultMessage": "Solidarity membership"
+  },
+  "profile.title": {
+    "defaultMessage": "Profile"
+  },
+  "project.comingSoon": {
+    "defaultMessage": "Coming soon"
+  },
+  "project.comingSoonBody": {
+    "defaultMessage": "{name} is just starting. The first pieces appear here as soon as they are published."
+  },
+  "project.feedFailed": {
+    "defaultMessage": "The pieces could not be loaded."
+  },
+  "project.joinLocalNetwork": {
+    "defaultMessage": "Join the local network"
+  },
+  "project.latestPosts": {
+    "defaultMessage": "Latest pieces"
+  },
+  "project.listenRadio": {
+    "defaultMessage": "Listen to Salon5 Radio"
+  },
+  "project.noId": {
+    "defaultMessage": "No identifier was passed."
+  },
+  "project.notFound": {
+    "defaultMessage": "This project does not exist"
+  },
+  "project.screenTitle": {
+    "defaultMessage": "Project"
+  },
+  "project.tipWhatsapp": {
+    "defaultMessage": "Send a tip on WhatsApp"
+  },
+  "project.unknownId": {
+    "defaultMessage": "Unknown identifier \"{id}\"."
+  },
+  "search.articlesHeading": {
+    "defaultMessage": "Articles"
+  },
+  "search.fieldLabel": {
+    "defaultMessage": "Search term"
+  },
+  "search.hint": {
+    "defaultMessage": "Search across investigations, fact checks, projects, podcasts and ways to take part."
+  },
+  "search.noResults": {
+    "defaultMessage": "No hits for \"{query}\"."
+  },
+  "search.placeholder": {
+    "defaultMessage": "Search …"
+  },
+  "search.projectsHeading": {
+    "defaultMessage": "From the projects"
+  },
+  "search.screenTitle": {
+    "defaultMessage": "Search"
+  },
+  "series.noId": {
+    "defaultMessage": "No identifier was passed."
+  },
+  "series.notFound": {
+    "defaultMessage": "This series does not exist"
+  },
+  "series.screenTitle": {
+    "defaultMessage": "Podcast series"
+  },
+  "series.unknownId": {
+    "defaultMessage": "Unknown identifier \"{id}\"."
+  },
+  "settings.about.body": {
+    "defaultMessage": "CORRECTIV is a non-profit, independent centre for investigative journalism. Investigations for society, funded by people like you."
+  },
+  "settings.about.imprint": {
+    "defaultMessage": "Legal notice"
+  },
+  "settings.about.privacy": {
+    "defaultMessage": "Privacy"
+  },
+  "settings.about.section": {
+    "defaultMessage": "About CORRECTIV"
+  },
+  "settings.about.website": {
+    "defaultMessage": "Open correctiv.org"
+  },
+  "settings.access.localBundle": {
+    "defaultMessage": "Local bundle"
+  },
+  "settings.access.none": {
+    "defaultMessage": "No app access"
+  },
+  "settings.access.paid": {
+    "defaultMessage": "Membership with a contribution"
+  },
+  "settings.access.trial": {
+    "defaultMessage": "Trial"
+  },
+  "settings.account.section": {
+    "defaultMessage": "Account"
+  },
+  "settings.account.signOut": {
+    "defaultMessage": "Sign out"
+  },
+  "settings.account.signedOut": {
+    "defaultMessage": "Not signed in"
+  },
+  "settings.appearance.dark": {
+    "defaultMessage": "Dark mode"
+  },
+  "settings.appearance.followSystem": {
+    "defaultMessage": "Follow the system setting"
+  },
+  "settings.appearance.section": {
+    "defaultMessage": "Appearance"
+  },
+  "settings.demo.done": {
+    "defaultMessage": "✓ Reset. Restart the app for the onboarding."
+  },
+  "settings.demo.note": {
+    "defaultMessage": "For demonstrations: resets interests and onboarding. Your account stays signed in."
+  },
+  "settings.demo.reset": {
+    "defaultMessage": "Reset the demo state"
+  },
+  "settings.demo.section": {
+    "defaultMessage": "Demo"
+  },
+  "settings.notifications.push": {
+    "defaultMessage": "Push notifications"
+  },
+  "settings.notifications.pushDescription": {
+    "defaultMessage": "New investigations and calls to take part (simulated)"
+  },
+  "settings.notifications.section": {
+    "defaultMessage": "Notifications"
+  },
+  "settings.textScale.note": {
+    "defaultMessage": "Affects the article view."
+  },
+  "settings.textScale.option": {
+    "defaultMessage": "Text size {scale}"
+  },
+  "settings.textScale.section": {
+    "defaultMessage": "Text size in an article"
+  },
+  "settings.title": {
+    "defaultMessage": "Settings"
+  },
+  "ui.back": {
+    "defaultMessage": "Back"
+  },
+  "ui.tabDiscover": {
+    "defaultMessage": "Discover"
+  },
+  "ui.tabHome": {
+    "defaultMessage": "Home"
+  },
+  "ui.tabMediathek": {
+    "defaultMessage": "Mediathek"
+  },
+  "ui.tabParticipate": {
+    "defaultMessage": "Take part"
+  },
+  "ui.tabProfile": {
+    "defaultMessage": "Profile"
+  },
+  "video.cardLabel": {
+    "defaultMessage": "Video: {title}"
+  },
+  "video.frameTitle": {
+    "defaultMessage": "Video"
+  },
+  "video.kicker": {
+    "defaultMessage": "Video"
+  },
+  "video.loading": {
+    "defaultMessage": "Loading …"
+  },
+  "video.newEpisode": {
+    "defaultMessage": "New episode"
+  },
+  "video.none": {
+    "defaultMessage": "No video selected."
+  },
+  "video.screenTitle": {
+    "defaultMessage": "Video"
+  },
+  "video.today": {
+    "defaultMessage": "Today"
+  },
+  "video.unavailable": {
+    "defaultMessage": "Video unavailable"
+  },
+  "video.views": {
+    "defaultMessage": "{count, plural, one {# view} other {# views}}"
+  },
+  "video.watchOn": {
+    "defaultMessage": "Watch on {host}"
+  },
+  "video.watchOriginal": {
+    "defaultMessage": "Watch the original"
+  },
+  "video.yesterday": {
+    "defaultMessage": "Yesterday"
+  }
+}
