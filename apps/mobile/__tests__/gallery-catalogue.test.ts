@@ -17,8 +17,21 @@ import { join, relative, resolve } from 'node:path';
 const APP = resolve(__dirname, '..');
 const COMPONENTS = resolve(APP, 'src/components');
 
-/** Not components: shared prop contracts and the barrel. */
-const NOT_A_COMPONENT = new Set(['ui/index.ts', 'media/videoFrameTypes.ts', 'reader/types.ts']);
+/**
+ * Not components: shared prop contracts, the barrel, and the header's drawn bar.
+ *
+ * `ScreenHeaderBar` is what `ScreenHeader` draws on web and on the two screens
+ * that keep the bar on every platform (ADR 0030). It is one drawing with one
+ * entry, and the entry is `ScreenHeader`, because that is the component a screen
+ * asks for and the address `tools/figma-plugin` and the handbook already use.
+ */
+const NOT_A_COMPONENT = new Set([
+  'ui/index.ts',
+  'media/videoFrameTypes.ts',
+  'reader/types.ts',
+  'ui/screenHeaderTypes.ts',
+  'ui/ScreenHeaderBar.tsx',
+]);
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {

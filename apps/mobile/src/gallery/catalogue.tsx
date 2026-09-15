@@ -46,6 +46,12 @@ import { NavCard } from '@/components/profile/NavCard';
 import { SettingRow } from '@/components/profile/SettingRow';
 import { ReaderView } from '@/components/reader/ReaderView';
 import { RecoveryScreen } from '@/components/recovery/RecoveryScreen';
+// The bar itself, not the seam: on iOS and Android `ScreenHeader` configures the
+// platform's stack header and draws nothing, and configuring one from inside a
+// gallery card would set the options of the route the gallery is on (ADR 0030).
+// What is drawn here is what `ScreenHeader` draws on web, which is the whole of
+// what there is to look at.
+import { ScreenHeaderBar } from '@/components/ui/ScreenHeaderBar';
 import {
   Badge,
   Bleed,
@@ -57,7 +63,6 @@ import {
   Rail,
   SafeAreaView,
   Screen,
-  ScreenHeader,
   SectionCard,
   SectionHeader,
   Thumbnail,
@@ -370,22 +375,28 @@ export const CATALOGUE: Folder[] = [
       },
       {
         name: 'ScreenHeader',
+        note: 'The bar it draws on web, and on the two screens that keep the bar everywhere. On iOS and Android it configures the platform’s stack header instead and draws nothing (ADR 0030).',
         specimens: [
-          { label: 'default', height: 72, ownSurface: true, node: <ScreenHeader onBack={noop} /> },
+          {
+            label: 'default',
+            height: 72,
+            ownSurface: true,
+            node: <ScreenHeaderBar onBack={noop} />,
+          },
           {
             label: 'backLabel="Abbrechen"',
             height: 72,
             ownSurface: true,
-            node: <ScreenHeader backLabel="Abbrechen" onBack={noop} />,
+            node: <ScreenHeaderBar backLabel="Abbrechen" onBack={noop} />,
           },
           {
             label: 'with children, so back shrinks to the chevron',
             height: 72,
             ownSurface: true,
             node: (
-              <ScreenHeader onBack={noop}>
+              <ScreenHeaderBar onBack={noop}>
                 <SearchEntry onPress={noop} />
-              </ScreenHeader>
+              </ScreenHeaderBar>
             ),
           },
         ],

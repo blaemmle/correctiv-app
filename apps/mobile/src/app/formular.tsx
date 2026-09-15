@@ -36,7 +36,7 @@ export default function FormularScreen() {
   if (!callout) {
     return (
       <View className="flex-1 bg-canvas">
-        <ScreenHeader />
+        <ScreenHeader title="Mitmach-Formular" drawnBar />
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="headline-s" className="text-center">
             Dieses Formular gibt es nicht
@@ -91,7 +91,11 @@ export default function FormularScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader backLabel="Abbrechen" />
+      {/* The second named exception in ADR 0030. "Abbrechen" exists so that two
+          controls called "Zurück" cannot mean two things, and `headerBackTitle`
+          is iOS-only — an Android stack header shows no back title at all, so the
+          label would simply disappear there. */}
+      <ScreenHeader title="Mitmach-Formular" drawnBar backLabel="Abbrechen" />
 
       {/* Step indicator: one bar per slide, filled up to the current one. */}
       <View className="flex-row gap-3xs px-m pt-2xs">

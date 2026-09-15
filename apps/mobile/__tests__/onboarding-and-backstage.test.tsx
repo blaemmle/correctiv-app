@@ -12,9 +12,13 @@ import { diaries, earlyAccess } from '@correctiv/app-core/data/backstage';
  * umsehen" went with ADR 0018, and the join flow this file used to cover with ADR 0020.
  */
 
+// `Stack.Screen` because `ScreenHeader` configures the platform's header through
+// it on native, and a screen with a header therefore reaches expo-router for more
+// than `router` now (ADR 0030).
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
+  Stack: { Screen: () => null },
 }));
 jest.mock('@/lib/openArticle', () => ({ openArticle: jest.fn() }));
 

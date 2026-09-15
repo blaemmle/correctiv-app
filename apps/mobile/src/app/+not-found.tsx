@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { Button, Overline, Screen, Typo } from '@/components/ui';
+import { useDocumentTitle } from '@/lib/navigation/documentTitle';
 
 /**
  * What an address that leads nowhere shows.
@@ -15,6 +16,9 @@ import { Button, Overline, Screen, Typo } from '@/components/ui';
  * `replace`, not push: a page that does not exist is not a place to come back to.
  */
 export default function NotFoundScreen() {
+  // This is the web target's 404 page, so the tab is read more often here than
+  // anywhere: every stale address published anywhere lands on it.
+  useDocumentTitle('Seite nicht gefunden');
   return (
     <Screen scroll={false}>
       <View className="flex-1 items-center justify-center">

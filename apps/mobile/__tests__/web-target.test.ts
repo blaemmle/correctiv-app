@@ -38,6 +38,15 @@ const PLATFORM_PAIRED = [
   // Not a native SDK this time but half a megabyte of base64: the bundled covers
   // are for an offline phone, and .web.ts keeps them out of the page.
   'lib/articles/covers.ts',
+  // The screen header. Native configures the platform's stack header; on web
+  // that header draws nothing at all — `ScreenStackHeaderConfig.web.js` makes it
+  // and every subview a bare `View` — so .web.tsx keeps the app's drawn bar
+  // (ADR 0030).
+  'components/ui/ScreenHeader.tsx',
+  // The browser tab's name. `.web.ts` keeps a list of the screens naming
+  // themselves and writes the top of it; the bare `.ts` is the no-op a device
+  // gets, because there is no document there (ADR 0030).
+  'lib/navigation/documentTitle.ts',
 ];
 
 function sourceFiles(dir: string): string[] {
@@ -169,6 +178,17 @@ describe('web target', () => {
     for (const variant of ['ReaderView.tsx', 'ReaderView.web.tsx']) {
       const source = readFileSync(resolve(SRC, 'components/reader', variant), 'utf8');
       expect(source).toMatch(/ReaderViewProps.*from\s+'\.\/types'/s);
+    }
+  });
+
+  it('routes both screen-header implementations through one shared props type', () => {
+    // The same rule as above, for the pair ADR 0030 added. This one carries more
+    // than shape: the props type is where the two named exceptions are declared,
+    // so a copy of it in one file would let the other accept a prop it cannot
+    // honour.
+    for (const variant of ['ScreenHeader.tsx', 'ScreenHeader.web.tsx']) {
+      const source = readFileSync(resolve(SRC, 'components/ui', variant), 'utf8');
+      expect(source).toMatch(/ScreenHeaderProps.*from\s+'\.\/screenHeaderTypes'/s);
     }
   });
 });

@@ -34,7 +34,7 @@ export default function VideoScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Video" />
       {!current ? (
         <View className="flex-1 items-center justify-center px-m">
           <Typo variant="text-m" color="on-canvas-muted">

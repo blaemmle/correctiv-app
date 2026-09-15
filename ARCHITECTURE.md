@@ -172,9 +172,9 @@ plays at a time. `articles/extract/` holds two backends, string and DOM, behind 
 In the app, `src/app/` is expo-router's route tree, `src/components/ui/` the design
 system, `src/components/gate/` the door, and `src/lib/` the wiring: `platform/` implements the ports, `audio/` wraps
 expo-audio, `feeds/` puts React hooks over the core's feed store, `theme/` re-exports
-the tokens with the palette hook. `src/components/reader/` and
-`src/components/media/` are the two platform splits, each a `.tsx`, a `.web.tsx` and
-a shared props type.
+the tokens with the palette hook. `src/components/reader/`,
+`src/components/media/` and `src/components/ui/ScreenHeader` are the three platform
+splits, each a `.tsx`, a `.web.tsx` and a shared props type.
 
 Outside both, `apps/handbook` is the published site: the repository's own documents,
 the source inventory, the diagrams, a reference generated from the core, and the app
@@ -272,9 +272,13 @@ opened through the device frame at
 <https://faktenforum.github.io/correctiv-app/workbench>. Same routes, screens and
 core as the native builds, with two host-level differences.
 
-- **The two platform splits.** `ReaderView` and `VideoFrame` each have a `.web.tsx`
-  sibling, an `<iframe>` where native uses a WebView. `__tests__/web-target.test.ts`
-  fails if a component without a web implementation reaches the bundle.
+- **The three platform splits.** `ReaderView` and `VideoFrame` each have a `.web.tsx`
+  sibling, an `<iframe>` where native uses a WebView. So does `ScreenHeader`, since
+  [ADR 0030](adr/0030-the-platforms-header-and-ours-on-web.md): iOS and Android
+  configure the platform's stack header, and web keeps the app's drawn bar, because
+  `react-native-screens` makes every part of that header a bare `View` on web.
+  `__tests__/web-target.test.ts` fails if a component without a web implementation
+  reaches the bundle.
 - **Feeds are live here too, since [ADR 0015](adr/0015-reading-correctiv-org-through-its-rest-api.md).**
   This entry used to read "no feed is ever live", because a browser blocks every
   CORRECTIV *RSS* request. It still does. The REST API is the app's network path now

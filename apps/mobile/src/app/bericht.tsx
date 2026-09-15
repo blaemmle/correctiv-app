@@ -11,7 +11,7 @@ import { quarterlyReport } from '@correctiv/app-core/data/quartalsbericht';
 export default function BerichtScreen() {
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Quartalsbericht" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"

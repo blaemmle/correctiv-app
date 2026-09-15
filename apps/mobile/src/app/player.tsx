@@ -7,6 +7,7 @@ import { formatTimeHm } from '@correctiv/app-core/lib/format';
 import { seekTo, setSpeed, togglePlay } from '@/lib/audio/player';
 import { useAudio } from '@/lib/audio/useAudio';
 import { goBack } from '@/lib/navigation/goBack';
+import { useDocumentTitle } from '@/lib/navigation/documentTitle';
 import { sizes, useColors } from '@/lib/theme';
 
 const SPEEDS = [1, 1.2, 1.5];
@@ -16,6 +17,9 @@ const SPEEDS = [1, 1.2, 1.5];
  * is no second state and no second instance; the modal is only a larger view of it.
  */
 export default function PlayerScreen() {
+  // A modal over whatever it was opened from, and therefore a route with a tab of
+  // its own on the web target. It has no `ScreenHeader` to name it (ADR 0030).
+  useDocumentTitle('Player');
   const colors = useColors();
   const { track, status, positionSec, durationSec, speed, errorMessage } = useAudio();
   const live = track?.kind === 'radio';

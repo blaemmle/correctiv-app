@@ -40,7 +40,7 @@ export default function EinstellungenScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Einstellungen" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"

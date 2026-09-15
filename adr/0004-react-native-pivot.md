@@ -227,9 +227,14 @@ every chip and thereby overwrote real descriptions with "Alle Beiträge zum Them
 Klima." — deliberately changed.
 
 *A native header search bar would be the wrong route.* `Stack.SearchBar` /
-`headerSearchBarOptions` is Expo's recommendation, but this app sets `headerShown: false`
-throughout and builds its own header rows, so that iOS, Android and web show the same
-brand. A native bar looks different on every platform and does not appear at all on web.
+`headerSearchBarOptions` is Expo's recommendation, but ~~this app sets
+`headerShown: false` throughout and builds its own header rows, so that iOS, Android and
+web show the same brand~~ — that premise is voided by
+[ADR 0030](0030-the-platforms-header-and-ours-on-web.md), which gives thirteen routes
+the platform's stack header and keeps the drawn bar on web and on two named screens.
+The conclusion stands, and 0030 is what confirms it: `/suche` is one of those two
+exceptions, for the reason the next sentence gives.
+A native bar looks different on every platform and does not appear at all on web.
 Hence `ScreenHeader` + `TextInput`. The `autoFocus` there is a deliberate exception to
 `jsx-a11y/no-autofocus`, argued in `.oxlintrc.json`: the screen exists for nothing else
 and is only reached by an explicit tap on the search entry.

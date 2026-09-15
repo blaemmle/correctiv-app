@@ -20,9 +20,13 @@ import { projectTarget } from '@/lib/discover/target';
  */
 
 // expo-router is the only thing these screens do to the outside world.
+// `Stack.Screen` because `ScreenHeader` configures the platform's header through
+// it on native, and a screen with a header therefore reaches expo-router for more
+// than `router` now (ADR 0030).
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({})),
+  Stack: { Screen: () => null },
 }));
 /**
  * The cascade itself is the core's, and is tested there

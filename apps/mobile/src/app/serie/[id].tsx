@@ -39,7 +39,7 @@ export default function SerieScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Podcast-Serie" />
 
       {!series ? (
         <View className="flex-1 items-center justify-center px-m">

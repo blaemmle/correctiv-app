@@ -11,6 +11,7 @@ import { loadArticle } from '@correctiv/app-core/articles/load';
 import type { Article } from '@correctiv/app-core/articles/types';
 import { readerHtml } from '@/lib/articles/reader';
 import { goBack } from '@/lib/navigation/goBack';
+import { useDocumentTitle } from '@/lib/navigation/documentTitle';
 import { openExternal } from '@/lib/openExternal';
 import { shareArticle } from '@/lib/shareArticle';
 import { useCoreActions, useIsSaved, useTextScale } from '@/lib/store/core';
@@ -36,6 +37,11 @@ import { sizes, useColors, useIsDark } from '@/lib/theme';
  * would be done, for every screen at once rather than for this one.
  */
 export default function ArtikelScreen() {
+  // The reader draws its own floating chrome rather than a `ScreenHeader`, so the
+  // browser tab is named here. A fixed word and not the headline: the tab would
+  // otherwise read the screen it was opened from, which is the defect, and the
+  // article's own title is a separate change (ADR 0030).
+  useDocumentTitle('Artikel');
   const colors = useColors();
   const actions = useCoreActions();
   const { url, title, badge } = useLocalSearchParams<{

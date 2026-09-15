@@ -23,7 +23,7 @@ export default function SpotlightScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader />
+      <ScreenHeader title="Spotlight" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"
