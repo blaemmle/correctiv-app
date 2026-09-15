@@ -54,8 +54,9 @@ describe('the hash contract, on every route', () => {
 
   /**
    * The one thing that makes the grammar safe: an app route starts with `/` and a
-   * heading id never does, because `plugin/markdown.ts`'s `slug()` strips
-   * everything but letters, digits, spaces and hyphens.
+   * heading id never does, because `src/lib/slug.ts` strips everything but
+   * letters, digits, spaces and hyphens — for every id this site mints, since
+   * the board stopped carrying a second copy of that function.
    */
   it('keeps a document anchor an anchor when nothing else is said', () => {
     expect(parseAddress('#the-four-ports', DOCUMENT).head).toBe('the-four-ports');

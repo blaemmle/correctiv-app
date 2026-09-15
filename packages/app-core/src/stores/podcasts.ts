@@ -112,5 +112,3 @@ export const fetchAll =
       }),
     );
   };
-
-export const podcastsActions = { ...slice.actions, fetchAll };

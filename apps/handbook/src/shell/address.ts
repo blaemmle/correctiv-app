@@ -12,8 +12,10 @@ import type { SectionId, ViewDeclaration } from './views';
  * parameters and on the component route is the device and the rendering.
  *
  * **The two halves cannot collide**, which is what lets one grammar serve both: an
- * app route starts with `/` and a heading id never does, because `plugin/markdown.ts`'s
- * `slug()` strips everything but letters, digits, spaces and hyphens.
+ * app route starts with `/` and a heading id never does, because `lib/slug.ts`
+ * strips everything but letters, digits, spaces and hyphens. The board's row ids
+ * come through the same function, so the guarantee covers every head this parses
+ * and not only the documents.
  *
  * **A parameter is written only when it differs from the view's declared
  * default.** That is what keeps a document clean: a reader who toggled nothing

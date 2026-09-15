@@ -49,9 +49,12 @@ The primitives behind them — `white`, `black`, `neutral-100…700`, `red-500`,
 `bg-canvas`. That is a white page on a dark phone, and no check catches it. Use one
 only where a colour must not follow the scheme: text on the brand red, a label on club
 yellow, a fill on a photograph. In `apps/mobile` that case is still spelled
-`always-light` / `always-dark`, which is what all 45 existing call sites use; they are
-the older names for `white` and `neutral-700` and ADR 0022 retires them, so prefer them
-there until it does rather than mixing both spellings.
+`always-light` / `always-dark`, which is what all 49 existing call sites use — a line
+of `apps/mobile/src` outside a comment that writes one of the two names, which is the
+count a rename pass would have to make, and `apps/mobile/__tests__/tokens.test.ts`
+takes it so this sentence cannot drift off the code again. They are the older names
+for `white` and `neutral-700` and ADR 0022 retires them, so prefer them there until
+it does rather than mixing both spellings.
 
 **Not in the core.** `always-light` and `always-dark` are this app's invention, so they
 are absent from `tokens/theme.css` and therefore from the `--var-color-*` block the
@@ -85,18 +88,27 @@ where someone reading it would act on it and be wrong.
 ## Facts that expire
 
 A figure measured against the outside world goes wrong quietly, and no reviewer
-catches it because nothing about it looks wrong. Two such facts exist here, and each
-one is a single fact typed in two places:
+catches it because nothing about it looks wrong. A figure measured against **this
+repository** goes wrong the same way, and faster. Three such facts exist here:
 
 - The measuring day, in `SOURCES.md` and in `apps/handbook/content/sources.manifest.ts`.
   Re-measuring means editing both, so a test fails when the two dates part, and the
   board prints the age beside the date, worked out in the reader's browser, because a
   published page sits at its address for months.
 - A claim and the record that voided it, which is the pair above.
+- The count of `always-light` / `always-dark` call sites, in the colour section above.
+  It was exact when ADR 0022 typed it, four short a week later, and nothing failed.
+  `apps/mobile/__tests__/tokens.test.ts` takes it from the source and holds this file
+  to it, so it is one number in one place with a check under it.
 
-Add the check with the fact, not afterwards. "Keep the documentation current" is not
-a rule that belongs here: it cannot fail, so nothing enforces it, and a rule nobody
-can break is noise beside the ones they can.
+Add the check with the fact, not afterwards. Where a check is genuinely not possible,
+keep the number in one document and have the others point at it — the time
+`npm run check` takes is measured in `ARCHITECTURE.md` and nowhere else for that
+reason. That is the weaker arrangement and it is worth knowing why: a pointer stops
+two copies parting, and nothing about it stops the one copy going stale. A figure that
+depends on the machine it was measured on should be read as a bound, not a reading. "Keep the
+documentation current" is not a rule that belongs here: it cannot fail, so nothing
+enforces it, and a rule nobody can break is noise beside the ones they can.
 
 ## Language
 
@@ -138,8 +150,10 @@ spelling.
 
 ## Checks
 
-`npm run check` at the root: typecheck, oxlint, oxfmt, tests, under twenty seconds. Do
-not introduce eslint or prettier.
+`npm run check` at the root: typecheck, oxlint, oxfmt, tests. How long it takes is
+measured in [ARCHITECTURE.md](ARCHITECTURE.md) and is deliberately not repeated here,
+because a duration typed in two places is two facts and one of them goes wrong on its
+own. Do not introduce eslint or prettier.
 
 **A green check proves nothing about how the app looks or whether it runs.** After a
 route, a bundle config or a platform split, run `npm run build:web`, then

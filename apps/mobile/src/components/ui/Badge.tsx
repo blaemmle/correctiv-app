@@ -6,7 +6,7 @@ type Tone = 'emphasis' | 'club' | 'neutral' | 'live';
 
 export type BadgeProps = {
   label: string;
-  /** emphasis = Projekt-Badge (rot), club = Backstage (gelb), live = roter Punkt + Label. */
+  /** emphasis = project badge (red), club = Backstage (yellow), live = red dot plus label. */
   tone?: Tone;
   className?: string;
 };
