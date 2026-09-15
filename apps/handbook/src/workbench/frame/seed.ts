@@ -18,6 +18,20 @@
  * is not ignored but **deleted**, and the slice starts empty.
  */
 
+/**
+ * The app's two MMKV stores, as they land in `localStorage` on the web target.
+ *
+ * MMKV's web build gives each instance its own key prefix, `<id>` followed by a
+ * backslash — see `LOCAL_STORAGE_KEY_WILDCARD` in `react-native-mmkv`. The ids
+ * come from `apps/mobile/src/lib/platform/expo.ts`, which is the only place the
+ * app names them, and `test/workbench/seed.test.ts` holds the two spellings
+ * together. They are also the reason a fixture cannot accidentally seed a bookmark
+ * into the cache: the app keeps what the reader chose and what it may evict in two
+ * separate stores.
+ */
+const STATE_PREFIX = 'correctiv.state\\';
+const CACHE_PREFIX = 'correctiv.cache\\';
+
 /** `packages/app-core/src/services/cache.service.ts` — djb2, kept identical. */
 function fileKey(key: string): string {
   let h = 5381;
@@ -25,7 +39,7 @@ function fileKey(key: string): string {
   return h.toString(36);
 }
 
-const blobKey = (ns: string, key: string) => `blob:${ns}/${fileKey(key)}.json`;
+const blobKey = (ns: string, key: string) => `${CACHE_PREFIX}${ns}/${fileKey(key)}.json`;
 
 /** Feeds that carry articles: `CONTENT_FEEDS`, i.e. everything but `europe`. */
 const CONTENT_FEEDS = ['recherchen', 'faktencheck', 'klima', 'schweiz', 'lokal', 'salon5'];
@@ -93,7 +107,7 @@ export interface Fixture {
 }
 
 const kv = (store: Storage, slice: string, value: unknown) =>
-  store.setItem(`kv:store.${slice}`, JSON.stringify(value));
+  store.setItem(`${STATE_PREFIX}store.${slice}`, JSON.stringify(value));
 
 /**
  * The mark this tool leaves when it opens the app's door for a frame.
@@ -104,12 +118,12 @@ const kv = (store: Storage, slice: string, value: unknown) =>
  * it — `apps/mobile/src/gallery/Gallery.tsx`, which is the page every framed
  * component is drawn on.
  *
- * Outside `kv:store.` on purpose. `persist()` writes back only the keys a slice
- * declares, so anything invented under that prefix is dropped on the app's first
- * write; this is not the core's state and must not look like it. It is also one
- * greppable string, which is what the issue asks for: `handbook:seeded` appears
- * in exactly two files, and `test/workbench/seed.test.ts` fails if the two ever
- * spell it differently.
+ * Outside the app's own store on purpose. `persist()` writes back only the keys a
+ * slice declares, so anything invented under `store.` is dropped on the app's
+ * first write; this is not the core's state and must not look like it. It is also
+ * one greppable string, which is what the issue asks for: `handbook:seeded`
+ * appears in exactly two files, and `test/workbench/seed.test.ts` fails if the two
+ * ever spell it differently.
  *
  * The bypass itself cannot reach a production build for a simpler reason than a
  * `__DEV__` branch: it is not in the app. `holdTheDoorOpen` is this package's
@@ -129,7 +143,7 @@ export const SEEDED_KEY = 'handbook:seeded';
  */
 function clearApp(store: Storage): void {
   for (const key of Object.keys(store)) {
-    if (key.startsWith('kv:store.') || key.startsWith('blob:') || key === SEEDED_KEY) {
+    if (key.startsWith(STATE_PREFIX) || key.startsWith(CACHE_PREFIX) || key === SEEDED_KEY) {
       store.removeItem(key);
     }
   }
@@ -304,7 +318,7 @@ export function applyFixture(store: Storage, id: string): void {
  */
 export function holdTheDoorOpen(store: Storage): void {
   try {
-    const raw = store.getItem('kv:store.session');
+    const raw = store.getItem(`${STATE_PREFIX}store.session`);
     const held = raw
       ? (JSON.parse(raw) as { entitlement?: { appAccess?: unknown } }).entitlement?.appAccess
       : false;

@@ -60,8 +60,8 @@ Four ports, all declared in `packages/app-core/src/ports/index.ts`:
 
 | Port | What the host answers | NativeScript | Expo |
 | --- | --- | --- | --- |
-| `KeyValueStore` | small settings, ~~synchronously~~ asynchronously since [0009](0009-redux-toolkit-for-the-cores-state.md) | `ApplicationSettings` | ~~AsyncStorage + a hydrated mirror~~ AsyncStorage |
-| `BlobStore` | the HTTP cache, asynchronously | `File` in `documents/cache/` | AsyncStorage |
+| `KeyValueStore` | small settings, ~~synchronously~~ asynchronously since [0009](0009-redux-toolkit-for-the-cores-state.md) | `ApplicationSettings` | ~~AsyncStorage + a hydrated mirror~~ ~~AsyncStorage~~ MMKV, in a store of its own, since [0026](0026-react-native-review-and-hardening.md) |
+| `BlobStore` | the HTTP cache, asynchronously | `File` in `documents/cache/` | ~~AsyncStorage~~ a second MMKV store, bounded and evictable, since [0026](0026-react-native-review-and-hardening.md) |
 | `ContentBundle` | what shipped inside the app | JSON in the app folder | a generated TS module |
 | `AudioBackend` | playback, as status ticks | `TNSPlayer` + a polling timer | expo-audio's status events |
 

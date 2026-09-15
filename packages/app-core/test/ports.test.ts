@@ -106,12 +106,20 @@ describe('cache.service', () => {
       blobs: {
         read: () => Promise.reject(new Error('disk gone')),
         write: () => Promise.reject(new Error('disk full')),
+        delete: () => Promise.reject(new Error('disk gone')),
       },
     });
+    // The ledger's own write is the one this file reports rather than swallows, and
+    // that is asserted in `cache-bound.test.ts`. Here it is noise around the point,
+    // which is that none of these rejections reaches the caller.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
     await expect(setCached('feeds', 'x', 'a')).resolves.toBeUndefined();
     expect(await getCached('feeds', 'x', 60_000)).toBe('a'); // session layer still answers
     clearMemoryCache();
     expect(await getStale('feeds', 'x')).toBeNull();
+
+    warn.mockRestore();
   });
 
   it('ignores corrupt persisted payloads instead of throwing', async () => {

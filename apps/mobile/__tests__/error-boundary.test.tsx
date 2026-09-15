@@ -90,7 +90,7 @@ jest.mock('uniwind', () => ({
 }));
 
 /**
- * The real adapter reaches for AsyncStorage's native module. The core's in-memory
+ * The real adapter reaches for MMKV's native module. The core's in-memory
  * platform answers the same ports, so hydration runs for real against it.
  */
 jest.mock('@/lib/platform/expo', () => {

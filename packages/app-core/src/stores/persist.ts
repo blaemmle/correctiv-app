@@ -9,10 +9,9 @@ import type { AppStore, RootState } from './store';
  *
  * Deliberately not `redux-persist`: this core already declares exactly what it
  * needs from a host as a port, so going through the port keeps one storage seam
- * instead of two — the Expo host maps it to AsyncStorage or localStorage, and
- * tests to memory. It also keeps the storage layout, `store.<id>` holding only the
- * declared keys, which is what lets an installed app keep its state across this
- * migration.
+ * instead of two — the Expo host maps it to MMKV, and tests to memory. It also
+ * keeps the storage layout, `store.<id>` holding only the declared keys, which is
+ * what lets an installed app keep its state across this migration.
  *
  * Each slice owns its own storage key, so one corrupt payload cannot take the
  * others down with it.

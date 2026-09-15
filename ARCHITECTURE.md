@@ -37,8 +37,8 @@ Everything the core cannot do on its own is declared in
 
 | Port | What the host answers | How this host answers it |
 | --- | --- | --- |
-| `KeyValueStore` | small settings, asynchronously | AsyncStorage, one prefixed key per setting |
-| `BlobStore` | the HTTP cache, asynchronously | AsyncStorage |
+| `KeyValueStore` | small settings, asynchronously | MMKV, the store holding what the reader chose |
+| `BlobStore` | the HTTP cache, asynchronously | a second MMKV store, bounded and evictable |
 | `ContentBundle` | what shipped inside the app | generated TS modules |
 | `AudioBackend` | playback, as status ticks | expo-audio's status events |
 
@@ -51,9 +51,27 @@ and made `persist()` a later call the host already awaits, so there was nothing 
 to be earlier than. [ADR 0009](adr/0009-redux-toolkit-for-the-cores-state.md) records
 the change and the 45 lines it deleted.
 
+**They stay asynchronous under MMKV, which can answer without a promise.** Making
+them synchronous again would buy back exactly that mirror and that trap, because a
+port is synchronous for every host or for none, and MMKV's web build behind
+localStorage is no more able to answer before the first frame than AsyncStorage was.
+A synchronous backend under an asynchronous port simply resolves a value.
+[ADR 0026](adr/0026-react-native-review-and-hardening.md) §4 has the swap and its
+measurements.
+
+**Two stores, not one, and that is the eviction policy's fence.** The cache has a
+count limit, a byte budget, a maximum entry size and least-recently-used eviction
+(`packages/app-core/src/services/cache.service.ts`, where the limits carry the
+measurements they were derived from). Eviction speaks only to `BlobStore`, and
+`BlobStore` is a different MMKV instance from the one holding bookmarks, settings and
+the session — two files on device, two key prefixes in localStorage. So a bookmark is
+not merely not evicted; it is not addressable by the code that evicts.
+
 The adapter is `apps/mobile/src/lib/platform/expo.ts`, and it is small on purpose.
 While the repo had a second host, one file per host knew the platform SDK, so
-dropping a host meant dropping that file plus its screens.
+dropping a host meant dropping that file plus its screens. It is one file on all
+three platforms: `react-native-mmkv` 4.3.2 ships a web build backed by localStorage,
+so there is no platform split here to keep in step.
 
 ## Three conventions in the core
 
