@@ -21,6 +21,8 @@
   ],
   "devDependencies": {
     "@types/node": "^20.19.43",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
     "oxfmt": "^0.61.0",
     "oxlint": "^1.76.0",
     "react": "19.2.3",
@@ -52,6 +54,11 @@
     "i18n:extract": "npm run i18n:extract -w @correctiv/mobile",
     "handbook": "npm run dev -w @correctiv/handbook",
     "build:handbook": "npm run build -w @correctiv/handbook",
-    "app": "npm run web -w @correctiv/mobile"
+    "app": "npm run web -w @correctiv/mobile",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs,json}": "oxfmt",
+    "*.{ts,tsx,js,mjs,cjs}": "oxlint"
   }
 }
