@@ -189,7 +189,7 @@ naming, because they are the feedback upstream needs before it drops the v1 tier
 |---|---|---|
 | `Badge` neutral fill, `ClaimStatusTag` | `grey-250` #f0f0f0 | upstream dropped it from the ramp with "no replacement" |
 | `Thumbnail` placeholder, the reader's neutral verdict plaque, `SettingRow`'s switch track | `grey-300` #e6e6e6 | `neutral-200` as a **fill**; the semantic tier has no surface there |
-| faint text: placeholders, chevrons, inactive tabs (45 uses) | `grey-500` #b3b3b3 | no foreground token that faint; `stroke-strong` shares the value but names a line |
+| faint text: placeholders, chevrons, inactive tabs (45 uses of `grey-500`, a different 45 from the struck call-site count above) | `grey-500` #b3b3b3 | no foreground token that faint; `stroke-strong` shares the value but names a line |
 
 **And one that is not an alias at all, which is the bigger gap.**
 `ClaimStatusTag.CHECKED_TRUE_GREEN` is a raw `#2e7d4f`, carried since the first

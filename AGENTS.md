@@ -101,9 +101,12 @@ repository** goes wrong the same way, and faster. Three such facts exist here:
   `apps/mobile/__tests__/tokens.test.ts` takes it from the source and holds this file
   to it, so it is one number in one place with a check under it.
 
-Add the check with the fact, not afterwards, and where a check is not possible, keep
-the number in one document and have the other point at it — the time `npm run check`
-takes is measured in `ARCHITECTURE.md` and nowhere else for that reason. "Keep the
+Add the check with the fact, not afterwards. Where a check is genuinely not possible,
+keep the number in one document and have the others point at it — the time
+`npm run check` takes is measured in `ARCHITECTURE.md` and nowhere else for that
+reason. That is the weaker arrangement and it is worth knowing why: a pointer stops
+two copies parting, and nothing about it stops the one copy going stale. A figure that
+depends on the machine it was measured on should be read as a bound, not a reading. "Keep the
 documentation current" is not a rule that belongs here: it cannot fail, so nothing
 enforces it, and a rule nobody can break is noise beside the ones they can.
 

@@ -38,3 +38,22 @@ export function slug(text: string): string {
     .trim()
     .replace(/\s+/g, '-');
 }
+
+/**
+ * The board's own row ids, which are not heading slugs and must not become them.
+ *
+ * `slug()` follows GitHub and DROPS punctuation without putting anything in its
+ * place, which is right for a heading — "Hello, World" is `hello-world` there
+ * too. It is wrong here, because three of these labels put a full stop BETWEEN
+ * two words: `CORRECTIV.Schweiz` would slug to `correctivschweiz` and the two
+ * words would run together.
+ *
+ * That is not only ugly. `row-correctiv-schweiz` is a published address — the
+ * page reads `#row-…` off the location bar — and the handbook deploys on every
+ * push to main, so changing it silently retires every link anybody is holding.
+ * Turning punctuation into a space first keeps the ids exactly as they were and
+ * still leaves one slug function in the package.
+ */
+export function feedId(label: string): string {
+  return slug(label.replace(/[^\p{L}\p{N}]+/gu, ' '));
+}

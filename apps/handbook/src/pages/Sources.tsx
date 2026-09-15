@@ -25,7 +25,7 @@ import { Segmented } from '../ui/kit/segmented';
 import { Button } from '../ui/kit/button';
 import { cn } from '../lib/cn';
 import { ageInWords, isStale, STALE_AFTER_DAYS } from '../lib/measured';
-import { slug } from '../lib/slug';
+import { feedId } from '../lib/slug';
 import { Slot } from '../shell/slots';
 import { Page } from '../ui/Page';
 import { Toc } from '../ui/Toc';
@@ -293,7 +293,7 @@ function feedQuestions(feed: Feed, family: SourceEntry): number[] {
 }
 
 function feedRow(feed: Feed, index: number, family: SourceEntry): BoardRow {
-  const key = slug(feed.label);
+  const key = feedId(feed.label);
   const severity: Severity | undefined = feed.health === 'healthy' ? undefined : feed.health;
   const questions = feedQuestions(feed, family);
 
@@ -735,7 +735,7 @@ export function Sources() {
 
             <ul className="mt-s grid gap-xs lg:grid-cols-3">
               {AILING.map((feed) => {
-                const rowId = `row-${slug(feed.label)}`;
+                const rowId = `row-${feedId(feed.label)}`;
                 const row = ROW_BY_ID.get(rowId);
                 const severity: Severity = feed.health === 'broken' ? 'broken' : 'stale';
                 return (

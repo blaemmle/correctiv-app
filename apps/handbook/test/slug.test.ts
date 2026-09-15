@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { collectDocs, ROOT } from '../plugin/collect.ts';
 import { FEEDS } from '../content/sources.manifest.ts';
-import { slug } from '../src/lib/slug.ts';
+import { feedId, slug } from '../src/lib/slug.ts';
 
 const HANDBOOK = join(ROOT, 'apps/handbook');
 
@@ -36,6 +36,10 @@ describe('the fragment identifier', () => {
     // An em dash separates most headings in `adr/`, and it is punctuation rather
     // than a hyphen, so it goes and the two spaces around it become one break.
     expect(slug('ADR 0022 — Three tiers of colour')).toBe('adr-0022-three-tiers-of-colour');
+    // GitHub drops punctuation without a separator, so a full stop between two
+    // words runs them together. Right for a heading, wrong for the board's row
+    // ids, which is why `Sources.tsx` normalises before it slugs — see the test
+    // below, which pins the published spelling.
     expect(slug('CORRECTIV.Schweiz')).toBe('correctivschweiz');
   });
 
@@ -62,7 +66,15 @@ describe('the fragment identifier', () => {
   it('gives the source board a row id for every feed', () => {
     // The other caller. An empty slug would make every row `row-`, which is one
     // id for seven rows and a link that lands on whichever came first.
-    const ids = FEEDS.map((feed) => `row-${slug(feed.label)}`);
+    const ids = FEEDS.map((feed) => `row-${feedId(feed.label)}`);
+
+    // The three that punctuation would have collapsed. These are published
+    // addresses — the page reads `#row-…` off the location bar and the handbook
+    // deploys on every push to main — so this is here to fail if anybody makes
+    // the board share the heading spelling.
+    expect(ids).toContain('row-correctiv-schweiz');
+    expect(ids).toContain('row-correctiv-lokal');
+    expect(ids).toContain('row-correctiv-europe');
     expect(new Set(ids).size).toBe(FEEDS.length);
     expect(ids.filter((id) => id === 'row-')).toEqual([]);
   });
