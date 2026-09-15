@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { withoutComments } from './support/source';
+
 /**
  * The check AGENTS.md says does not exist.
  *
@@ -17,11 +19,13 @@ import { join, relative, sep } from 'node:path';
  *    therefore does not follow the scheme. That is right for a surface that does
  *    not switch either (text on the brand red, the label on club yellow, a scrim
  *    over a photograph) and wrong everywhere else. In this app the right case has
- *    its own spelling, `always-light` / `always-dark`, which all 49 of its call
- *    sites use — so a primitive appearing here is the wrong case by construction,
- *    and needs no exception list at all. That is the whole reason this check can be
- *    strict in `apps/mobile` and could not be in `packages/app-core`, where the
- *    role names do not exist and the primitives are all there is.
+ *    its own spelling, `always-light` / `always-dark`, which every one of its call
+ *    sites uses — ADR 0022 counted 45 of them, over the files this walks, and
+ *    `DEVELOPER_ONLY` below is why that figure is not 49. So a primitive appearing
+ *    here is the wrong case by construction, and needs no exception list at all.
+ *    That is the whole reason this check can be strict in `apps/mobile` and could
+ *    not be in `packages/app-core`, where the role names do not exist and the
+ *    primitives are all there is.
  *  - A **deprecated v1 alias** — `grey-100…700`, `emphasis`, `alternative` — does
  *    follow the scheme and is not a bug. It is upstream's old spelling, kept as an
  *    alias until its consumers have moved, and nothing new should acquire one.
@@ -61,17 +65,27 @@ const utility = (tokens: string) =>
  * hex it is talking about.
  */
 const quoted = (tokens: string) => new RegExp(`(?<![\\w-])['"](${tokens})['"](?![\\w-])`, 'g');
+
+/**
+ * The fourth spelling, and the one the house idiom points straight at:
+ * `colors.white`. Dot access carries no quotes for `quoted` to find, `colors.accent`
+ * is written at twenty sites, and `lib/theme/useColors.ts` recommends the static
+ * `colors` import for exactly the primitive case — so this is the bypass the next
+ * developer reaches for by following that file's own advice, and it was open.
+ *
+ * Only `white`, `black`, `emphasis` and `alternative` can be written this way at
+ * all: `colors['grey-500']` needs its brackets because a hyphen is not an
+ * identifier, and that spelling is already `quoted`'s. Gated by `APPLIES` like
+ * `quoted`, for the same reason and at no cost — every palette is bound as `colors`
+ * or `palette`, so the line names one by construction.
+ */
+const member = (tokens: string) => new RegExp(`(?<=[\\w)\\]])\\.(${tokens})(?![\\w-])`, 'g');
+
 const APPLIES = /colou?r|palette|tint|background/i;
 
 const PRIMITIVE = 'white|black|neutral-\\d+';
 const V1_ALIAS = 'grey-\\d+|emphasis|alternative';
 
-/**
- * What this cannot see, said out loud so nobody reads a green run as more than it
- * is: a class assembled at runtime (`` `bg-${name}` ``) and a token reached through
- * a variable. Neither is written anywhere in this app today, and both would be
- * worth arguing about rather than quietly accommodating.
- */
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);
@@ -80,10 +94,25 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-/** Comments explain the tiers, so they are allowed to name them. */
-function withoutComments(code: string): string {
-  return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/[^\n]*/g, '$1');
-}
+/** Path under `src/`, with `/` on every OS. */
+const under = (path: string) => relative(SRC, path).split(sep).join('/');
+
+/**
+ * The gallery, excluded for the reason `__tests__/localisation-seam.test.ts`
+ * excludes it and so that the two checks read one app rather than two: it is a
+ * developer's catalogue of the components and is read by nobody else.
+ *
+ * It is also a catalogue OF the palette, which prints token names as captions — so
+ * a specimen labelled `bg-white` would fail this check for naming a token rather
+ * than painting with one, and the only way to pass would be to stop documenting it.
+ *
+ * It holds no primitive and no v1 alias today, so the scope costs this check
+ * nothing and settles a figure that was moving: `always-*` is 45 call sites without
+ * the gallery, which is what ADR 0022 counted, and 49 with it.
+ */
+const DEVELOPER_ONLY = /^gallery\//;
+
+const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
 
 interface Use {
   /** Path under `src/`, with `/` on every OS. */
@@ -95,13 +124,14 @@ interface Use {
 function uses(tokens: string): Use[] {
   const asClass = utility(tokens);
   const asName = quoted(tokens);
-  return sourceFiles(SRC).flatMap((path) => {
-    const file = relative(SRC, path).split(sep).join('/');
+  const asProperty = member(tokens);
+  return FILES.flatMap((path) => {
+    const file = under(path);
     return withoutComments(readFileSync(path, 'utf8'))
       .split('\n')
       .flatMap((text, index) => {
         const found = [...text.matchAll(asClass)];
-        if (APPLIES.test(text)) found.push(...text.matchAll(asName));
+        if (APPLIES.test(text)) found.push(...text.matchAll(asName), ...text.matchAll(asProperty));
         return found.map(([, token]) => ({ file, token, line: index + 1 }));
       });
   });
@@ -117,8 +147,30 @@ function tally(found: Use[]): Record<string, Record<string, number>> {
   return out;
 }
 
-const FILES = sourceFiles(SRC);
-
+/**
+ * **What a green run here does NOT mean**, at the top of the assertions rather than
+ * at the bottom of the file, because the sentence in AGENTS.md is read by people who
+ * will never open this one.
+ *
+ * This reads four spellings of a token NAME: the class (`bg-white`), the quoted key
+ * (`colors['white']`), the prop (`color="white"`) and the property (`colors.white`),
+ * the last three only on a line that also mentions colour. Everything else is
+ * invisible:
+ *
+ *  - a class assembled at runtime, `` `bg-${tone}` ``, and a token reached through a
+ *    variable, `colors[token]` — `Typo` does the second one on the `color` prop it
+ *    is handed, so this check sees the call site and never the value;
+ *  - a palette bound to a name with no colour in it: `const p = useColors()` and
+ *    then `p.white` fails `APPLIES` and passes;
+ *  - a colour that is not a token at all. Two hex literals live in `src` today
+ *    (`VideoFrame.tsx` `#000`, `ClaimStatusTag.tsx` `#2e7d4f`) and `app.json` ships
+ *    `#ffffff` as the splash and adaptive-icon background, which is literally the
+ *    white page on a dark phone this tier is about. `apps/handbook/test/styles.test.ts`
+ *    is the check for a literal; extending it to two more hosts is its own argument.
+ *
+ * None of these is accommodated here, and none should be quietly: each one is a PR
+ * to have rather than a pattern to widen.
+ */
 describe('colour comes from the tier that means the role', () => {
   it('reads the app it is checking (guards against a silently empty walk)', () => {
     // A walk that matched nothing writes no offenders, and every assertion below

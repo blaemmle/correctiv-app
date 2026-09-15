@@ -112,15 +112,17 @@ export function useMergedFeeds(feeds: FeedKey[]): AsyncState<FeedItem[]> {
  * `useSelector` it would compare unequal on every unrelated dispatch. Same shape
  * and the same reason as `useSpotlight` in `lib/store/core.ts`.
  *
- * It selects the whole feeds slice rather than one key, because the selector reads
- * `FeedsState` like every other pure query in that module. `s.feeds` is a stable
- * reference while no feed changes, so the cost is a re-filter when some other feed
- * lands, not a render on every dispatch.
+ * ONE slice is subscribed to, not `s.feeds`. Immer patches `byKey[feed]` in place
+ * and leaves its siblings alone, so `byKey.recherchen` keeps its identity while the
+ * other six feeds land and `s.feeds` does not — reading the whole object would
+ * re-render the profile every time Home finished loading something it does not
+ * show. The selector takes that slice (`RecherchenFeed`), so the narrow read is
+ * what it asks for rather than something this hook has to remember.
  */
 export function useInvestigations(limit: number): FeedItem[] {
-  const feeds = useAppSelector((s) => s.feeds);
+  const recherchen = useAppSelector((s) => s.feeds.byKey.recherchen);
 
-  useLazyLoad(feeds.byKey.recherchen.status, fetchFeedKey, 'recherchen');
+  useLazyLoad(recherchen.status, fetchFeedKey, 'recherchen');
 
-  return useMemo(() => investigations(feeds, limit), [feeds, limit]);
+  return useMemo(() => investigations({ byKey: { recherchen } }, limit), [recherchen, limit]);
 }

@@ -52,10 +52,17 @@ still spelled `always-light` / `always-dark`, which is what every existing call 
 uses; they are the older names for `white` and `neutral-700` and ADR 0022 retires them,
 so prefer them there until it does rather than mixing both spellings.
 
-Because that case has a spelling of its own, a primitive in `apps/mobile` is the
+Because that case has a spelling of its own, a primitive in `apps/mobile/src` is the
 mistake and nothing else, and `apps/mobile/__tests__/colour-tiers.test.ts` fails on
-one. It fails on a new deprecated alias too, against a per-file ratchet asserted in
-both directions. It cannot read a class built at runtime, and it says so.
+one — on a new deprecated alias too, against a per-file ratchet asserted in both
+directions. What it reads is the token NAME, in four spellings: the class
+(`bg-white`), the key (`colors['white']`), the prop (`color="white"`) and the
+property (`colors.white`), the last three only on a line that also says colour.
+It is blind to a class built at runtime, to a token reached through a variable
+(`colors[token]`), and to any colour that is not a token at all — the hex in
+`VideoFrame.tsx` and the `#ffffff` splash in `app.json` are invisible to it, and
+`src/gallery/` is out of its scope. So it catches the mistake as the app writes it
+today, and is no reason to skip looking in both appearances.
 
 **Not in the core.** `always-light` and `always-dark` are this app's invention, so they
 are absent from `tokens/theme.css` and therefore from the `--var-color-*` block the

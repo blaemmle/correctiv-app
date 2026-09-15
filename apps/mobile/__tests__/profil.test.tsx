@@ -31,11 +31,17 @@ jest.mock('expo-router', () => ({
  * (`stores/feeds.ts`, with its own suite), and the card below still has to be seen
  * obeying it — through the same code the app runs, not a second filter written
  * here.
+ *
+ * ONE export is replaced and the rest of the module is real, for the reason
+ * `discover.test.tsx` spreads `requireActual` too: a factory that returns one
+ * function makes `useFeed` undefined for every other component in this render, and
+ * the failure is "useFeed is not a function" in a child nobody was testing.
  */
 let mockFeedItems: FeedItem[] = [];
 jest.mock('@/lib/feeds/useFeed', () => {
   const { investigations } = jest.requireActual('@correctiv/app-core/stores/feeds');
   return {
+    ...jest.requireActual('@/lib/feeds/useFeed'),
     useInvestigations: (limit: number) =>
       investigations({ byKey: { recherchen: { items: mockFeedItems } } }, limit),
   };

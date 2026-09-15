@@ -44,6 +44,14 @@ export function searchLocalFeeds(state: FeedsState, query: string, limit = 12): 
  *
  * No limit, unlike `searchLocalFeeds`: the whole catalogue is nine entries, so a
  * cap would be a number with nothing behind it.
+ *
+ * One line of it is NOT the screen's, and deliberately: `app/suche.tsx` measured the
+ * query before lowercasing it and this measures it after, because `searchLocalFeeds`
+ * above is written that way and the two halves of one match should not guard
+ * differently. It can only tell for a query whose length CHANGES when it is
+ * lowercased — `İ` becomes two code units — and only then at the boundary between
+ * one character and two; no entry in the catalogue can contain such a needle, so
+ * this is the same answer over this corpus rather than the same code.
  */
 export function searchProjectHits(query: string): SearchSample[] {
   const needle = query.trim().toLowerCase();

@@ -119,6 +119,9 @@ export function mergedFeedItems(state: FeedsState, keys: FeedKey[]): FeedItem[] 
   return sortNewestFirst(items);
 }
 
+/** The one slice `investigations` reads, so a caller can subscribe to that alone. */
+export type RecherchenFeed = { byKey: Pick<FeedsState['byKey'], 'recherchen'> };
+
 /**
  * The investigations in the site-wide stream: `recherchen` without its fact checks.
  *
@@ -137,9 +140,16 @@ export function mergedFeedItems(state: FeedsState, keys: FeedKey[]): FeedItem[] 
  * `limit` is the caller's, like `recentIssues` in `stores/spotlight.ts`: how many
  * a card has room for is a layout decision and this slice has no business knowing
  * it.
+ *
+ * It takes the ONE slice it reads rather than `FeedsState`, and that is a fact
+ * about the host rather than a tidiness: a binding that has to hand over the whole
+ * `feeds` object has to subscribe to the whole `feeds` object, and Immer gives it a
+ * new identity whenever any feed lands. `byKey.recherchen` keeps its identity while
+ * its siblings change, so this signature is what lets `useInvestigations` re-render
+ * the profile for its own feed and no other. A full `FeedsState` still satisfies it.
  */
-export function investigations(state: FeedsState, limit?: number): FeedItem[] {
-  const items = feedItems(state, 'recherchen').filter((item) => !isFactCheckUrl(item.url));
+export function investigations(state: RecherchenFeed, limit?: number): FeedItem[] {
+  const items = state.byKey.recherchen.items.filter((item) => !isFactCheckUrl(item.url));
   return limit === undefined ? items : items.slice(0, limit);
 }
 
