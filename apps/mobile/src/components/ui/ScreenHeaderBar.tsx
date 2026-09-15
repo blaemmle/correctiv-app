@@ -26,7 +26,7 @@ export type ScreenHeaderBarProps = {
 };
 
 /**
- * Back bar with a hairline, as in the design draft: chevron plus „Zurück“, no
+ * Back bar with a hairline, as in the design draft: chevron plus "Zurück", no
  * title row.
  *
  * Not a screen's header on its own. `ScreenHeader` decides where this is drawn —

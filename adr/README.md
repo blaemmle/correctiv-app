@@ -34,7 +34,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0027](0027-the-handbook-draws-the-apps-components.md) | The handbook draws the app's components, and the app's rendering is the one that counts | accepted; retires 0002's decision, two of its own claims retired by 0028, three open items named |
 | [0028](0028-one-shell-and-a-route-that-declares-its-context.md) | One shell, and a route that declares its context | accepted; retires two of 0027's and two code comments, answers #112, three open items named |
 | [0029](0029-the-handbook-keeps-its-own-primitives.md) | The handbook keeps its own primitives, and the app's stack stops at the specimen | accepted; retires nothing, measured and rejected |
-| [0030](0030-the-platforms-header-and-ours-on-web.md) | The platform's header on the phone, and ours on web | accepted; carries out 0026 §9 with two named exceptions, retires half a comment and one line of `ARCHITECTURE.md`, **native half unrun** |
+| [0030](0030-the-platforms-header-and-ours-on-web.md) | The platform's header on the phone, and ours on web | accepted; carries out 0026 §9 with two named exceptions, retires one claim each in 0004 and 0026 plus half a code comment, **iOS unrun** |
 
 Eight notes for readers of the older ones:
 
@@ -77,6 +77,16 @@ dark block really did hold the light values, and `palette.js` really did assign 
 grey by role. wp-design-tokens `8ed7a28` deleted the first and made the second
 unnecessary. 0010's decision — the package is the shared one, the app writes nothing —
 is untouched.
+
+[ADR 0030](0030-the-platforms-header-and-ours-on-web.md) retires one claim in 0004 and
+one in 0026. 0004's is the premise "this app sets `headerShown: false` throughout and
+builds its own header rows": thirteen routes take the platform's header now, and the
+conclusion 0004 drew from it — that the search screen is the wrong place for a native
+search bar — is one of the two exceptions 0030 names, so the argument survives its
+premise. 0026's is "every pushed route on the published web target sharing one
+browser-tab title": they shared none, every page shipped an empty `<title>`, and the
+difference decided what the fix was. Both are strikes about a claim rather than about a
+conclusion; both conclusions were right.
 
 [ADR 0028](0028-one-shell-and-a-route-that-declares-its-context.md) strikes two of
 0027's claims, both of which 0027 wrote knowing the next change would make them false:

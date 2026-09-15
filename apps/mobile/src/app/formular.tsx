@@ -91,8 +91,8 @@ export default function FormularScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      {/* The second named exception in ADR 0030. „Abbrechen“ exists so that two
-          controls called „Zurück“ cannot mean two things, and `headerBackTitle`
+      {/* The second named exception in ADR 0030. "Abbrechen" exists so that two
+          controls called "Zurück" cannot mean two things, and `headerBackTitle`
           is iOS-only — an Android stack header shows no back title at all, so the
           label would simply disappear there. */}
       <ScreenHeader title="Mitmach-Formular" drawnBar backLabel="Abbrechen" />

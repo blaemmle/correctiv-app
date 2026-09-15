@@ -33,7 +33,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { Marked } from 'marked';
 import * as td from 'typedoc';
@@ -252,12 +252,50 @@ function propOf(child) {
  * `PressableProps` would list every React Native pressable prop on a component
  * whose own contract is four, and bury them. So a part this project owns is
  * expanded and a part it does not is NAMED, in `inherits`, verbatim as written.
+ *
+ * A fifth shape arrived with `ScreenHeaderProps`: a union, one member per way the
+ * component may be called. Before it was handled, a union fell through to the
+ * bottom of this function and the page printed "Props: None." followed by "Plus
+ * everything in `…`, which this repository does not own" — about a type declared
+ * two files from the component, on the one component whose props type exists
+ * precisely so that a reader can see which props go together.
  */
-function propsOf(type, found = { props: new Map(), inherits: [] }, depth = 0) {
+export function propsOf(type, found = { props: new Map(), inherits: [] }, depth = 0) {
   if (!type || depth > 4) return found;
 
   if (type.type === 'intersection') {
     for (const part of type.types) propsOf(part, found, depth + 1);
+    return found;
+  }
+
+  if (type.type === 'union') {
+    /*
+     * A call site picks one member, so the vocabulary a caller may write is every
+     * member's. Each is walked on its own and the results merged: a name several
+     * members carry gets their types joined, and one that is absent or optional
+     * in any member is optional, because there is a way to call this component
+     * without it.
+     *
+     * `never` drops out of a joined type. It is how one member forbids a prop
+     * another one takes — `backLabel?: never` beside `backLabel?: string` — and
+     * "never | string" says less to a reader than "string" does, while the prop's
+     * own prose says which member it belongs to.
+     */
+    const members = type.types.map((part) => propsOf(part, undefined, depth + 1));
+    for (const member of members) found.inherits.push(...member.inherits);
+
+    for (const name of new Set(members.flatMap((m) => [...m.props.keys()]))) {
+      if (found.props.has(name)) continue;
+      const seen = members.map((m) => m.props.get(name));
+      const present = seen.filter(Boolean);
+      const types = [...new Set(present.map((p) => p.type))].filter((t) => t !== 'never');
+      found.props.set(name, {
+        name,
+        type: types.join(' | ') || 'never',
+        optional: seen.some((p) => !p || p.optional),
+        doc: present.find((p) => p.doc)?.doc ?? '',
+      });
+    }
     return found;
   }
 
@@ -469,4 +507,7 @@ async function main() {
   );
 }
 
-await main();
+// Only when this file is the command. Running two TypeDoc conversions is what
+// `npm run api` is for; a test that wants `propsOf` imports the module instead,
+// and `test/api.test.ts` does exactly that.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();

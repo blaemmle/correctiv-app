@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 /**
- * Every route that has a header names itself, and no two name themselves the
+ * Every route pushed over the tabs names itself, and no two name themselves the
  * same.
  *
  * Until ADR 0030 no `Stack.Screen` in this app set a title. On iOS and Android
@@ -12,15 +12,22 @@ import { join, relative, resolve } from 'node:path';
  * only by the address. Nothing could see it: the build is green, the typecheck is
  * green, and a missing title reads as the address bar doing its job.
  *
- * `title` is a required prop now, so the typechecker catches an absent one. What
- * it cannot catch is the two ways this defect actually comes back — a placeholder
- * that says nothing, and a title copied from the screen next door — and those are
- * what this file is for.
+ * `title` is a required prop now, so the typechecker catches an absent one on a
+ * screen that has a header. What it cannot catch is the three ways this defect
+ * actually comes back — a placeholder that says nothing, a title copied from the
+ * screen next door, and a route with no header at all, which inherits the title
+ * of the screen it was pushed over and therefore names the wrong screen rather
+ * than none. Those are what this file is for.
  *
  * Read as text rather than imported: importing a route pulls in the app's whole
- * component tree to answer a question about fifteen string literals.
+ * component tree to answer a question about twenty string literals.
  */
 const ROUTES = resolve(__dirname, '../src/app');
+
+/** A tab root. Its tab is the app's entry page and nothing pushes it. */
+const TAB_ROOT = /^\(tabs\)\//;
+/** Not a screen: the navigators. */
+const LAYOUT = /(^|\/)_layout(\.\w+)?\.tsx$/;
 
 function routeFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -30,29 +37,53 @@ function routeFiles(dir: string): string[] {
   });
 }
 
-/** `title="…"` on every `<ScreenHeader>` in one file, in source order. */
+/**
+ * Every name a route gives itself, in source order.
+ *
+ * Two spellings, because there are two kinds of screen. One has a `ScreenHeader`
+ * and passes it a `title`; the five that have none — the reader, the player, the
+ * onboarding, the gallery and the 404 — call `useDocumentTitle` directly, which
+ * is the same string reaching the same place by the shorter route (ADR 0030).
+ */
 function titlesIn(source: string): string[] {
-  return [...source.matchAll(/<ScreenHeader\b[^>]*?\btitle="([^"]*)"/gs)].map((m) => m[1]);
+  return [
+    ...[...source.matchAll(/<ScreenHeader\b[^>]*?\btitle="([^"]*)"/gs)].map((m) => m[1]),
+    ...[...source.matchAll(/\buseDocumentTitle\('([^']*)'\)/g)].map((m) => m[1]),
+  ];
 }
 
 describe('screen titles', () => {
-  const withHeader = routeFiles(ROUTES)
-    .map((file) => ({
-      rel: relative(ROUTES, file).replaceAll('\\', '/'),
-      source: readFileSync(file, 'utf8'),
-    }))
-    .filter(({ source }) => /<ScreenHeader\b/.test(source));
+  const routes = routeFiles(ROUTES).map((file) => ({
+    rel: relative(ROUTES, file).replaceAll('\\', '/'),
+    source: readFileSync(file, 'utf8'),
+  }));
 
-  it('finds the routes that have a header', () => {
+  const named = routes.filter(({ source }) => titlesIn(source).length > 0);
+
+  it('finds the routes that name themselves', () => {
     // A moved route tree would otherwise make this whole file pass by having
     // nothing to say.
-    expect(withHeader.length).toBeGreaterThan(10);
+    expect(named.length).toBeGreaterThan(10);
   });
 
-  it('gives every call site a title', () => {
-    const offenders = withHeader.filter(({ source }) => {
+  it('names every route that is pushed over the tabs', () => {
+    // The five tab roots keep the entry page's tab, which is the app's address
+    // and is a separate, smaller change. Everything else is pushed on top of one
+    // of them, and a pushed route with no name of its own does not leave the tab
+    // empty — it leaves it reading the screen underneath.
+    const nameless = routes.filter(
+      ({ rel, source }) =>
+        !TAB_ROOT.test(rel) && !LAYOUT.test(rel) && titlesIn(source).length === 0,
+    );
+
+    expect(nameless.map((r) => r.rel)).toEqual([]);
+  });
+
+  it('gives every ScreenHeader call site a title', () => {
+    const offenders = routes.filter(({ source }) => {
       const calls = source.match(/<ScreenHeader\b/g)?.length ?? 0;
-      return titlesIn(source).filter((t) => t.trim().length > 0).length !== calls;
+      const titles = [...source.matchAll(/<ScreenHeader\b[^>]*?\btitle="([^"]*)"/gs)];
+      return titles.filter((m) => m[1].trim().length > 0).length !== calls;
     });
 
     expect(offenders.map((r) => r.rel)).toEqual([]);
@@ -63,13 +94,13 @@ describe('screen titles', () => {
     // they are two states of one screen. A duplicate ACROSS routes is the defect
     // — it is what the web target looked like when every page had none.
     const byTitle = new Map<string, string[]>();
-    for (const { rel, source } of withHeader) {
+    for (const { rel, source } of named) {
       for (const title of new Set(titlesIn(source))) {
         byTitle.set(title, [...(byTitle.get(title) ?? []), rel]);
       }
     }
 
-    const shared = [...byTitle].filter(([, routes]) => routes.length > 1);
+    const shared = [...byTitle].filter(([, routes_]) => routes_.length > 1);
 
     expect(shared).toEqual([]);
   });
@@ -78,9 +109,15 @@ describe('screen titles', () => {
     // AGENTS.md: everything a user reads is German, and a German sentence uses
     // „…“ and never an em dash. A title is the shortest user-facing string in the
     // app and the easiest one to have typed in English by habit.
-    const offenders = [...withHeader].flatMap(({ rel, source }) =>
+    //
+    // U+201C is NOT in this class, because it is German's CLOSING quote and only
+    // English's opening one: „Abriss-Atlas“ is correct and has to pass. What is
+    // rejected is U+201D, which is English's closing quote and appears in German
+    // only by mistake, and the straight `"`, which is reachable now that a title
+    // can also be written inside `useDocumentTitle('…')`.
+    const offenders = named.flatMap(({ rel, source }) =>
       titlesIn(source)
-        .filter((title) => /[—“”"]/.test(title))
+        .filter((title) => /[—”"]/.test(title))
         .map((title) => `${rel}: ${title}`),
     );
 

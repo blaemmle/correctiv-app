@@ -505,8 +505,14 @@ Three details this decision does not settle, and the implementation ADR has to:
 Lower risk than 0013 in one respect: native stack headers are the oldest path in
 react-navigation, not an alpha API. A cost worth naming: a title has to be written for
 each of the fifteen routes that use `ScreenHeader`, because no `Stack.Screen` sets one
-today, which is also the fix for every pushed route on the published web target
-sharing one browser-tab title. And the chevron's colour comes from `useColors()`
+today, which is also the fix for ~~every pushed route on the published web target
+sharing one browser-tab title~~ — they share none: every one of them ships an empty
+`<title>`, measured and retired by
+[ADR 0030](0030-the-platforms-header-and-ours-on-web.md), which also found that
+`options.title` does not reach a browser tab at all here and that writing the titles is
+therefore only half the fix. The conclusion this paragraph draws from the wrong premise
+— that the titles have to be written — is right.
+And the chevron's colour comes from `useColors()`
 rather than from a class, because `Ionicons` takes a colour prop and not a class name,
 so this is a change that has to be seen in both appearance settings and with "System"
 against a dark device.

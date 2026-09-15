@@ -43,6 +43,10 @@ const PLATFORM_PAIRED = [
   // and every subview a bare `View` — so .web.tsx keeps the app's drawn bar
   // (ADR 0030).
   'components/ui/ScreenHeader.tsx',
+  // The browser tab's name. `.web.ts` keeps a list of the screens naming
+  // themselves and writes the top of it; the bare `.ts` is the no-op a device
+  // gets, because there is no document there (ADR 0030).
+  'lib/navigation/documentTitle.ts',
 ];
 
 function sourceFiles(dir: string): string[] {
