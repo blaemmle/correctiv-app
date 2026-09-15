@@ -31,6 +31,7 @@ import { HomeHeader } from '@/components/home/HomeHeader';
 import { ImpactFooter } from '@/components/home/ImpactFooter';
 import { MediathekReihe } from '@/components/home/MediathekReihe';
 import { SpotlightBriefing } from '@/components/home/SpotlightBriefing';
+import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
 import { EpisodeRow } from '@/components/media/EpisodeRow';
 import { LiveBanner } from '@/components/media/LiveBanner';
 import { MediaCard } from '@/components/media/MediaCard';
@@ -790,6 +791,25 @@ export const CATALOGUE: Folder[] = [
             height: 460,
             ownSurface: true,
             node: <RecoveryScreen detail={LONG_ERROR} onRetry={noop} />,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    folder: 'keyboard',
+    entries: [
+      {
+        name: 'KeyboardAvoiding',
+        // There is nothing to look at, and that is worth an entry rather than an
+        // exception: the gallery draws its specimens with no keyboard open, and
+        // everything this component does happens while one is. The note points at
+        // where the argument is written down instead.
+        note: 'A layout wrapper with no appearance of its own: it pads its bottom while a software keyboard is open, which no still picture can show. The component file carries the reasoning.',
+        specimens: [
+          {
+            label: 'around a box',
+            node: <KeyboardAvoiding>{filler('KeyboardAvoiding')}</KeyboardAvoiding>,
           },
         ],
       },

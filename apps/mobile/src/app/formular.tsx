@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
 import { FormField } from '@/components/participate/FormField';
 import { Button, Hairline, ScreenHeader, Typo } from '@/components/ui';
 import { callouts, type CalloutComponent, type Callout } from '@correctiv/app-core/data/callouts';
@@ -104,55 +105,61 @@ export default function FormularScreen() {
         ))}
       </View>
 
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="px-m pt-s pb-l"
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        <Typo variant="text-s" color="grey-500">
-          Schritt {step + 1} von {slides.length}
-        </Typo>
-        <Typo variant="headline-l" className="mt-2xs">
-          {slide.title}
-        </Typo>
+      {/* The scroller and the action footer in ONE avoiding view. The footer used
+          to be a sibling of the `ScrollView`, which left the two to react to the
+          keyboard separately — and "Weiter" is the control a person reaches for
+          while the keyboard is still up. */}
+      <KeyboardAvoiding className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-m pt-s pb-l"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <Typo variant="text-s" color="grey-500">
+            Schritt {step + 1} von {slides.length}
+          </Typo>
+          <Typo variant="headline-l" className="mt-2xs">
+            {slide.title}
+          </Typo>
 
-        {slide.components.map((component) => (
-          <FormField
-            key={component.key}
-            component={component}
-            choice={choices[component.key] ?? []}
-            text={texts[component.key] ?? ''}
-            fileAttached={files[component.key] ?? false}
-            onSelect={(value) => select(component, value)}
-            onText={(value) => setTexts((prev) => ({ ...prev, [component.key]: value }))}
-            onToggleFile={() =>
-              setFiles((prev) => ({ ...prev, [component.key]: !prev[component.key] }))
-            }
-          />
-        ))}
-      </ScrollView>
+          {slide.components.map((component) => (
+            <FormField
+              key={component.key}
+              component={component}
+              choice={choices[component.key] ?? []}
+              text={texts[component.key] ?? ''}
+              fileAttached={files[component.key] ?? false}
+              onSelect={(value) => select(component, value)}
+              onText={(value) => setTexts((prev) => ({ ...prev, [component.key]: value }))}
+              onToggleFile={() =>
+                setFiles((prev) => ({ ...prev, [component.key]: !prev[component.key] }))
+              }
+            />
+          ))}
+        </ScrollView>
 
-      <View className="bg-canvas">
-        <Hairline />
-        <View className="flex-row gap-s px-m py-s">
-          {step > 0 && (
+        <View className="bg-canvas">
+          <Hairline />
+          <View className="flex-row gap-s px-m py-s">
+            {step > 0 && (
+              <Button
+                title="Zurück"
+                variant="secondary"
+                onPress={() => setStep(step - 1)}
+                className="flex-1"
+              />
+            )}
             <Button
-              title="Zurück"
-              variant="secondary"
-              onPress={() => setStep(step - 1)}
+              title={isLast ? 'Absenden' : 'Weiter'}
+              onPress={next}
+              disabled={!stepValid}
               className="flex-1"
             />
-          )}
-          <Button
-            title={isLast ? 'Absenden' : 'Weiter'}
-            onPress={next}
-            disabled={!stepValid}
-            className="flex-1"
-          />
+          </View>
         </View>
-      </View>
+      </KeyboardAvoiding>
     </View>
   );
 }

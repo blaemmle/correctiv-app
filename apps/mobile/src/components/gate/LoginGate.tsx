@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
 import { Button, Card, Hairline, Overline, SafeAreaView, Typo } from '@/components/ui';
 import { formatDateDe } from '@correctiv/app-core/lib/format';
 import type { SignInFailure } from '@correctiv/app-core/services/auth.service';
@@ -94,32 +95,36 @@ export function LoginGate() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-canvas">
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="grow px-m pt-l pb-m"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Typo variant="headline-m" style={{ letterSpacing: 2 }}>
-          {COPY.wordmark}
-        </Typo>
-
-        {shortfall ? <NoAccess shortfall={shortfall} /> : <SignInForm />}
-
-        {/* Anchors the note to the bottom on a tall screen; on a short one it
-            simply follows the content. */}
-        <View className="grow" />
-        <Card tone="surface" className="mt-l">
-          <Overline label={COPY.simulatedHeading} />
-          <Typo variant="text-s" color="on-canvas-muted" className="mt-2xs">
-            {shortfall
-              ? COPY.noAccess.simulated(
-                  shortfall === 'lapsed' ? COPY.noAccess.resume : COPY.noAccess.upgrade,
-                )
-              : COPY.form.simulated}
+      {/* Inside the safe area, so the bottom inset is not counted twice — the
+          component says why. */}
+      <KeyboardAvoiding className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="grow px-m pt-l pb-m"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Typo variant="headline-m" style={{ letterSpacing: 2 }}>
+            {COPY.wordmark}
           </Typo>
-        </Card>
-      </ScrollView>
+
+          {shortfall ? <NoAccess shortfall={shortfall} /> : <SignInForm />}
+
+          {/* Anchors the note to the bottom on a tall screen; on a short one it
+              simply follows the content. */}
+          <View className="grow" />
+          <Card tone="surface" className="mt-l">
+            <Overline label={COPY.simulatedHeading} />
+            <Typo variant="text-s" color="on-canvas-muted" className="mt-2xs">
+              {shortfall
+                ? COPY.noAccess.simulated(
+                    shortfall === 'lapsed' ? COPY.noAccess.resume : COPY.noAccess.upgrade,
+                  )
+                : COPY.form.simulated}
+            </Typo>
+          </Card>
+        </ScrollView>
+      </KeyboardAvoiding>
     </SafeAreaView>
   );
 }
