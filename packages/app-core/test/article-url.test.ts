@@ -1,4 +1,6 @@
-import { isFactCheckUrl, isInternalArticleUrl } from '@/lib/articles/articleUrl';
+import { describe, expect, it } from 'vitest';
+
+import { isFactCheckUrl, isInternalArticleUrl } from '../src/articles/url';
 
 /**
  * The URL shapes below were read off the live feeds on 2026-08-05, not invented:

@@ -25,17 +25,27 @@ jest.mock('expo-router', () => ({
  * generated bundle, so this file supplies the items. No network here for the same
  * reason as `home-timed.test.tsx`: a thunk landing after the test body is an update
  * outside `act`, and that noise is where a real warning hides.
+ *
+ * What the mock replaces is the lazy load and the store subscription; the SELECTOR
+ * is the real one. "A fact check is not an investigation" is the core's rule now
+ * (`stores/feeds.ts`, with its own suite), and the card below still has to be seen
+ * obeying it — through the same code the app runs, not a second filter written
+ * here.
+ *
+ * ONE export is replaced and the rest of the module is real, for the reason
+ * `discover.test.tsx` spreads `requireActual` too: a factory that returns one
+ * function makes `useFeed` undefined for every other component in this render, and
+ * the failure is "useFeed is not a function" in a child nobody was testing.
  */
 let mockFeedItems: FeedItem[] = [];
-jest.mock('@/lib/feeds/useFeed', () => ({
-  useFeed: () => ({
-    data: mockFeedItems.length > 0 ? mockFeedItems : null,
-    loading: false,
-    error: null,
-    offline: false,
-    reload: jest.fn(),
-  }),
-}));
+jest.mock('@/lib/feeds/useFeed', () => {
+  const { investigations } = jest.requireActual('@correctiv/app-core/stores/feeds');
+  return {
+    ...jest.requireActual('@/lib/feeds/useFeed'),
+    useInvestigations: (limit: number) =>
+      investigations({ byKey: { recherchen: { items: mockFeedItems } } }, limit),
+  };
+});
 
 import { router } from 'expo-router';
 import { openExternal } from '@/lib/openExternal';

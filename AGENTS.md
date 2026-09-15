@@ -45,16 +45,30 @@ Reach for a **semantic** token: `canvas`, `surface`, `on-canvas`, `on-canvas-mut
 `stroke`, `accent`. Those follow the scheme.
 
 The primitives behind them — `white`, `black`, `neutral-100…700`, `red-500`,
-`yellow-400` — do **not**, and nothing stops you writing `bg-white` where you meant
-`bg-canvas`. That is a white page on a dark phone, and no check catches it. Use one
-only where a colour must not follow the scheme: text on the brand red, a label on club
-yellow, a fill on a photograph. In `apps/mobile` that case is still spelled
-`always-light` / `always-dark`, which is what all 49 existing call sites use — a line
-of `apps/mobile/src` outside a comment that writes one of the two names, which is the
-count a rename pass would have to make, and `apps/mobile/__tests__/tokens.test.ts`
-takes it so this sentence cannot drift off the code again. They are the older names
-for `white` and `neutral-700` and ADR 0022 retires them, so prefer them there until
-it does rather than mixing both spellings.
+`yellow-400` — do **not**, so `bg-white` where you meant `bg-canvas` is a white page on
+a dark phone. Use one only where a colour must not follow the scheme: text on the brand
+red, a label on club yellow, a fill on a photograph. In `apps/mobile` that case is
+still spelled `always-light` / `always-dark`, which is what all 49 existing call sites
+use — a line of `apps/mobile/src` outside a comment that writes one of the two names,
+which is the count a rename pass would have to make, and
+`apps/mobile/__tests__/tokens.test.ts` takes it so this sentence cannot drift off the
+code again. ADR 0022's 45 is the same measurement without `src/gallery/`, which is
+where the other four are and which the check below does not read; neither number
+supersedes the other. They are the older names for `white` and `neutral-700` and
+ADR 0022 retires them, so prefer them there until it does rather than mixing both
+spellings.
+
+Because that case has a spelling of its own, a primitive in `apps/mobile/src` is the
+mistake and nothing else, and `apps/mobile/__tests__/colour-tiers.test.ts` fails on
+one — on a new deprecated alias too, against a per-file ratchet asserted in both
+directions. What it reads is the token NAME, in four spellings: the class
+(`bg-white`), the key (`colors['white']`), the prop (`color="white"`) and the
+property (`colors.white`), the last three only on a line that also says colour.
+It is blind to a class built at runtime, to a token reached through a variable
+(`colors[token]`), and to any colour that is not a token at all — the hex in
+`VideoFrame.tsx` and the `#ffffff` splash in `app.json` are invisible to it, and
+`src/gallery/` is out of its scope. So it catches the mistake as the app writes it
+today, and is no reason to skip looking in both appearances.
 
 **Not in the core.** `always-light` and `always-dark` are this app's invention, so they
 are absent from `tokens/theme.css` and therefore from the `--var-color-*` block the
@@ -64,8 +78,8 @@ article reader's WebView gets. `packages/app-core` has to use the primitives —
 in the repo is that boundary, not an inconsistency to tidy.
 
 `grey-100…700`, `emphasis` and `alternative` still resolve; they are upstream's
-deprecated tier and nothing new should use one. Three app uses have no successor yet
-and are listed in the ADR.
+deprecated tier and nothing new should use one. Three of them have no successor yet,
+are listed in the ADR, and are the only three the check above will excuse.
 ([ADR 0022](adr/0022-three-tiers-of-colour-and-a-dark-scheme-that-names-roles.md))
 
 ## Decisions

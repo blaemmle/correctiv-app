@@ -5,6 +5,8 @@ import { basename, join, relative, resolve, sep } from 'node:path';
 
 import { de } from '@/i18n/catalogue/de';
 
+import { withoutComments } from './support/source';
+
 /**
  * The localisation seam, and the two things about it that can rot silently.
  *
@@ -122,20 +124,6 @@ describe('every id exists on both sides', () => {
 const GERMAN_CHARACTERS = /[äöüßÄÖÜ„“]/;
 
 /**
- * The file with its comments removed, because a comment is not a string a user
- * reads. Block comments go whole; a line comment goes when `//` opens the line,
- * which is the only shape this codebase writes and keeps `https://` inside a
- * string intact.
- *
- * The cost is real and worth naming: a comment written in German — a regression,
- * not a leftover, since 2026-08-12 — is now invisible here. It always was, since
- * every file this would have caught sat on the list below for a different reason.
- */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
-}
-
-/**
  * Bundled CONTENT rather than UI: the offline article and podcast snapshots, which
  * are CORRECTIV's own German journalism as `npm run offline-articles` fetched it.
  * Translating an article is not what this seam is for, and the reader's own copy
@@ -202,6 +190,12 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
  *
  * One occurrence each, deliberately: a string excused once and then pasted a
  * second time in the same file is a second decision and shows up here.
+ *
+ * The comments go first, because a comment is not a string a user reads
+ * (`support/source.ts`, shared with `colour-tiers.test.ts`). The cost is real and
+ * worth naming: a comment written in German — a regression, not a leftover, since
+ * 2026-08-12 — is invisible here. It always was, since every file this would have
+ * caught sat on the list below for a different reason.
  */
 function germanLines(source: string, excused: string[]): string[] {
   let remaining = withoutComments(source);
