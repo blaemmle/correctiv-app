@@ -99,9 +99,41 @@ function registerPersistence(): Promise<void> {
  */
 export const unstable_settings = { anchor: '(tabs)' };
 
+/**
+ * Rozenite's hook-shaped domains — Redux for an agent, MMKV, React Navigation —
+ * or nothing at all.
+ *
+ * **Selected at MODULE scope, and that is the whole point of the line.** The
+ * tempting shape — `__DEV__` around a `require` inside a function — does NOT keep
+ * a module out of a release bundle: Metro collects a `require` from the syntax
+ * tree however unreachable the call is, and only a module-scope guard folds one
+ * away. A package written that way survives it, because each of these three
+ * guards ITSELF at module scope and ships a no-op branch for production;
+ * `lib/devtools/AgentTools` is ours and guards nothing, so written that way it
+ * would ship, with three debugger packages behind it.
+ * [ADR 0026](../../../adr/0026-react-native-review-and-hardening.md) §1 carries
+ * the experiment, five variants built into a production export on 2026-09-10, of
+ * which only the two at module scope dropped their module. `lib/store/core.ts`
+ * selects its enhancer the same way, and says why a self-guarding package was not
+ * enough there either.
+ *
+ * The test runner is excluded for the two reasons `devToolsEnhancers()` gives:
+ * `__DEV__` is true under jest, there is no dev client for any of this to talk to,
+ * and the suites mock `expo-router` without the container ref this reaches for.
+ */
+const AgentTools: () => null =
+  // `__DEV__` is the operand that does the work. `NODE_ENV !== 'test'` is TRUE in a
+  // release build, so it must never be left standing alone here — it excludes the
+  // test runner and nothing else.
+  __DEV__ && process.env.NODE_ENV !== 'test'
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+      (require('@/lib/devtools/AgentTools') as typeof import('@/lib/devtools/AgentTools')).default
+    : () => null;
+
 export default function RootLayout() {
   return (
     <AppEnvironment>
+      <AgentTools />
       <AppShell />
     </AppEnvironment>
   );

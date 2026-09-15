@@ -75,9 +75,18 @@ out. The current debugger genuinely does stay out, but because
 `redux-devtools-expo-dev-plugin/build/index.js` carries
 `if (process.env.NODE_ENV !== "production")` at module scope, which Metro substitutes
 and then eliminates. `@rozenite/redux-devtools-plugin` 2.4.0 guards itself the same
-way, so the swap keeps the property. **The shape in `core.ts` is not what to copy for
-a local module**, which is why the agent-tools component below is selected at module
-scope.
+way, so the swap keeps the property. ~~The shape in `core.ts` is not what to copy for
+a local module, which is why the agent-tools component below is selected at module
+scope.~~ It keeps the implementation out and not the NAME, so it is not what to copy
+anywhere. Measured while implementing this (#149, 2026-09-15): with the require left
+inside `devToolsEnhancers()`, the production export carried the package's no-op module,
+and a no-op still carries its export names — `rozeniteDevToolsEnhancer`,
+`composeWithRozeniteDevTools` and `useReduxDevToolsAgentTools` all survived
+minification. That trips the very grep this section asks CI to run, so the check would
+have to be permanently red or permanently loosened. **Module scope is required for both
+requires.** A third variant is measured now beside the two above: `__DEV__ &&
+process.env.NODE_ENV !== 'test' ? require(…) : …` folds the same way and leaves the
+module out, which is the shape both call sites use.
 
 **A developer and an agent cannot look at once.** Rozenite's own documentation states
 that React Native DevTools disconnects when an agent session begins, because the
@@ -650,8 +659,14 @@ temporarily installed in a separate benchmark application ID, then removed with 
 instrumentation. Section 4 exercised the real core persistence and cache code with
 synthetic data, not screen rendering, navigation or scrolling. No physical-device,
 iOS, battery, peak-memory or power-loss-durability conclusion follows. The storage
-adapter replacement and bounded-cache policy remain implementation work.
+adapter replacement and bounded-cache policy ~~remain implementation work~~ landed in
+[#136](https://github.com/faktenforum/correctiv-app/pull/136); the retires section
+above already records section 4 as built, and this sentence contradicted it.
 
-**Rozenite was read, not run.** Section 1 still relies on the published
+~~**Rozenite was read, not run.** Section 1 still relies on the published
 `@rozenite/metro` 2.4.0 tarball, not an installed integration. Its runtime behaviour
-in this app remains unobserved.
+in this app remains unobserved.~~ Installed and run in
+[#149](https://github.com/faktenforum/correctiv-app/pull/149), which found the export
+above and two things section 1 could not have known from a tarball: the Storage domain
+is `@rozenite/mmkv-plugin`, there being no async-storage plugin, and expo-router 57
+vendors its own react-navigation, so the navigation plugin talks to a second copy.

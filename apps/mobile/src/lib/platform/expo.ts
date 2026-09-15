@@ -132,6 +132,29 @@ function store(id: string): MMKV | null {
 }
 
 /**
+ * The two stores, by id, opened if they are not already.
+ *
+ * One reader: the MMKV inspector in `lib/devtools/AgentTools.tsx`, which is
+ * development-only and is selected away at module scope in a release build, so
+ * nothing in the shipped app calls this. It is here rather than a second
+ * `createMMKV({ id })` inside that file so that the inspector watches the very
+ * handles `persist()` and the cache write through, and so that the two ids stay
+ * one fact in one place.
+ *
+ * A store that failed to open is left out rather than reported as empty: a panel
+ * listing a namespace with no keys says the app wrote nothing, which is a
+ * different fault from the one `store()` already warned about.
+ */
+export function openStores(): Record<string, MMKV> {
+  const open: Record<string, MMKV> = {};
+  for (const id of [STATE_ID, CACHE_ID]) {
+    const instance = store(id);
+    if (instance) open[id] = instance;
+  }
+  return open;
+}
+
+/**
  * A read that fails and a key that is absent are the same thing to `persist()`:
  * it starts that slice from its initial state. Logged, because a broken storage
  * backend otherwise looks exactly like state that resets on its own.

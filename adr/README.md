@@ -30,14 +30,23 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0023](0023-the-host-constructs-the-store.md) | The host constructs the store | accepted; recorded after the fact, corrects one claim in `ARCHITECTURE.md` and four comments |
 | [0024](0024-the-handbook-owns-the-root.md) | The handbook owns the site root, and the app moves under it | accepted; retires two of 0014's, its argument untouched |
 | [0025](0025-the-published-app-is-a-production-bundle.md) | The published app is a production bundle, and the workbench gives up its handle | accepted; a capability measured and rejected |
-| [0026](0026-react-native-review-and-hardening.md) | The React Native review, and which of it we are doing | accepted; nine decisions, three with a named open item, retires two storage cells of 0006, three comments and three sentences of `AGENTS.md` named for later |
+| [0026](0026-react-native-review-and-hardening.md) | The React Native review, and which of it we are doing | accepted; nine decisions, two still carrying a named open item, retires two storage cells of 0006, three comments and three sentences of `AGENTS.md`; **three of its own sentences now struck** — two open items it declared have been built, and one measured claim was wrong |
 | [0027](0027-the-handbook-draws-the-apps-components.md) | The handbook draws the app's components, and the app's rendering is the one that counts | accepted; retires 0002's decision, two of its own claims retired by 0028, three open items named |
 | [0028](0028-one-shell-and-a-route-that-declares-its-context.md) | One shell, and a route that declares its context | accepted; retires two of 0027's and two code comments, answers #112, three open items named |
 | [0029](0029-the-handbook-keeps-its-own-primitives.md) | The handbook keeps its own primitives, and the app's stack stops at the specimen | accepted; retires nothing, measured and rejected |
 | [0030](0030-the-platforms-header-and-ours-on-web.md) | The platform's header on the phone, and ours on web | accepted; carries out 0026 §9 with two named exceptions, retires one claim each in 0004 and 0026 plus half a code comment, **iOS unrun** |
 
-Eight notes for readers of the older ones:
+Nine notes for readers of the older ones:
 
+- ADR 0026's "What this has not delivered" section is two thirds out of date, and the
+  strikes there say so rather than the section being rewritten. Its storage half was
+  built in [#136](https://github.com/faktenforum/correctiv-app/pull/136) and its
+  Rozenite half in [#149](https://github.com/faktenforum/correctiv-app/pull/149).
+  Running Rozenite also falsified a measured claim in §1 — that guarding the require
+  inside a function keeps the package out of a release bundle, which keeps the
+  implementation out but not the export NAMES — so read §1's requires as module-scope
+  throughout. The reasoning around all three is intact and worth reading; only the
+  conclusions moved.
 - ADRs 0001–0004 were written in German and translated on 2026-08-11, so the repo
   reads in one language ([AGENTS.md](../AGENTS.md#language)). Only the wording
   changed; the German originals are in the git history.

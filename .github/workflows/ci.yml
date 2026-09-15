@@ -136,6 +136,18 @@ jobs:
             grep -rl "does not support this platform" dist/ | head
             exit 1
           fi
+          # Rozenite is development-only tooling and must not reach a shipped
+          # bundle. The deploy workflow asserts this too, but only on a push to
+          # main — which is after the merge. A `require` moved inside a function
+          # would go green here and break the deploy afterwards, and the whole
+          # argument for this check is that the failure is invisible otherwise:
+          # a no-op module still carries its export names (ADR 0026 §1).
+          test -d dist || { echo "::error::dist is missing — the export produced nothing"; exit 1; }
+          if grep -riq 'rozenite' dist/; then
+            echo "::error::the web bundle carries Rozenite. Check that metro.config.js still passes an explicit enabled, and that both requires are selected at MODULE scope."
+            grep -ril 'rozenite' dist/ | head
+            exit 1
+          fi
           for route in index 404 artikel entdecken mediathek mitmachen profil; do
             test -f "dist/$route.html" || { echo "::error::missing dist/$route.html"; exit 1; }
           done

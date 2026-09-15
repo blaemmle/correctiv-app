@@ -44,6 +44,7 @@
     "web": "npm run web -w @correctiv/mobile",
     "web:root": "npm run web:root -w @correctiv/mobile",
     "start": "npm start -w @correctiv/mobile",
+    "start:rozenite": "npm run start:rozenite -w @correctiv/mobile",
     "android": "npm run android -w @correctiv/mobile",
     "ios": "npm run ios -w @correctiv/mobile",
     "build:web": "npm run build:web -w @correctiv/mobile",

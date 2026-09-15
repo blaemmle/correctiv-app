@@ -126,7 +126,10 @@ export function appPlugins() {
  * without a `.default` under Rolldown — `TypeError: devToolsEnhancer is not a
  * function`, thrown while the module was evaluating, so nothing rendered at all.
  * `expo-router` also opened Metro's `/hot` and `/message` sockets against this
- * server and failed.
+ * server and failed. That debugger is `@rozenite/redux-devtools-plugin` now and
+ * the `require` sits at module scope, so the shapes have changed; what has not is
+ * why this define is here, which is that a Vite site has no dev client behind any
+ * of it.
  *
  * A production build already defined it false, so the dev server was the odd one
  * out and the two now agree. The handbook's own code asks `import.meta.env.DEV`
