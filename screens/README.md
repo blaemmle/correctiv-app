@@ -214,6 +214,43 @@ Each of these cost a wrong conclusion or a worthless committed picture.
   article is that morning's. The `android/` set is older and still shows the state
   before it.
 
+## evidence/, the pictures a pull request or an issue points at
+
+[`evidence/`](evidence/) is not a set. It holds the individual shots that a pull
+request or an issue argues from, named for the number they belong to, and it exists
+because of the same rule as the rest of this directory turned outwards: a finding that
+was only visible in a picture has to reach the person reading about it as a picture.
+Describing it in prose asks them to take the writer's word for what a screenshot
+showed.
+
+They are committed rather than attached because a body that 404s in a year is worse
+than a few hundred kilobytes. A crop is one to three KB and a full phone shot around
+thirty, so the whole `android/` set above is a megabyte.
+
+Two rules keep it from becoming a dump:
+
+- **One picture per claim, and reuse it.** The shot that made an issue is the shot the
+  pull request closing it shows, at the same address. If both show the same thing,
+  both link the same file.
+- **Crop to the claim.** A finding about one button is a crop of that button, not a
+  phone. `140-zurueck-und-weite.webp` is 2 KB and shows the whole argument: the same
+  row, the same type, one label whole and one a letter short.
+
+Naming is `<number>-<what>.webp`, where the number is the issue or pull request. A
+before-and-after pair is two files ending `-before` and `-after`, because a slider is
+not available and two images in sequence read fine.
+
+Referencing one from a body needs the raw address, since GitHub renders no repository
+path:
+
+```
+https://raw.githubusercontent.com/faktenforum/correctiv-app/<commit>/screens/evidence/<name>.webp
+```
+
+Pin the **commit**, not `main`. A branch address shows whatever that file became; the
+picture an argument rests on has to keep showing what it showed when the argument was
+made.
+
 ## Where the comparison history went
 
 Five rounds compared this app against the design draft and the NativeScript build,

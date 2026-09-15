@@ -151,3 +151,8 @@ tablet size and carries device, route, appearance and app state in its URL. Anyt
 touching colour has to be seen in **both** appearance settings *and* with the setting
 on "System" against a dark device. That last combination is the app's default and is
 the one that has already shipped broken.
+
+**A picture that decided something goes into the pull request or the issue**, not only
+into the working directory. `screens/evidence/` is where it lives and
+[screens/README.md](screens/README.md) has the addressing rule, which is not obvious:
+a body renders no repository path, so it needs a raw address pinned to a commit.
