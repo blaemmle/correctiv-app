@@ -454,8 +454,35 @@ const CSS_HEADER =
 
 const paletteLines = (palette) => Object.entries(palette).map(([k, v]) => `  --color-${k}: ${v};`);
 
+/**
+ * One theme's palette, nested so that BOTH consumers can read it.
+ *
+ * The nesting is the whole of it, and it is not cosmetic. Written at the top
+ * level — `@variant dark { ... }` with nothing around it — Tailwind 4.3.3 has no
+ * element to anchor the variant to and compiles it against `:scope`, outside
+ * `@layer theme`. A browser reads `:scope` in a stylesheet as `:root` and gets
+ * the right answer, which is why the web export has always been correct. Uniwind's
+ * native CSS processor does not: it treats a `:scope` component as an unobservable
+ * selector and discards the rule whole, so no dark variable table is ever built
+ * and `UniwindStore.vars.dark` ends up a copy of the light palette. Every
+ * `bg-*`/`text-*` class then renders its light value on a dark phone, while
+ * `useColors()` — which reads the TypeScript palette below and never touches this
+ * file — switches correctly. That split is issue #138: the same token answering
+ * two ways in the same second, depending on whether a class or TypeScript asked.
+ *
+ * `:root` inside `@layer theme` gives the variant something to attach to, and the
+ * rule survives into the native table. The browser output is unchanged in meaning.
+ */
 const variantBlock = (name, palette) =>
-  [`@variant ${name} {`, ...paletteLines(palette), '}'].join('\n');
+  [
+    '@layer theme {',
+    '  :root {',
+    `    @variant ${name} {`,
+    ...paletteLines(palette).map((line) => `    ${line}`),
+    '    }',
+    '  }',
+    '}',
+  ].join('\n');
 
 /**
  * theme.css — the Tailwind v4 theme, and the artefact the other three are
@@ -494,6 +521,10 @@ const variantBlock = (name, palette) =>
  * per-theme values: Uniwind scans for exactly these to learn which variables are
  * theme-dependent, and both blocks must declare the SAME set or it refuses. The
  * two checks in phase 4 already guarantee that.
+ *
+ * Where those two blocks SIT is load-bearing, and `variantBlock` above carries the
+ * argument: at the top level Uniwind's native processor throws them away without
+ * a word.
  *
  * The upshot is that dark mode needs no `dark:` variant on any surface:
  * `bg-grey-100` resolves a variable, redefined under both the `.dark` class and
