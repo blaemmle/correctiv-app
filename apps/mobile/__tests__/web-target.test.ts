@@ -30,6 +30,10 @@ const NATIVE_ONLY = [/\.native\.[jt]sx?$/, /\.(android|ios)\.[jt]sx?$/];
  * ReaderView.tsx is the native branch of a platform pair: Metro prefers
  * ReaderView.web.tsx on web, so the bare .tsx never reaches a browser. Verified
  * below by asserting the .web.tsx sibling exists.
+ *
+ * Membership says one thing: Metro never picks this file on web. The webview rule
+ * above reads the list as an exemption because that is what the one thing implies,
+ * so an entry is earned by having a real .web sibling and nothing else.
  */
 const PLATFORM_PAIRED = [
   'components/reader/ReaderView.tsx',
@@ -47,6 +51,17 @@ const PLATFORM_PAIRED = [
   // themselves and writes the top of it; the bare `.ts` is the no-op a device
   // gets, because there is no document there (ADR 0030).
   'lib/navigation/documentTitle.ts',
+  // The share sheet. `react-native`'s `Share` exists on react-native-web, which is
+  // why the gap here is quiet rather than loud: it forwards to `navigator.share`
+  // and REJECTS with "Share is not supported in this browser" everywhere else, so
+  // without the `.web.ts` the button on a desktop browser does nothing at all and
+  // logs a warning nobody reads. The web export is how most people see this app.
+  'lib/shareArticle.ts',
+  // The tab bar. Native tabs are the system's; the web has no system tab bar to
+  // borrow, so `.web.tsx` draws one (ADR 0013). Without the sibling the web target
+  // falls back to expo-router's native-tabs web implementation, which renders the
+  // five labels and NO icons — a bar that still works, and is not the app.
+  'app/(tabs)/_layout.tsx',
 ];
 
 function sourceFiles(dir: string): string[] {
@@ -55,6 +70,21 @@ function sourceFiles(dir: string): string[] {
     if (statSync(full).isDirectory()) return sourceFiles(full);
     return /\.[jt]sx?$/.test(entry) ? [full] : [];
   });
+}
+
+/**
+ * The `COPY = defineMessages({…})` block of a file, one string per descriptor:
+ * `key: id = English default`. Read out of the source rather than imported,
+ * because importing either tab layout pulls in expo-router and the whole screen
+ * with it, for five lines of data.
+ */
+function tabLabels(rel: string): string[] {
+  const source = readFileSync(resolve(SRC, rel), 'utf8');
+  const block = /const COPY = defineMessages\(\{([\s\S]*?)\n\}\);/.exec(source);
+  if (!block) return [];
+  return [
+    ...block[1].matchAll(/(\w+):\s*\{\s*id:\s*'([^']+)',\s*defaultMessage:\s*'([^']+)'\s*\}/g),
+  ].map((m) => `${m[1]}: ${m[2]} = ${m[3]}`);
 }
 
 describe('web target', () => {
@@ -109,6 +139,23 @@ describe('web target', () => {
     expect(offenders.map((f) => relative(SRC, f))).toEqual([]);
   });
 
+  it('reaches the system share sheet only through the platform-paired module', () => {
+    // `Share` from react-native is the native branch of `lib/shareArticle`, and the
+    // reason that module is a pair at all. A second importer gets react-native-web's
+    // `Share` instead, which rejects on every browser without the Web Share API —
+    // a dead button, a console warning, and a green build. The failure is the one
+    // the covers and the bundle above have: nothing about the page looks wrong.
+    const offenders = files.filter((file) => {
+      const rel = relative(SRC, file).replaceAll('\\', '/');
+      if (rel === 'lib/shareArticle.ts') return false;
+      return /import\s*\{[^}]*\bShare\b[^}]*\}\s*from\s*'react-native'/.test(
+        readFileSync(file, 'utf8'),
+      );
+    });
+
+    expect(offenders.map((f) => relative(SRC, f))).toEqual([]);
+  });
+
   it('gives every dynamic route a generateStaticParams', () => {
     // `expo export --platform web` turns a route without it into a single
     // `[id].html`, so on a static host every real URL under it 404s. `/projekt/klima`
@@ -126,6 +173,27 @@ describe('web target', () => {
     );
 
     expect(offenders.map((f) => relative(SRC, f))).toEqual([]);
+  });
+
+  it('declares the same five tab labels on both targets', () => {
+    // The two tab bars are drawn by different files with nothing between them to
+    // import a constant through, so the five labels are written out twice. One
+    // shape of drift is already caught elsewhere: the same id with two different
+    // English defaults changes what `npm run i18n:extract` produces, and
+    // `localisation-seam.test.ts` compares that against the committed `en.json`.
+    // Every other shape is silent. A web tab reusing an id that already exists
+    // extracts to the same catalogue, keeps its German, and ships a bar with two
+    // tabs called "Home" past a fully green `npm run check` — verified.
+    //
+    // So the agreement is checked where it is written: key, id, default and order,
+    // one row per tab, both files.
+    const native = tabLabels('app/(tabs)/_layout.tsx');
+
+    // Also the guard against a parse that matched nothing, since two empty lists
+    // are equal. A default containing an apostrophe would land here rather than
+    // pass quietly — the row is dropped and the count is wrong.
+    expect(native).toHaveLength(5);
+    expect(tabLabels('app/(tabs)/_layout.web.tsx')).toEqual(native);
   });
 
   it('never imports from expo-router/tabs', () => {
@@ -178,6 +246,20 @@ describe('web target', () => {
     for (const variant of ['ReaderView.tsx', 'ReaderView.web.tsx']) {
       const source = readFileSync(resolve(SRC, 'components/reader', variant), 'utf8');
       expect(source).toMatch(/ReaderViewProps.*from\s+'\.\/types'/s);
+    }
+  });
+
+  it('routes both video-frame implementations through one shared props type', () => {
+    // The third pair, and the one whose own comment already claimed this test
+    // existed: VideoFrame.tsx says `className` is part of the contract in
+    // videoFrameTypes.ts and that the branches cannot drift because of it. They
+    // could. `className` reaches a real DOM attribute on web and a wrapped
+    // `WebView` prop on native, so a props type copied into one file is two
+    // components with one name — and nothing about the build, the typecheck or a
+    // screenshot of either platform alone would show it.
+    for (const variant of ['VideoFrame.tsx', 'VideoFrame.web.tsx']) {
+      const source = readFileSync(resolve(SRC, 'components/media', variant), 'utf8');
+      expect(source).toMatch(/VideoFrameProps.*from\s+'\.\/videoFrameTypes'/s);
     }
   });
 
