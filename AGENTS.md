@@ -48,9 +48,15 @@ The primitives behind them — `white`, `black`, `neutral-100…700`, `red-500`,
 `yellow-400` — do **not**, so `bg-white` where you meant `bg-canvas` is a white page on
 a dark phone. Use one only where a colour must not follow the scheme: text on the brand
 red, a label on club yellow, a fill on a photograph. In `apps/mobile` that case is
-still spelled `always-light` / `always-dark`, which is what every existing call site
-uses; they are the older names for `white` and `neutral-700` and ADR 0022 retires them,
-so prefer them there until it does rather than mixing both spellings.
+still spelled `always-light` / `always-dark`, which is what all 49 existing call sites
+use — a line of `apps/mobile/src` outside a comment that writes one of the two names,
+which is the count a rename pass would have to make, and
+`apps/mobile/__tests__/tokens.test.ts` takes it so this sentence cannot drift off the
+code again. ADR 0022's 45 is the same measurement without `src/gallery/`, which is
+where the other four are and which the check below does not read; neither number
+supersedes the other. They are the older names for `white` and `neutral-700` and
+ADR 0022 retires them, so prefer them there until it does rather than mixing both
+spellings.
 
 Because that case has a spelling of its own, a primitive in `apps/mobile/src` is the
 mistake and nothing else, and `apps/mobile/__tests__/colour-tiers.test.ts` fails on

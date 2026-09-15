@@ -247,7 +247,8 @@ const STILL_ON_THE_V1_TIER: Record<string, Record<string, number>> = {
   'components/media/EpisodeRow.tsx': { 'grey-500': 1 },
   'components/media/MediaCard.tsx': { 'grey-500': 1 },
   'components/media/SeriesTile.tsx': { 'grey-500': 1 },
-  'components/participate/CalloutCard.tsx': { 'grey-250': 1, 'grey-500': 1 },
+  // `grey-250` left this file in #151, which moved the progress track to `stroke`.
+  'components/participate/CalloutCard.tsx': { 'grey-500': 1 },
   'components/participate/ClaimStatusTag.tsx': { 'grey-250': 1 },
   'components/participate/FormField.tsx': { 'grey-500': 1 },
   'components/player/MiniPlayer.tsx': { 'grey-500': 1 },
