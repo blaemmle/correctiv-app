@@ -40,7 +40,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
  * an id loses its German. One set of ids, one German word per tab, on both
  * targets.
  */
-const TABS = defineMessages({
+const COPY = defineMessages({
   home: { id: 'ui.tabHome', defaultMessage: 'Home' },
   discover: { id: 'ui.tabDiscover', defaultMessage: 'Discover' },
   mediathek: { id: 'ui.tabMediathek', defaultMessage: 'Mediathek' },
@@ -107,35 +107,35 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: intl.formatMessage(TABS.home),
+            title: intl.formatMessage(COPY.home),
             tabBarIcon: tabIcon('home', 'home-outline'),
           }}
         />
         <Tabs.Screen
           name="entdecken"
           options={{
-            title: intl.formatMessage(TABS.discover),
+            title: intl.formatMessage(COPY.discover),
             tabBarIcon: tabIcon('compass', 'compass-outline'),
           }}
         />
         <Tabs.Screen
           name="mediathek"
           options={{
-            title: intl.formatMessage(TABS.mediathek),
+            title: intl.formatMessage(COPY.mediathek),
             tabBarIcon: tabIcon('play-circle', 'play-circle-outline'),
           }}
         />
         <Tabs.Screen
           name="mitmachen"
           options={{
-            title: intl.formatMessage(TABS.participate),
+            title: intl.formatMessage(COPY.participate),
             tabBarIcon: tabIcon('people', 'people-outline'),
           }}
         />
         <Tabs.Screen
           name="profil"
           options={{
-            title: intl.formatMessage(TABS.profile),
+            title: intl.formatMessage(COPY.profile),
             tabBarIcon: tabIcon('person', 'person-outline'),
           }}
         />

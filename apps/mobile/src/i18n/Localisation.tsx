@@ -4,7 +4,7 @@
 import './polyfills';
 
 import type { ReactNode } from 'react';
-import { IntlProvider } from 'react-intl';
+import { IntlProvider, ReactIntlErrorCode, type IntlConfig } from 'react-intl';
 
 import type { Locale } from '@correctiv/app-core/stores/settings';
 import { useLocale } from '@/lib/store/core';
@@ -32,9 +32,10 @@ const CATALOGUES: Record<Locale, Record<string, string>> = { de };
  * `defaultMessage` is English so that the source reads in one language
  * ([AGENTS.md](../../../../AGENTS.md#language)); German is data, in
  * `catalogue/de/`. So a missing German entry does not blank the screen, it prints
- * the English — which is a defect that looks like a feature, and is exactly why
- * `__tests__/localisation-seam.test.ts` fails on one instead of leaving it to a
- * reader to notice.
+ * the English — which is a defect that looks like a feature, and is why
+ * `__tests__/localisation-seam.test.ts` fails on one at build time and `onError`
+ * below throws on one at run time, instead of either being left to a reader to
+ * notice.
  *
  * Mounted inside `lib/env/AppEnvironment.tsx`, below the Redux Provider because
  * it reads the locale from the store, and there rather than in `app/_layout.tsx`
@@ -42,10 +43,57 @@ const CATALOGUES: Record<Locale, Record<string, string>> = { de };
  * ([ADR 0028](../../../../adr/0028-one-shell-and-a-route-that-declares-its-context.md)).
  * A component that formats a message would throw in the handbook otherwise.
  */
+/**
+ * What a formatting failure does, and the one that matters is
+ * `MISSING_TRANSLATION`.
+ *
+ * It is the failure mode `defaultLocale="en"` buys: an id with no German entry
+ * renders the English `defaultMessage` on a German phone, which is a screen that
+ * works, reads wrong, and reports nothing. react-intl's own `onError` logs it and
+ * carries on — and a console line is precisely what happened during issue #99,
+ * unseen on the device while `__tests__/localisation-seam.test.ts` reported 295
+ * ids against 295. That test cannot see this: it compares a generated `en.json`
+ * with a hand-written catalogue, both of them files, and the miss was in the
+ * bundle the phone was actually running.
+ *
+ * **In development it throws.** That is the whole point: the screen is replaced by
+ * the recovery screen and the message is unmissable, in the dev client, in the
+ * workbench and under jest, where `__DEV__` is true as well. A missing entry is a
+ * defect somebody introduced minutes ago, and the cost of finding it then is a
+ * reload.
+ *
+ * **In production it is silent, and the English renders.** Two reasons, and
+ * neither is "it does not matter". A release build has nowhere to log TO: there is
+ * no console on a shipped phone and no error sink yet (that is #95), so a
+ * `console.error` there is not a quieter report, it is no report, and it costs the
+ * next reader of this file a minute working out who would ever read it. And
+ * against a reader, one English word is a blemish, where a throw would take a
+ * working article away and hand them the recovery screen instead. So the place
+ * this is caught is the check and the dev run, both of which happen before anyone
+ * ships — and by the time the choice is between an English word and a crash, the
+ * English word has already won.
+ *
+ * Every other `IntlError` — a malformed ICU pattern, a formatter the runtime does
+ * not have — keeps react-intl's own behaviour and is logged, because those are
+ * bugs in a message rather than a hole in the catalogue.
+ */
+const onError: NonNullable<IntlConfig['onError']> = (error) => {
+  if (error.code === ReactIntlErrorCode.MISSING_TRANSLATION) {
+    if (__DEV__) throw error;
+    return;
+  }
+  console.error(error);
+};
+
 export function Localisation({ children }: { children: ReactNode }) {
   const locale = useLocale();
   return (
-    <IntlProvider locale={locale} defaultLocale="en" messages={CATALOGUES[locale]}>
+    <IntlProvider
+      locale={locale}
+      defaultLocale="en"
+      messages={CATALOGUES[locale]}
+      onError={onError}
+    >
       {children}
     </IntlProvider>
   );

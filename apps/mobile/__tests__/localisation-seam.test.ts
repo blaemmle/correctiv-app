@@ -156,23 +156,32 @@ const CONTENT = new Set([
 const DEVELOPER_ONLY = /^gallery\//;
 
 /**
- * The two files that still write a German character in code, and why each one
- * does. Asserted EXACTLY, in both directions: a new German string in a file that
- * is not named here fails, and a file named here that no longer holds German
- * fails too. Neither is allowed to pass quietly, which is what a one-directional
- * allow-list would do.
+ * The two German strings that are still written in code, and why each one is. Each
+ * entry is the STRING, not the file it sits in: a whole-file exemption excuses
+ * everything anybody adds to that file afterwards, which is a ratchet with one
+ * entry instead of thirty-six.
  *
- * This was thirty-six entries and the word for it was "not yet". It is two, and
- * the word is now "because" — so each line carries its reason, and a third line
+ * Asserted in both directions. German outside the catalogue that is not one of
+ * these fails, and a string named here that the file no longer contains fails too
+ * — so the reason has to be deleted with the string it was about, and cannot rot
+ * into an excuse for something else.
+ *
+ * This was thirty-six files and the word for it was "not yet". It is two strings,
+ * and the word is now "because" — so each one carries its reason, and a third
  * arriving without one is the thing to argue about.
+ *
+ * What this cannot do is the other half of a file. The net is partial (see
+ * `GERMAN_CHARACTERS`), so the four German strings beside the excused one in
+ * `RecoveryScreen.tsx` carry no umlaut and are invisible here whatever this list
+ * says. They are covered by the same reason and named in that file.
  */
-const GERMAN_OUTSIDE_THE_CATALOGUE = [
+const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
   // A channel's name, `CORRECTIV im Gespräch`. Marks get no id (a mark is not
   // translated), and an id would not help: a descriptor's `defaultMessage` would
   // BE the German spelling and would sit in this file all the same. The ways out
   // are a display name in the feed configuration or a line-level exception here,
   // and neither is worth doing before a second channel needs one.
-  'app/(tabs)/mediathek.tsx',
+  'app/(tabs)/mediathek.tsx': ['CORRECTIV im Gespräch'],
   // `useIntl()` throws here. The recovery screen is rendered BY the error
   // boundary, and expo-router's `Try` wraps the root route's default export — so
   // the boundary sits above `RootLayout`, and the `IntlProvider` that
@@ -182,8 +191,27 @@ const GERMAN_OUTSIDE_THE_CATALOGUE = [
   // Moving the provider above the boundary would fix it and would also put the
   // catalogue between a crash and the screen that reports it, which is the wrong
   // trade for the one screen that has to render when everything else did not.
-  'components/recovery/RecoveryScreen.tsx',
-];
+  'components/recovery/RecoveryScreen.tsx': [
+    'Die App konnte diesen Bildschirm nicht anzeigen. Bitte versuchen Sie es noch einmal. Bleibt der Fehler, schließen Sie die App und öffnen Sie sie neu.',
+  ],
+};
+
+/**
+ * The lines of a file that still carry German, once its excused strings are taken
+ * out of it.
+ *
+ * One occurrence each, deliberately: a string excused once and then pasted a
+ * second time in the same file is a second decision and shows up here.
+ */
+function germanLines(source: string, excused: string[]): string[] {
+  let remaining = withoutComments(source);
+  for (const fragment of excused) remaining = remaining.replace(fragment, '');
+  return remaining
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => GERMAN_CHARACTERS.test(line));
+}
+
 describe('German lives in the catalogue', () => {
   /** Every file under `src/`, as a path relative to it, with `/` on every OS. */
   const sources = filesUnder(SRC)
@@ -193,21 +221,71 @@ describe('German lives in the catalogue', () => {
         !path.startsWith('i18n/catalogue/de/') && !CONTENT.has(path) && !DEVELOPER_ONLY.test(path),
     );
 
-  const german = sources
-    .filter((path) =>
-      GERMAN_CHARACTERS.test(withoutComments(readFileSync(join(SRC, path), 'utf8'))),
-    )
-    .sort();
+  const read = (path: string) => readFileSync(join(SRC, path), 'utf8');
 
   it('reads the app it is checking (guards against a silently empty walk)', () => {
     expect(sources.length).toBeGreaterThan(50);
   });
 
-  it('holds German in the catalogue, and in two files that say why not', () => {
-    // Exact, in both directions. A new German string outside the catalogue adds a
-    // line above; a file that stops holding one removes it. Neither is allowed to
-    // pass silently, which is what a one-directional allow-list would do.
-    expect(german).toEqual([...GERMAN_OUTSIDE_THE_CATALOGUE].sort());
+  it('holds German in the catalogue, and in two strings that say why not', () => {
+    const german = sources
+      .flatMap((path) =>
+        germanLines(read(path), GERMAN_OUTSIDE_THE_CATALOGUE[path] ?? []).map(
+          (line) => `${path}: ${line}`,
+        ),
+      )
+      .sort();
+
+    expect(german).toEqual([]);
+  });
+
+  it('excuses no German that has since been lifted', () => {
+    // The other direction, and the one a one-sided allow-list cannot do: a string
+    // that has moved into the catalogue leaves its reason behind, where the next
+    // reader takes it for a rule about the file.
+    const stale = Object.entries(GERMAN_OUTSIDE_THE_CATALOGUE).flatMap(([path, fragments]) =>
+      fragments
+        .filter((fragment) => !sources.includes(path) || !read(path).includes(fragment))
+        .map((fragment) => `${path}: ${fragment}`),
+    );
+
+    expect(stale).toEqual([]);
+  });
+});
+
+/**
+ * The name a block of descriptors goes under.
+ *
+ * Three authors migrated this app in one pass and left eight names for one thing:
+ * `COPY`, `TABS`, `HEADER_COPY`, `MESSAGES`, `NO_ACCESS`, `STAGE`, `SOURCE_LABELS`
+ * and `TIER_LABELS`. None of them is wrong on its own, which is the problem — the
+ * cost is paid by the next person, who has to open the file to find out what the
+ * words in it are called, and by the one after that, who invents a ninth.
+ *
+ * Two kinds, so two names, and [AGENTS.md](../../../AGENTS.md#language) says which:
+ *
+ *  - `COPY`, the words a file writes in its own voice, one per file. A block
+ *    another file IMPORTS takes the name of what it belongs to instead
+ *    (`HEADER_COPY`, `SALON5_RADIO_COPY`), because the importer has a `COPY` of
+ *    its own and two of them cannot both be called that.
+ *  - `<DOMAIN>_LABELS`, a `Record<DomainValue, MessageDescriptor>` the call site
+ *    indexes with a value rather than reads top to bottom: `TIER_LABELS`,
+ *    `SOURCE_LABELS`, `STAGE_LABELS`, `FAILURE_LABELS`. Not a block of copy, and
+ *    naming it `COPY` would hide the one thing worth knowing about it.
+ */
+const CONTAINER = /^(COPY|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*_(?:LABELS|COPY))$/;
+
+describe('descriptors live under one name', () => {
+  it('names every `defineMessages` block COPY or <DOMAIN>_LABELS', () => {
+    const offenders = filesUnder(SRC)
+      .filter((full) => /\.tsx?$/.test(full))
+      .flatMap((full) =>
+        [...readFileSync(full, 'utf8').matchAll(/\bconst (\w+)(?::[^=]+)? = defineMessages\(/g)]
+          .filter(([, name]) => !CONTAINER.test(name))
+          .map(([, name]) => `${relative(SRC, full).split(sep).join('/')}: ${name}`),
+      );
+
+    expect(offenders).toEqual([]);
   });
 });
 

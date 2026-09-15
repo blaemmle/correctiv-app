@@ -24,8 +24,8 @@ import { useTimedModule } from '@/lib/useTimedModule';
  * `src/i18n/catalogue/de/home.ts` (ADR 0026 §6). Everything else on this screen
  * belongs to a card, and each card carries its own.
  *
- * The arrows stay out of the messages and beside them at the call site: they are
- * decoration on a link, not a word anyone translates.
+ * The arrows stay out of the messages, and out of the call site too: `SectionHeader`
+ * draws its own, because decoration on a link belongs to whoever draws the link.
  */
 const COPY = defineMessages({
   offlineArticles: {
@@ -125,7 +125,7 @@ export default function HomeScreen() {
           <SectionHeader
             title={intl.formatMessage(COPY.factChecks)}
             className="mb-s"
-            actionLabel={`${intl.formatMessage(COPY.viewAll)} →`}
+            actionLabel={intl.formatMessage(COPY.viewAll)}
             onAction={() => router.push('/(tabs)/entdecken')}
           />
           <FaktencheckRail items={faktenchecks.data!.slice(0, 8)} onPress={openArticle} />
@@ -142,7 +142,7 @@ export default function HomeScreen() {
         <SectionHeader
           title={MEDIATHEK}
           className="mb-s"
-          actionLabel={`${intl.formatMessage(COPY.viewEverything)} →`}
+          actionLabel={intl.formatMessage(COPY.viewEverything)}
           onAction={() => router.push('/(tabs)/mediathek')}
         />
         <MediathekReihe onOpenMediathek={() => router.push('/(tabs)/mediathek')} />

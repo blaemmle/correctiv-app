@@ -8,12 +8,21 @@ import { calloutKicker, calloutStyle } from '@/lib/participate/calloutStyle';
 import { colors } from '@/lib/theme';
 
 /**
- * The one word this module adds to what `lib/participate/calloutStyle.ts` already
- * answers: on Home the kicker names the module before it names the callout, so
- * the two halves are one message rather than two glued together at the call site.
+ * The two words this module adds to what `lib/participate/calloutStyle.ts` already
+ * answers, and both are two halves that a call site could have glued together
+ * instead — which is why they are messages.
+ *
+ * `kicker`: on Home the kicker names the module before it names the callout.
+ *
+ * `ctaAccessibility`: the card's button says "Mitmachen" and the card is about one
+ * investigation, so the button's accessibility name has to carry the headline as
+ * well. Which separator does that, and in which order, is a question about the
+ * language and not about the card — the same shape `gespeichert.tsx`,
+ * `MediaCard` and `EpisodeRow` already put in a message for the same reason.
  */
 const COPY = defineMessages({
   kicker: { id: 'callout.teaser.kicker', defaultMessage: 'Take part · {kicker}' },
+  ctaAccessibility: { id: 'callout.teaser.ctaAccessibility', defaultMessage: '{cta}: {title}' },
 });
 
 /**
@@ -69,7 +78,10 @@ export function CalloutTeaser({
         title={cta}
         className="mt-s"
         onPress={() => onPress(callout)}
-        accessibilityLabel={`${cta}: ${callout.title}`}
+        accessibilityLabel={intl.formatMessage(COPY.ctaAccessibility, {
+          cta,
+          title: callout.title,
+        })}
       />
     </Pressable>
   );

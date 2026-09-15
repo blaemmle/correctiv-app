@@ -42,7 +42,7 @@ import { useColors } from '@/lib/theme';
  * an id loses its German. One set of ids, one German word per tab, on both
  * targets.
  */
-const TABS = defineMessages({
+const COPY = defineMessages({
   home: { id: 'ui.tabHome', defaultMessage: 'Home' },
   discover: { id: 'ui.tabDiscover', defaultMessage: 'Discover' },
   mediathek: { id: 'ui.tabMediathek', defaultMessage: 'Mediathek' },
@@ -109,7 +109,7 @@ export default function TabsLayout() {
       labelVisibilityMode="labeled"
     >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.home)}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(COPY.home)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
           md={{ default: 'home', selected: 'home' }}
@@ -117,7 +117,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="entdecken">
-        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.discover)}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(COPY.discover)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'safari', selected: 'safari.fill' }}
           md={{ default: 'explore', selected: 'explore' }}
@@ -125,7 +125,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mediathek">
-        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.mediathek)}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(COPY.mediathek)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'play.circle', selected: 'play.circle.fill' }}
           md={{ default: 'play_circle', selected: 'play_circle' }}
@@ -133,7 +133,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mitmachen">
-        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.participate)}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(COPY.participate)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.2', selected: 'person.2.fill' }}
           md={{ default: 'groups', selected: 'groups' }}
@@ -141,7 +141,7 @@ export default function TabsLayout() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profil">
-        <NativeTabs.Trigger.Label>{intl.formatMessage(TABS.profile)}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{intl.formatMessage(COPY.profile)}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
           md={{ default: 'account_circle', selected: 'account_circle' }}

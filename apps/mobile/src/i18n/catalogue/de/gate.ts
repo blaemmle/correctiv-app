@@ -37,5 +37,5 @@ export const gate: Record<string, string> = {
   'gate.noAccess.recheck': 'Erneut prüfen',
   'gate.noAccess.switchAccount': 'Mit einem anderen Konto anmelden',
   'gate.noAccess.simulated':
-    'Es wird nichts übertragen. Nach „{button}“ findet „Erneut prüfen“ eine Mitgliedschaft mit Beitrag.',
+    'Es wird nichts übertragen. Nach „{button}“ findet „{recheck}“ eine Mitgliedschaft mit Beitrag.',
 };

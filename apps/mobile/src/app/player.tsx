@@ -24,7 +24,7 @@ const SPEEDS = [1, 1.2, 1.5];
  * fails on one id carrying two different defaults.
  */
 const COPY = defineMessages({
-  documentTitle: { id: 'player.documentTitle', defaultMessage: 'Player' },
+  screenTitle: { id: 'player.documentTitle', defaultMessage: 'Player' },
   close: { id: 'player.close', defaultMessage: 'Close the player' },
   nothingPlaying: { id: 'player.nothingPlaying', defaultMessage: 'Nothing is playing.' },
   liveSubtitle: { id: 'player.liveSubtitle', defaultMessage: '● LIVE · 24/7 from Bottrop' },
@@ -45,7 +45,7 @@ export default function PlayerScreen() {
   const intl = useIntl();
   // A modal over whatever it was opened from, and therefore a route with a tab of
   // its own on the web target. It has no `ScreenHeader` to name it (ADR 0030).
-  useDocumentTitle(intl.formatMessage(COPY.documentTitle));
+  useDocumentTitle(intl.formatMessage(COPY.screenTitle));
   const colors = useColors();
   const { track, status, positionSec, durationSec, speed, errorMessage } = useAudio();
   const live = track?.kind === 'radio';

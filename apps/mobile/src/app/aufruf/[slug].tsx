@@ -32,11 +32,10 @@ const COPY = defineMessages({
     defaultMessage: 'This callout does not exist',
   },
   unknownSlug: { id: 'callout.detail.unknownSlug', defaultMessage: 'Unknown identifier "{slug}".' },
-  noSlug: { id: 'callout.detail.noSlug', defaultMessage: 'No identifier was given.' },
+  noSlug: { id: 'callout.detail.noSlug', defaultMessage: 'No identifier was passed.' },
   responses: {
     id: 'callout.detail.responses',
-    defaultMessage:
-      '{count, plural, one {One contribution} other {{count, number} contributions}} so far',
+    defaultMessage: '{count, plural, one {One contribution} other {# contributions}} so far',
   },
   whoAsks: { id: 'callout.detail.whoAsks', defaultMessage: 'Who is asking?' },
   dataUse: { id: 'callout.detail.dataUse', defaultMessage: 'What happens to your data?' },

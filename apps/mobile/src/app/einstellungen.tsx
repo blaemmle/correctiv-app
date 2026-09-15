@@ -16,7 +16,7 @@ import type { EntitlementSource } from '@correctiv/app-core/types/models';
  * `components/gate/LoginGate.tsx` set out.
  */
 const COPY = defineMessages({
-  title: { id: 'settings.title', defaultMessage: 'Settings' },
+  screenTitle: { id: 'settings.title', defaultMessage: 'Settings' },
   accountSection: { id: 'settings.account.section', defaultMessage: 'Account' },
   signedOut: { id: 'settings.account.signedOut', defaultMessage: 'Not signed in' },
   signOut: { id: 'settings.account.signOut', defaultMessage: 'Sign out' },
@@ -89,7 +89,7 @@ const LINKS: Array<{ title: MessageDescriptor; url: string }> = [
  * Typed as the record rather than left to inference, so a fourth
  * `EntitlementSource` fails to compile here instead of leaving this line blank.
  */
-const ACCESS_SOURCE: Record<EntitlementSource, MessageDescriptor> = defineMessages({
+const SOURCE_LABELS: Record<EntitlementSource, MessageDescriptor> = defineMessages({
   paid: { id: 'settings.access.paid', defaultMessage: 'Membership with a contribution' },
   'local-bundle': { id: 'settings.access.localBundle', defaultMessage: 'Local bundle' },
   trial: { id: 'settings.access.trial', defaultMessage: 'Trial' },
@@ -104,18 +104,18 @@ export default function EinstellungenScreen() {
 
   const followSystem = settings.theme === 'system';
   const accessLine = intl.formatMessage(
-    session.entitlement?.source ? ACCESS_SOURCE[session.entitlement.source] : COPY.accessNone,
+    session.entitlement?.source ? SOURCE_LABELS[session.entitlement.source] : COPY.accessNone,
   );
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title={intl.formatMessage(COPY.title)} />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-m pt-m pb-2xl"
         showsVerticalScrollIndicator={false}
       >
-        <Typo variant="headline-l">{intl.formatMessage(COPY.title)}</Typo>
+        <Typo variant="headline-l">{intl.formatMessage(COPY.screenTitle)}</Typo>
 
         {/* The way back out of the door. Signing out closes the app in the same
             tick, because the root layout renders the gate in place of the routes. */}

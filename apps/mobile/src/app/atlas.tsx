@@ -24,7 +24,7 @@ const COPY = defineMessages({
   stats: {
     id: 'atlas.stats',
     defaultMessage:
-      '{reports, plural, one {One reported demolition} other {{reports, number} reported demolitions}} in {cities, plural, one {one city} other {{cities, number} cities}} (DE/CH)',
+      '{reports, plural, one {One reported demolition} other {# reported demolitions}} in {cities, plural, one {one city} other {# cities}} (DE/CH)',
   },
   recentHeading: { id: 'atlas.recentHeading', defaultMessage: 'Most recently reported' },
   report: { id: 'atlas.report', defaultMessage: 'Report a demolition on abriss-atlas.de' },

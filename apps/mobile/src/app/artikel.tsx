@@ -29,7 +29,7 @@ import { sizes, useColors, useIsDark } from '@/lib/theme';
  * draws its own chevron because the chrome floats over the hero image.
  */
 const COPY = defineMessages({
-  documentTitle: { id: 'article.documentTitle', defaultMessage: 'Article' },
+  screenTitle: { id: 'article.documentTitle', defaultMessage: 'Article' },
   loadFailed: { id: 'article.loadFailed', defaultMessage: 'The article could not be loaded' },
   retryHint: { id: 'article.retryHint', defaultMessage: 'A second attempt may help.' },
   retry: { id: 'article.retry', defaultMessage: 'Try again' },
@@ -64,7 +64,7 @@ export default function ArtikelScreen() {
   // browser tab is named here. A fixed word and not the headline: the tab would
   // otherwise read the screen it was opened from, which is the defect, and the
   // article's own title is a separate change (ADR 0030).
-  useDocumentTitle(intl.formatMessage(COPY.documentTitle));
+  useDocumentTitle(intl.formatMessage(COPY.screenTitle));
   const colors = useColors();
   const actions = useCoreActions();
   const { url, title, badge } = useLocalSearchParams<{

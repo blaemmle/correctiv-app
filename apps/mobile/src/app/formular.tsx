@@ -38,7 +38,7 @@ const COPY = defineMessages({
   contributors: {
     id: 'form.contributors',
     defaultMessage:
-      '{count, plural, one {One person has} other {{count, number} people have}} contributed so far.',
+      '{count, plural, one {One person has} other {# people have}} contributed so far.',
   },
   moreCallouts: { id: 'form.moreCallouts', defaultMessage: 'See more ways to take part' },
 });

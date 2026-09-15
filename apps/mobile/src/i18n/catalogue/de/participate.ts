@@ -6,11 +6,11 @@ export const participate: Record<string, string> = {
   'participate.activeCallouts': 'Aktive Aufrufe',
   'participate.forumHeading': 'Behauptungen gemeinsam prüfen',
   'participate.forumLead':
-    'Die Community prüft Behauptungen aus dem Netz, angeleitet von der Redaktion. Gerade {count, plural, one {ist eine Behauptung} other {sind {count, number} Behauptungen}} in Arbeit.',
+    'Die Community prüft Behauptungen aus dem Netz, angeleitet von der Redaktion. Gerade {count, plural, one {ist eine Behauptung} other {sind # Behauptungen}} in Arbeit.',
   'participate.forumAction': 'Behauptungen ansehen',
   'participate.atlasHeading': 'Abrisse dokumentieren',
   'participate.atlasLead':
-    'Welche Gebäude verschwinden? {reports, plural, one {Eine Meldung} other {{reports, number} Meldungen}} aus {cities, plural, one {einer Stadt} other {{cities, number} Städten}} in Deutschland und der Schweiz.',
+    'Welche Gebäude verschwinden? {reports, plural, one {Eine Meldung} other {# Meldungen}} aus {cities, plural, one {einer Stadt} other {# Städten}} in Deutschland und der Schweiz.',
   'participate.atlasAction': 'Atlas ansehen',
   'participate.tipLabel': 'Tipp geben',
   'participate.tipHeading': 'Faktencheck-Tipp per WhatsApp',

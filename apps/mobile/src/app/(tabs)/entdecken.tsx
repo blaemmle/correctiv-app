@@ -16,7 +16,7 @@ import { openExternal } from '@/lib/openExternal';
  * catalogue from `@correctiv/app-core/data/projects`, which is content.
  */
 const COPY = defineMessages({
-  title: { id: 'discover.title', defaultMessage: 'Discover' },
+  screenTitle: { id: 'discover.title', defaultMessage: 'Discover' },
 });
 
 /**
@@ -31,7 +31,7 @@ export default function EntdeckenScreen() {
   return (
     <Screen>
       <Typo variant="headline-xl" className="mb-s">
-        {intl.formatMessage(COPY.title)}
+        {intl.formatMessage(COPY.screenTitle)}
       </Typo>
 
       <SearchEntry onPress={() => router.push('/suche')} />

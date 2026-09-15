@@ -28,7 +28,7 @@ import { useCoreActions, useSavedArticles, useSession, useSettings } from '@/lib
  * Two of these are the app's first ICU selections, and both were ternaries.
  */
 const COPY = defineMessages({
-  title: { id: 'profile.title', defaultMessage: 'Profile' },
+  screenTitle: { id: 'profile.title', defaultMessage: 'Profile' },
 
   membershipSection: { id: 'profile.membership.section', defaultMessage: 'Your membership' },
   tierRow: { id: 'profile.membership.tier', defaultMessage: 'Tier' },
@@ -203,7 +203,7 @@ export default function ProfilScreen() {
 
   return (
     <Screen>
-      <Typo variant="headline-xl">{intl.formatMessage(COPY.title)}</Typo>
+      <Typo variant="headline-xl">{intl.formatMessage(COPY.screenTitle)}</Typo>
 
       <ClubCard
         name={session.account?.name ?? ''}

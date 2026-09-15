@@ -107,15 +107,20 @@ now is a regression, not a leftover.
 **The source a user reads is English too, and the German is data.** Every
 user-facing string is a message descriptor — `defineMessages({ id, defaultMessage })`
 in one obvious place per screen, not interpolated through the markup — and its
-`defaultMessage` is English. The German, formal *Sie*, lives in
+`defaultMessage` is English. That place is called `COPY`, one per file; a block
+another file imports takes the name of what it belongs to (`HEADER_COPY`), because
+the importer has a `COPY` of its own, and a `Record` of labels for a domain's values
+is named for the domain (`TIER_LABELS`) rather than folded into the copy. The German,
+formal *Sie*, lives in
 `apps/mobile/src/i18n/catalogue/de/`, one file per id namespace, and that directory
 is the only place under `apps/mobile/src` where a German character may be written.
 German is the only language that ships: the locale is a fixed value in the core's
 settings slice, and a switch for it belongs in the workbench rather than in the app.
-`apps/mobile/__tests__/localisation-seam.test.ts` is what enforces this. Two files
-are exempt and it names both with the reason: a channel's own name, and the recovery
-screen, which renders from inside the subtree the provider is in. A third one
-arriving without a reason is the thing to argue about.
+`apps/mobile/__tests__/localisation-seam.test.ts` is what enforces this. Two German
+strings are exempt and it names each one, not the file it sits in, with the reason: a
+channel's own name, and the recovery screen's lead, which cannot be a message because
+that screen is rendered BY the error boundary, so the provider is inside the subtree
+being caught. A third exemption arriving without a reason is the thing to argue about.
 ([ADR 0026](adr/0026-react-native-review-and-hardening.md) §6)
 
 **A pull request is the exception, and German is the rule there.** Its title and body

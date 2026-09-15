@@ -18,7 +18,7 @@ import { sizes, useColors } from '@/lib/theme';
  * the German pattern on purpose.
  */
 const COPY = defineMessages({
-  title: { id: 'profile.saved.title', defaultMessage: 'Saved articles' },
+  screenTitle: { id: 'profile.saved.title', defaultMessage: 'Saved articles' },
   empty: {
     id: 'profile.saved.empty',
     defaultMessage: 'Nothing saved yet. Tap the bookmark in an article to keep it here.',
@@ -63,7 +63,7 @@ export default function GespeichertScreen() {
 
   return (
     <View className="flex-1 bg-canvas">
-      <ScreenHeader title={intl.formatMessage(COPY.title)} />
+      <ScreenHeader title={intl.formatMessage(COPY.screenTitle)} />
       <FlatList
         className="flex-1"
         data={items}
@@ -75,7 +75,7 @@ export default function GespeichertScreen() {
         // respectively, which is why it is still two different sizes.
         ListHeaderComponent={
           <Typo variant="headline-l" className={items.length > 0 ? 'mb-s' : ''}>
-            {intl.formatMessage(COPY.title)}
+            {intl.formatMessage(COPY.screenTitle)}
           </Typo>
         }
         ListEmptyComponent={Empty}

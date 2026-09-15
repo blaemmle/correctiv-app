@@ -42,7 +42,7 @@
     "defaultMessage": "Report a demolition on abriss-atlas.de"
   },
   "atlas.stats": {
-    "defaultMessage": "{reports, plural, one {One reported demolition} other {{reports, number} reported demolitions}} in {cities, plural, one {one city} other {{cities, number} cities}} (DE/CH)"
+    "defaultMessage": "{reports, plural, one {One reported demolition} other {# reported demolitions}} in {cities, plural, one {one city} other {# cities}} (DE/CH)"
   },
   "backstage.allFromBackstage": {
     "defaultMessage": "Everything from Backstage"
@@ -87,10 +87,10 @@
     "defaultMessage": "Send another tip"
   },
   "callout.crowdnewsroom.count": {
-    "defaultMessage": "{count, plural, one {One contribution} other {{count, number} contributions}}"
+    "defaultMessage": "{count, plural, one {One contribution} other {# contributions}}"
   },
   "callout.crowdnewsroom.countSoFar": {
-    "defaultMessage": "{count, plural, one {One contribution} other {{count, number} contributions}} so far"
+    "defaultMessage": "{count, plural, one {One contribution} other {# contributions}} so far"
   },
   "callout.crowdnewsroom.cta": {
     "defaultMessage": "Take part"
@@ -105,10 +105,10 @@
     "defaultMessage": "What happens to your data?"
   },
   "callout.detail.noSlug": {
-    "defaultMessage": "No identifier was given."
+    "defaultMessage": "No identifier was passed."
   },
   "callout.detail.responses": {
-    "defaultMessage": "{count, plural, one {One contribution} other {{count, number} contributions}} so far"
+    "defaultMessage": "{count, plural, one {One contribution} other {# contributions}} so far"
   },
   "callout.detail.unknownHeadline": {
     "defaultMessage": "This callout does not exist"
@@ -123,16 +123,19 @@
     "defaultMessage": "Callout"
   },
   "callout.survey.count": {
-    "defaultMessage": "{count, plural, one {One response} other {{count, number} responses}}"
+    "defaultMessage": "{count, plural, one {One response} other {# responses}}"
   },
   "callout.survey.countSoFar": {
-    "defaultMessage": "{count, plural, one {One response} other {{count, number} responses}} so far"
+    "defaultMessage": "{count, plural, one {One response} other {# responses}} so far"
   },
   "callout.survey.cta": {
     "defaultMessage": "Take part"
   },
   "callout.survey.kicker": {
     "defaultMessage": "Survey"
+  },
+  "callout.teaser.ctaAccessibility": {
+    "defaultMessage": "{cta}: {title}"
   },
   "callout.teaser.kicker": {
     "defaultMessage": "Take part · {kicker}"
@@ -141,7 +144,7 @@
     "defaultMessage": "Reliability: {level}"
   },
   "claim.noId": {
-    "defaultMessage": "No identifier was given."
+    "defaultMessage": "No identifier was passed."
   },
   "claim.noSources": {
     "defaultMessage": "No sources yet. The community is gathering them."
@@ -213,7 +216,7 @@
     "defaultMessage": "Cancel"
   },
   "form.contributors": {
-    "defaultMessage": "{count, plural, one {One person has} other {{count, number} people have}} contributed so far."
+    "defaultMessage": "{count, plural, one {One person has} other {# people have}} contributed so far."
   },
   "form.fileAttached": {
     "defaultMessage": "{file} attached ✓"
@@ -309,7 +312,7 @@
     "defaultMessage": "Signed in as {email}"
   },
   "gate.noAccess.simulated": {
-    "defaultMessage": "Nothing is transmitted. After \"{button}\", \"Check again\" finds a membership with a contribution."
+    "defaultMessage": "Nothing is transmitted. After \"{button}\", \"{recheck}\" finds a membership with a contribution."
   },
   "gate.noAccess.switchAccount": {
     "defaultMessage": "Sign in with a different account"
@@ -495,7 +498,7 @@
     "defaultMessage": "Document demolitions"
   },
   "participate.atlasLead": {
-    "defaultMessage": "Which buildings are disappearing? {reports, plural, one {One report} other {{reports, number} reports}} from {cities, plural, one {one city} other {{cities, number} cities}} in Germany and Switzerland."
+    "defaultMessage": "Which buildings are disappearing? {reports, plural, one {One report} other {# reports}} from {cities, plural, one {one city} other {# cities}} in Germany and Switzerland."
   },
   "participate.communityNote": {
     "defaultMessage": "In the community area you discuss investigations with other members, and soon in the app as well."
@@ -507,7 +510,7 @@
     "defaultMessage": "Checking claims together"
   },
   "participate.forumLead": {
-    "defaultMessage": "The community checks claims from around the web, guided by the newsroom. Right now {count, plural, one {one claim is} other {{count, number} claims are}} being worked on."
+    "defaultMessage": "The community checks claims from around the web, guided by the newsroom. Right now {count, plural, one {one claim is} other {# claims are}} being worked on."
   },
   "participate.lead": {
     "defaultMessage": "Investigations are made with you. Your tips, your observations and your checks are what make them possible."

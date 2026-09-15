@@ -13,7 +13,7 @@ export const form: Record<string, string> = {
   'form.thanksLead':
     'Ihr Beitrag fließt in die Recherche ein. Die Redaktion prüft alle Hinweise. Bei Rückfragen melden wir uns.',
   'form.contributors':
-    '{count, plural, one {Ein Mensch hat} other {{count, number} Menschen haben}} bereits beigetragen.',
+    '{count, plural, one {Ein Mensch hat} other {# Menschen haben}} bereits beigetragen.',
   'form.moreCallouts': 'Weitere Mitmach-Aktionen ansehen',
   'form.answerPlaceholder': 'Ihre Antwort …',
   'form.fileAttached': '{file} angehängt ✓',

@@ -50,6 +50,55 @@ const COPY = defineMessages({
       'Nothing is transmitted. Every address signs in: with "frei" as the free tier without app access, with "test" during the trial, with "lokal" through the local bundle. A password shorter than four characters fails.',
   },
   simulatedHeading: { id: 'gate.simulatedHeading', defaultMessage: 'Simulated' },
+
+  /**
+   * The fourth state's own words, under the `gate.noAccess.*` ids. They were a
+   * second `defineMessages` in this file; a screen's copy goes in one obvious
+   * place ([AGENTS.md](../../../../../AGENTS.md#language)), and the prefix on the
+   * key is the id's own spelling, so the two cannot drift.
+   */
+  noAccessSignedInAs: { id: 'gate.noAccess.signedInAs', defaultMessage: 'Signed in as {email}' },
+  noAccessHeadline: { id: 'gate.noAccess.headline', defaultMessage: 'Good to have you with us.' },
+  noAccessLead: {
+    id: 'gate.noAccess.lead',
+    defaultMessage: 'The app is part of membership with a contribution.',
+  },
+  noAccessTier: {
+    id: 'gate.noAccess.tier',
+    defaultMessage:
+      'Your account is on the free tier. It keeps everything on correctiv.org open to you. The app comes with the contribution: it funds the investigations, and in return there is audio, video and formats that exist only here.',
+  },
+  noAccessLapsed: {
+    id: 'gate.noAccess.lapsed',
+    defaultMessage:
+      'Your trial ended on {date}. Thank you for trying the app. With a contribution it carries on here, with everything you already know.',
+  },
+  noAccessTierRow: { id: 'gate.noAccess.tierRow', defaultMessage: 'Your tier' },
+  noAccessTierTrial: { id: 'gate.noAccess.tierTrial', defaultMessage: 'Trial' },
+  noAccessAccessRow: { id: 'gate.noAccess.accessRow', defaultMessage: 'App access' },
+  noAccessAccessNone: { id: 'gate.noAccess.accessNone', defaultMessage: 'Not included' },
+  noAccessAccessLapsed: {
+    id: 'gate.noAccess.accessLapsed',
+    defaultMessage: 'Trial, ended on {date}',
+  },
+  noAccessUpgrade: { id: 'gate.noAccess.upgrade', defaultMessage: 'Extend membership' },
+  noAccessResume: { id: 'gate.noAccess.resume', defaultMessage: 'Set a contribution' },
+  noAccessRecheck: { id: 'gate.noAccess.recheck', defaultMessage: 'Check again' },
+  noAccessSwitchAccount: {
+    id: 'gate.noAccess.switchAccount',
+    defaultMessage: 'Sign in with a different account',
+  },
+  /**
+   * Both button labels are interpolated, and the second one is the point. It used
+   * to be typed into the sentence, so renaming `recheck` left the note quoting a
+   * button that no longer exists — and nothing would have said so, because a
+   * sentence naming the wrong control still reads perfectly.
+   */
+  noAccessSimulated: {
+    id: 'gate.noAccess.simulated',
+    defaultMessage:
+      'Nothing is transmitted. After "{button}", "{recheck}" finds a membership with a contribution.',
+  },
 });
 
 /**
@@ -59,7 +108,7 @@ const COPY = defineMessages({
  * `SignInFailure` fails to compile here instead of rendering an empty string on
  * the one screen nobody can get past.
  */
-const FAILURE: Record<SignInFailure, MessageDescriptor> = defineMessages({
+const FAILURE_LABELS: Record<SignInFailure, MessageDescriptor> = defineMessages({
   'wrong-credentials': {
     id: 'gate.failure.wrongCredentials',
     defaultMessage: 'That email address and password do not match. Please check both.',
@@ -68,42 +117,6 @@ const FAILURE: Record<SignInFailure, MessageDescriptor> = defineMessages({
     id: 'gate.failure.unreachable',
     defaultMessage:
       'correctiv.org cannot be reached at the moment. Please try again in a few minutes.',
-  },
-});
-
-const NO_ACCESS = defineMessages({
-  signedInAs: { id: 'gate.noAccess.signedInAs', defaultMessage: 'Signed in as {email}' },
-  headline: { id: 'gate.noAccess.headline', defaultMessage: 'Good to have you with us.' },
-  lead: {
-    id: 'gate.noAccess.lead',
-    defaultMessage: 'The app is part of membership with a contribution.',
-  },
-  tier: {
-    id: 'gate.noAccess.tier',
-    defaultMessage:
-      'Your account is on the free tier. It keeps everything on correctiv.org open to you. The app comes with the contribution: it funds the investigations, and in return there is audio, video and formats that exist only here.',
-  },
-  lapsed: {
-    id: 'gate.noAccess.lapsed',
-    defaultMessage:
-      'Your trial ended on {date}. Thank you for trying the app. With a contribution it carries on here, with everything you already know.',
-  },
-  tierRow: { id: 'gate.noAccess.tierRow', defaultMessage: 'Your tier' },
-  tierTrial: { id: 'gate.noAccess.tierTrial', defaultMessage: 'Trial' },
-  accessRow: { id: 'gate.noAccess.accessRow', defaultMessage: 'App access' },
-  accessNone: { id: 'gate.noAccess.accessNone', defaultMessage: 'Not included' },
-  accessLapsed: { id: 'gate.noAccess.accessLapsed', defaultMessage: 'Trial, ended on {date}' },
-  upgrade: { id: 'gate.noAccess.upgrade', defaultMessage: 'Extend membership' },
-  resume: { id: 'gate.noAccess.resume', defaultMessage: 'Set a contribution' },
-  recheck: { id: 'gate.noAccess.recheck', defaultMessage: 'Check again' },
-  switchAccount: {
-    id: 'gate.noAccess.switchAccount',
-    defaultMessage: 'Sign in with a different account',
-  },
-  simulated: {
-    id: 'gate.noAccess.simulated',
-    defaultMessage:
-      'Nothing is transmitted. After "{button}", "Check again" finds a membership with a contribution.',
   },
 });
 
@@ -168,10 +181,11 @@ export function LoginGate() {
             <Overline label={intl.formatMessage(COPY.simulatedHeading)} />
             <Typo variant="text-s" color="on-canvas-muted" className="mt-2xs">
               {shortfall
-                ? intl.formatMessage(NO_ACCESS.simulated, {
+                ? intl.formatMessage(COPY.noAccessSimulated, {
                     button: intl.formatMessage(
-                      shortfall === 'lapsed' ? NO_ACCESS.resume : NO_ACCESS.upgrade,
+                      shortfall === 'lapsed' ? COPY.noAccessResume : COPY.noAccessUpgrade,
                     ),
+                    recheck: intl.formatMessage(COPY.noAccessRecheck),
                   })
                 : intl.formatMessage(COPY.simulated)}
             </Typo>
@@ -271,7 +285,7 @@ function SignInForm() {
               colour is not what makes this readable, the words are. */}
           <Ionicons name="alert-circle" size={18} color={colors.accent} />
           <Typo variant="text-s" color="on-canvas" className="ml-2xs flex-1">
-            {intl.formatMessage(FAILURE[session.failure])}
+            {intl.formatMessage(FAILURE_LABELS[session.failure])}
           </Typo>
         </View>
       )}
@@ -324,18 +338,18 @@ function NoAccess({ shortfall }: { shortfall: AccessShortfall }) {
   return (
     <>
       <Typo variant="text-s" color="on-canvas-muted" className="mt-l">
-        {intl.formatMessage(NO_ACCESS.signedInAs, { email: session.account?.email ?? '' })}
+        {intl.formatMessage(COPY.noAccessSignedInAs, { email: session.account?.email ?? '' })}
       </Typo>
       <Typo variant="headline-xxl" family="serif" className="mt-2xs">
-        {intl.formatMessage(NO_ACCESS.headline)}
+        {intl.formatMessage(COPY.noAccessHeadline)}
       </Typo>
       <Typo variant="text-l" className="mt-s">
-        {intl.formatMessage(NO_ACCESS.lead)}
+        {intl.formatMessage(COPY.noAccessLead)}
       </Typo>
       <Typo variant="text-m" color="on-canvas-muted" className="mt-s">
         {lapsedOn
-          ? intl.formatMessage(NO_ACCESS.lapsed, { date: lapsedOn })
-          : intl.formatMessage(NO_ACCESS.tier)}
+          ? intl.formatMessage(COPY.noAccessLapsed, { date: lapsedOn })
+          : intl.formatMessage(COPY.noAccessTier)}
       </Typo>
 
       {/* The entitlement as the membership system answered it. Tier and access,
@@ -345,27 +359,27 @@ function NoAccess({ shortfall }: { shortfall: AccessShortfall }) {
             mit Beitrag" directly under a sentence explaining that the app belongs to
             one. The source is what the reader needs in that state. */}
         <Row
-          label={intl.formatMessage(NO_ACCESS.tierRow)}
+          label={intl.formatMessage(COPY.noAccessTierRow)}
           value={
             shortfall === 'lapsed'
-              ? intl.formatMessage(NO_ACCESS.tierTrial)
+              ? intl.formatMessage(COPY.noAccessTierTrial)
               : intl.formatMessage(TIER_LABELS[entitlement?.tier ?? 'free'])
           }
         />
         <Hairline className="my-s" />
         <Row
-          label={intl.formatMessage(NO_ACCESS.accessRow)}
+          label={intl.formatMessage(COPY.noAccessAccessRow)}
           value={
             lapsedOn
-              ? intl.formatMessage(NO_ACCESS.accessLapsed, { date: lapsedOn })
-              : intl.formatMessage(NO_ACCESS.accessNone)
+              ? intl.formatMessage(COPY.noAccessAccessLapsed, { date: lapsedOn })
+              : intl.formatMessage(COPY.noAccessAccessNone)
           }
         />
       </Card>
 
       <View className="mt-m">
         <Button
-          title={intl.formatMessage(lapsedOn ? NO_ACCESS.resume : NO_ACCESS.upgrade)}
+          title={intl.formatMessage(lapsedOn ? COPY.noAccessResume : COPY.noAccessUpgrade)}
           fullWidth
           onPress={() => {
             actions.session.upgradeStarted();
@@ -373,7 +387,7 @@ function NoAccess({ shortfall }: { shortfall: AccessShortfall }) {
           }}
         />
         <Button
-          title={intl.formatMessage(NO_ACCESS.recheck)}
+          title={intl.formatMessage(COPY.noAccessRecheck)}
           variant="outline"
           fullWidth
           className="mt-2xs"
@@ -382,7 +396,7 @@ function NoAccess({ shortfall }: { shortfall: AccessShortfall }) {
       </View>
       <View className="mt-s items-center">
         <TextLink
-          label={intl.formatMessage(NO_ACCESS.switchAccount)}
+          label={intl.formatMessage(COPY.noAccessSwitchAccount)}
           onPress={() => actions.session.signOut()}
         />
       </View>

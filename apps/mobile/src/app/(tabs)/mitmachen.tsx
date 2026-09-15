@@ -21,7 +21,7 @@ const WHATSAPP_TIP = 'https://wa.me/4915142647500';
  * city or a single claim in review would otherwise read "1 Behauptungen".
  */
 const COPY = defineMessages({
-  title: { id: 'participate.title', defaultMessage: 'Take part' },
+  screenTitle: { id: 'participate.title', defaultMessage: 'Take part' },
   lead: {
     id: 'participate.lead',
     defaultMessage:
@@ -32,14 +32,14 @@ const COPY = defineMessages({
   forumLead: {
     id: 'participate.forumLead',
     defaultMessage:
-      'The community checks claims from around the web, guided by the newsroom. Right now {count, plural, one {one claim is} other {{count, number} claims are}} being worked on.',
+      'The community checks claims from around the web, guided by the newsroom. Right now {count, plural, one {one claim is} other {# claims are}} being worked on.',
   },
   forumAction: { id: 'participate.forumAction', defaultMessage: 'See the claims' },
   atlasHeading: { id: 'participate.atlasHeading', defaultMessage: 'Document demolitions' },
   atlasLead: {
     id: 'participate.atlasLead',
     defaultMessage:
-      'Which buildings are disappearing? {reports, plural, one {One report} other {{reports, number} reports}} from {cities, plural, one {one city} other {{cities, number} cities}} in Germany and Switzerland.',
+      'Which buildings are disappearing? {reports, plural, one {One report} other {# reports}} from {cities, plural, one {one city} other {# cities}} in Germany and Switzerland.',
   },
   atlasAction: { id: 'participate.atlasAction', defaultMessage: 'See the atlas' },
   tipLabel: { id: 'participate.tipLabel', defaultMessage: 'Send a tip' },
@@ -77,7 +77,7 @@ export default function MitmachenScreen() {
 
   return (
     <Screen>
-      <Typo variant="headline-xl">{intl.formatMessage(COPY.title)}</Typo>
+      <Typo variant="headline-xl">{intl.formatMessage(COPY.screenTitle)}</Typo>
       <Typo variant="text-m" color="on-canvas-muted" className="mt-2xs">
         {intl.formatMessage(COPY.lead)}
       </Typo>

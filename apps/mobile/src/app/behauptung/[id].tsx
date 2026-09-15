@@ -1,10 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
-import { defineMessages, useIntl } from 'react-intl';
+import { defineMessages, useIntl, type MessageDescriptor } from 'react-intl';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { ClaimStatusTag } from '@/components/participate/ClaimStatusTag';
 import { Button, Card, ScreenHeader, Typo } from '@/components/ui';
-import { claims, type Claim, type ClaimSource } from '@correctiv/app-core/data/claims';
+import {
+  claims,
+  type Claim,
+  type ClaimSource,
+  type ClaimStatus,
+} from '@correctiv/app-core/data/claims';
 import { openExternal } from '@/lib/openExternal';
 
 const FORUM_URL = 'https://faktenforum.org';
@@ -26,7 +31,7 @@ const COPY = defineMessages({
   screenTitle: { id: 'claim.screenTitle', defaultMessage: 'Claim' },
   unknownHeadline: { id: 'claim.unknownHeadline', defaultMessage: 'This claim does not exist' },
   unknownId: { id: 'claim.unknownId', defaultMessage: 'Unknown identifier "{id}".' },
-  noId: { id: 'claim.noId', defaultMessage: 'No identifier was given.' },
+  noId: { id: 'claim.noId', defaultMessage: 'No identifier was passed.' },
   quote: { id: 'claim.quote', defaultMessage: '"{quote}"' },
   sourcesHeading: { id: 'claim.sourcesHeading', defaultMessage: 'Source assessment' },
   noSources: {
@@ -40,14 +45,20 @@ const COPY = defineMessages({
   },
 });
 
-const STAGE = defineMessages({
+/**
+ * The three stages a claim goes through, as the app names them.
+ *
+ * Typed as the record rather than left to inference, so a fourth `ClaimStatus`
+ * fails to compile here instead of leaving a dot on the progress row unlabelled.
+ */
+const STAGE_LABELS: Record<ClaimStatus, MessageDescriptor> = defineMessages({
   submitted: { id: 'claim.stage.submitted', defaultMessage: 'Submitted' },
   checking: { id: 'claim.stage.checking', defaultMessage: 'Being checked' },
   checked: { id: 'claim.stage.checked', defaultMessage: 'Checked' },
 });
 
 /** How far along the check is, in order: submitted, being checked, checked. */
-const STAGES = [STAGE.submitted, STAGE.checking, STAGE.checked];
+const STAGES = [STAGE_LABELS.submitted, STAGE_LABELS.checking, STAGE_LABELS.checked];
 
 function stageOf(claim: Claim): number {
   return claim.status === 'checked' ? 2 : claim.status === 'checking' ? 1 : 0;

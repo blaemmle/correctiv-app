@@ -12,28 +12,30 @@ import type { Callout } from '@correctiv/app-core/data/callouts';
  *
  * The counters are ICU plurals. A callout with a single response printed the
  * plural noun anyway before this, and the phrase differs per kind, so the unit
- * cannot be a word glued onto a number by whoever renders it.
+ * cannot be a word glued onto a number by whoever renders it. The number in them is
+ * `#`, which is the plural's own argument formatted in the provider's locale — so
+ * the thousands separator stays German, and there is one spelling of it in the app
+ * rather than `#` in some messages and `{count, number}` in others.
  */
-const MESSAGES = defineMessages({
+const COPY = defineMessages({
   surveyKicker: { id: 'callout.survey.kicker', defaultMessage: 'Survey' },
   surveyCta: { id: 'callout.survey.cta', defaultMessage: 'Take part' },
   surveyCount: {
     id: 'callout.survey.count',
-    defaultMessage: '{count, plural, one {One response} other {{count, number} responses}}',
+    defaultMessage: '{count, plural, one {One response} other {# responses}}',
   },
   surveyCountSoFar: {
     id: 'callout.survey.countSoFar',
-    defaultMessage: '{count, plural, one {One response} other {{count, number} responses}} so far',
+    defaultMessage: '{count, plural, one {One response} other {# responses}} so far',
   },
   crowdnewsroomCta: { id: 'callout.crowdnewsroom.cta', defaultMessage: 'Take part' },
   crowdnewsroomCount: {
     id: 'callout.crowdnewsroom.count',
-    defaultMessage: '{count, plural, one {One contribution} other {{count, number} contributions}}',
+    defaultMessage: '{count, plural, one {One contribution} other {# contributions}}',
   },
   crowdnewsroomCountSoFar: {
     id: 'callout.crowdnewsroom.countSoFar',
-    defaultMessage:
-      '{count, plural, one {One contribution} other {{count, number} contributions}} so far',
+    defaultMessage: '{count, plural, one {One contribution} other {# contributions}} so far',
   },
 });
 
@@ -71,19 +73,19 @@ export type CalloutStyle = {
 export function calloutStyle(callout: Callout): CalloutStyle {
   if (callout.kind === 'survey') {
     return {
-      kicker: MESSAGES.surveyKicker,
-      cta: MESSAGES.surveyCta,
+      kicker: COPY.surveyKicker,
+      cta: COPY.surveyCta,
       variant: 'outline',
-      count: MESSAGES.surveyCount,
-      countSoFar: MESSAGES.surveyCountSoFar,
+      count: COPY.surveyCount,
+      countSoFar: COPY.surveyCountSoFar,
     };
   }
   return {
     kicker: CROWDNEWSROOM,
-    cta: MESSAGES.crowdnewsroomCta,
+    cta: COPY.crowdnewsroomCta,
     variant: 'primary',
-    count: MESSAGES.crowdnewsroomCount,
-    countSoFar: MESSAGES.crowdnewsroomCountSoFar,
+    count: COPY.crowdnewsroomCount,
+    countSoFar: COPY.crowdnewsroomCountSoFar,
   };
 }
 
