@@ -23,7 +23,7 @@ Expo is moving off regardless. And `NativeTabs.BottomAccessory` exists in the
 installed version — the system slot for the bar Apple Music puts a track in, which is
 the mini player's problem solved by the platform instead of by us.
 
-## Decision
+## 1. Decision
 
 **Native tabs on iOS and Android.** `expo-router/unstable-native-tabs`, with the
 colours still from the token palette so the bar follows the appearance setting.

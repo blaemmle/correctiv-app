@@ -45,7 +45,7 @@ and an error state that flipped back to a spinner. The NativeScript feed store d
 stale-while-revalidate and borrowed bundled cover images offline; the Expo one did
 neither. Neither app knew what the other had learned.
 
-## Decision
+## 1. Decision
 
 **`packages/app-core` holds the behaviour; the two apps hold their view layer and
 their platform adapters. Both stay, `apps/mobile-rn` is still the app going

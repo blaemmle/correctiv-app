@@ -61,6 +61,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The decision ledger's only real guard compares `adr/decisions.lock.json`
+      # with its own revision on the default branch, because that is the one
+      # comparison a self-consistent hand-edit cannot satisfy. `actions/checkout`
+      # clones one commit and no other ref, so `origin/main` would not exist and
+      # the check would report that it could not run — red, deliberately, rather
+      # than quietly agreeing with whatever the working tree says.
+      - name: Fetch the default branch, for the decision ledger's baseline
+        run: git fetch --depth=1 origin +main:refs/remotes/origin/main
+
       # tsc over every workspace, then oxlint, oxfmt --check, jest and vitest.
       # Includes the boundary guard that keeps the core free of platform SDKs.
       - name: Check

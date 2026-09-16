@@ -145,11 +145,13 @@ have landed since; these are the ones the change was made against. Nothing about
 count is load-bearing — it is here because it is the honest size of the thing, and
 because a rename whose cost is unstated reads cheaper than it is.
 
-**Open work on the same files conflicts.** [#168](https://github.com/faktenforum/correctiv-app/pull/168)
-is open and touches `apps/handbook/plugin/markdown.ts` and adds
-`apps/handbook/test/decision-numbers.test.ts`, both of which have moved under it. It
-also adds `adr/decisions.lock.json`, the ledger the numbered decisions above live in, so
-this record's four entries have to be added to it once that merges.
+**Open work on the same files conflicts, and one such change landed mid-flight.**
+[#168](https://github.com/faktenforum/correctiv-app/pull/168) merged while this was
+being written; it touches `plugin/markdown.ts` and adds `test/decision-numbers.test.ts`,
+both of which moved under it, and it brings `adr/decisions.lock.json`, the ledger the
+four decisions above live in. Merged in, the test moved with the rest of the package and
+`npm run adr:lock` appended this record's four entries. The paths in `scripts/adr.mjs`
+and `scripts/adr-ledger.mjs` moved too.
 
 **A reader's stored appearance is forgotten once.** `handbook:appearance` becomes
 `workbench:appearance`, so the first visit after the deploy reads no key and falls back

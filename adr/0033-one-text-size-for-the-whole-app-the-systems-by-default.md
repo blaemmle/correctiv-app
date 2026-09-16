@@ -23,7 +23,7 @@ So a reader who has set their phone to large type gets large type everywhere, an
 second, unrelated dial that only changes the article. The two multiply, and neither knows
 the other exists.
 
-## Decision
+## 1. Decision
 
 **One setting, for the whole app, and the system's value is the default.**
 

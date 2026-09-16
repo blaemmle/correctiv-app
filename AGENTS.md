@@ -87,6 +87,33 @@ are listed in the ADR, and are the only three the check above will excuse.
 
 ## Decisions
 
+**`npm run adr:new` gives the number.** Not the highest in `adr/` plus one: on
+2026-09-16 two agents read that off the same tree, wrote 0034 twice, and git merged
+them without a conflict because the slugs differed. It fetches `origin/main` and reads
+the open pull requests as well. It prints the number whichever of those it reached,
+because somebody asking for it is about to write a record and a blank answer helps
+nobody; what says whether the number was verified is the exit code and the line
+beside it.
+
+**Every decision inside a record carries a number**, `N. ` at the front of its
+heading, so `ADR 0026 §6` still points at the same decision in a year. A heading that
+argues for a decision takes none. `npm run adr:lock` appends each number's text to
+`adr/decisions.lock.json`: the ledger keeps every text a number has carried and every
+slug a record's file has carried, a removed decision leaves its number behind as a
+gap, and nothing in the ledger is ever rewritten.
+
+**What holds that rule is the comparison with `origin/main`**, in
+`apps/workbench/test/decision-numbers.test.ts`: the working tree's ledger has to be an
+*extension* of the published one, never a revision of it. It does not make a
+renumbering impossible — a swap put through `adr:lock` appends and passes — it makes
+one impossible to do quietly, because the append cannot later be taken out and the
+diff shows both numbers carrying each other's heading. Every other check on the ledger
+reads the working tree alone, and a renumbering that edits the records and the ledger
+in one pass leaves a working tree that agrees with itself; two cold reviews went
+straight through the version that claimed otherwise. Those checks are kept, for the
+accident and the half-finished edit, and they are worth their line at that. They are
+not a defence against somebody who means it. Do not write one that says it is.
+
 `adr/` records **why**, not what. Add one when a choice would otherwise have to be
 argued from scratch later: a dependency swapped, a boundary moved, a capability
 measured and rejected. Not for ordinary work, and not for anything the code already

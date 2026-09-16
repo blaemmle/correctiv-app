@@ -16,7 +16,7 @@ in your head, and a uniform idiom for the agents that work here.
 The question is a good one and the answer is no. It is written down because nothing
 in the tree says why, and someone will ask again.
 
-## Decision
+## 1. Decision
 
 `apps/handbook` keeps its DOM primitives: Radix for the interaction ones, `cmdk` for
 the palette, `react-resizable-panels` for the split, `lucide-react` for its icons.
