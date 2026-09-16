@@ -4,6 +4,7 @@ import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Hairline, Typo } from '@/components/ui';
+import { AUDIO_ERROR_LABELS } from '@correctiv/app-core/stores/audio';
 import { formatTimeHm } from '@correctiv/app-core/lib/format';
 import { stop, togglePlay } from '@/lib/audio/player';
 import { useAudio } from '@/lib/audio/useAudio';
@@ -16,6 +17,11 @@ import { sizes, useColors } from '@/lib/theme';
  * `pause` and `play` are the same two ids `app/player.tsx` declares, because the
  * mini bar and the full player are one player and the button is spoken with one
  * word. See that file for why the declaration is repeated rather than imported.
+ *
+ * What went wrong is NOT declared here: the audio store carries a code and the
+ * core owns the sentence for each one (`AUDIO_ERROR_LABELS`). `error` below is the
+ * fallback for the state that should not occur — `status: 'error'` with no code —
+ * and is the reason that id survived the lift.
  */
 const COPY = defineMessages({
   loading: { id: 'player.loading', defaultMessage: 'Loading …' },
@@ -38,7 +44,7 @@ const COPY = defineMessages({
 export function MiniPlayer() {
   const intl = useIntl();
   const colors = useColors();
-  const { track, status, positionSec, durationSec, errorMessage } = useAudio();
+  const { track, status, positionSec, durationSec, error } = useAudio();
   if (!track) return null;
 
   const live = track.kind === 'radio';
@@ -46,7 +52,8 @@ export function MiniPlayer() {
 
   const subtitle = () => {
     if (status === 'loading') return intl.formatMessage(COPY.loading);
-    if (status === 'error') return errorMessage ?? intl.formatMessage(COPY.error);
+    if (status === 'error')
+      return intl.formatMessage(error ? AUDIO_ERROR_LABELS[error] : COPY.error);
     if (live) return track.subtitle ?? intl.formatMessage(COPY.live);
     const total = durationSec > 0 ? ` / ${formatTimeHm(durationSec)}` : '';
     return `${formatTimeHm(positionSec)}${total}`;

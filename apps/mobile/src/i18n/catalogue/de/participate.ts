@@ -17,6 +17,10 @@ export const participate: Record<string, string> = {
   'participate.tipLead':
     'Verdächtige Behauptung gesehen? Schicken Sie sie direkt der Faktencheck-Redaktion.',
   'participate.tipAction': 'WhatsApp öffnen',
+  'participate.claimSubmitted': 'Eingereicht',
+  'participate.claimChecking': 'In Prüfung',
+  'participate.claimChecked': 'Geprüft: {verdict}',
+  'participate.claimNoVerdict': 'Abgeschlossen',
   'participate.communityNote':
     'Im Community-Bereich diskutieren Sie Recherchen mit anderen Mitgliedern, bald auch in der App.',
 };

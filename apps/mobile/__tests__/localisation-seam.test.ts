@@ -5,7 +5,7 @@ import { basename, join, relative, resolve, sep } from 'node:path';
 
 import { de } from '@/i18n/catalogue/de';
 
-import { withoutComments } from './support/source';
+import { withEscapesDecoded, withoutComments } from './support/source';
 
 /**
  * The localisation seam, and the two things about it that can rot silently.
@@ -195,10 +195,18 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
  * (`support/source.ts`, shared with `colour-tiers.test.ts`). The cost is real and
  * worth naming: a comment written in German — a regression, not a leftover, since
  * 2026-08-12 — is invisible here. It always was, since every file this would have
- * caught sat on the list below for a different reason.
+ * caught sat on the list below for a different reason. So is a German string
+ * written after a ` //` INSIDE a string literal, which that helper takes for a
+ * comment and truncates; the limit is written down where the helper is, because
+ * all three checks that read source inherit it.
+ *
+ * Escapes are not on that list. `withEscapesDecoded` writes `'Pr\u00fcfen'` back
+ * to `'Prüfen'` first, so a German string with one escaped letter in it — what a
+ * tool that "fixed the encoding" leaves behind — is caught rather than read as
+ * ASCII.
  */
 function germanLines(source: string, excused: string[]): string[] {
-  let remaining = withoutComments(source);
+  let remaining = withEscapesDecoded(withoutComments(source));
   for (const fragment of excused) remaining = remaining.replace(fragment, '');
   return remaining
     .split('\n')

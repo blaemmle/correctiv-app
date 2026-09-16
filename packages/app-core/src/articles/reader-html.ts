@@ -1,6 +1,7 @@
 import { escapeHtml } from '../lib/html';
 import { formatDateDe } from '../lib/format';
-import { ratingLabel, ratingTone } from './rating';
+import { coreMessage } from '../i18n/messages';
+import { ratingTone } from './rating';
 import type { Article } from './types';
 
 /**
@@ -22,6 +23,66 @@ import type { Article } from './types';
  * dark by redefining them.
  */
 
+/**
+ * Every word this document prints that is not the article's own, formatted.
+ *
+ * Handed IN rather than fetched here, and that is the whole difference between
+ * this file and a screen. The document goes into a WebView as a string: there is
+ * no React tree, no provider and no `useIntl()` to reach for, so the core names
+ * the words it needs (`READER_COPY` below) and the host arrives with them already
+ * turned into text.
+ *
+ * `verdict` is absent on an article with no rating, which is most of them, and
+ * `byline` on one with no named author. Both are then simply not printed, exactly
+ * as before.
+ */
+export interface ReaderCopy {
+  /** The plaque a fact check wears instead of its section. */
+  factcheckBadge: string;
+  /**
+   * The verdict, spelled out — `RATING_LABELS` is where the wording comes from.
+   *
+   * Optional because most articles have no rating, and a host that has one has to
+   * supply it. It cannot be made required without making every unrated article
+   * format a verdict it does not have, and it cannot be tied to `article.rating`
+   * in the type, so the guarantee is made where it is enforceable: an empty one
+   * prints NO plaque rather than an empty one. The closed-union argument
+   * `AUDIO_ERROR_LABELS` makes does not reach here — that one fails to compile
+   * because the Record must be total, and this is one field on a bag of words.
+   * A red box with no word in it asserts a verdict and names none, which is worse
+   * than an article that shows no verdict at all.
+   */
+  verdict?: string;
+  /** The authors with their preposition, as one phrase. */
+  byline?: string;
+  /** How long the article takes to read. */
+  readingTime: string;
+  /** The line in the footer, which is the only thing the document says in its own voice. */
+  support: string;
+}
+
+/**
+ * What the host has to format, as message descriptors.
+ *
+ * These live in the core because the document does: a second host rendering the
+ * same reader must not have to invent a support line, and two hosts inventing two
+ * is the drift this file was written to end. `byline` and `readingTime` take a
+ * value, which is why they are messages and not constants — "von X" and "7 Min.
+ * Lesezeit" are one sentence each in German and two different shapes in English.
+ */
+export const READER_COPY = {
+  factcheckBadge: coreMessage({ id: 'core.reader.factcheckBadge', defaultMessage: 'Fact check' }),
+  byline: coreMessage({ id: 'core.reader.byline', defaultMessage: 'by {authors}' }),
+  readingTime: coreMessage({
+    id: 'core.reader.readingTime',
+    defaultMessage: '{minutes} min read',
+  }),
+  support: coreMessage({
+    id: 'core.reader.support',
+    defaultMessage: 'Made possible by supporters like you. Thank you for being here.',
+  }),
+};
+
 export interface ReaderHtmlOptions {
   /** Inline CSS, in order — token variables and `@font-face` first, layout last. */
   css?: string[];
@@ -33,7 +94,11 @@ export interface ReaderHtmlOptions {
 
 const ROOT_FONT_PX = 16;
 
-export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {}): string {
+export function buildReaderHtml(
+  article: Article,
+  copy: ReaderCopy,
+  options: ReaderHtmlOptions = {},
+): string {
   const { css = [], stylesheets = [], textScale = 1 } = options;
 
   const rootStyle = `font-size:${ROOT_FONT_PX * textScale}px`;
@@ -46,23 +111,38 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
     ? `<figure class="hero"><img src="${escapeHtml(article.heroImageUrl)}" alt=""></figure>`
     : '';
 
-  // A fact check announces itself; everything else shows its section.
-  const badgeText = article.rating ? 'FAKTENCHECK' : (article.kicker ?? '').toUpperCase();
+  /**
+   * A fact check announces itself; everything else shows its section.
+   *
+   * Uppercased HERE, and that is the correctness of the string rather than of the
+   * stylesheet. `.badge{text-transform:uppercase}` in `READER_LAYOUT_CSS` says the
+   * same thing and is not the guarantee: `css` is optional and the split this file
+   * documents is that the CSS belongs to the HOST, so a host with a stylesheet of
+   * its own — or one that appends ours anywhere but last — renders "Faktencheck"
+   * in title case with nothing failing anywhere. The kicker was already uppercased
+   * in JavaScript on the same line, so the one branch that read differently was
+   * the one only a rendered document could show. The CSS rule stays, because it is
+   * what makes a host's OWN badge text agree with this one.
+   */
+  const badgeText = (article.rating ? copy.factcheckBadge : (article.kicker ?? '')).toUpperCase();
   const badge = badgeText ? `<p class="badge">${escapeHtml(badgeText)}</p>` : '';
 
-  const rating = article.rating
-    ? `<div class="rating rating--${ratingTone(article.rating)}">` +
-      `<span class="rating__label">${escapeHtml(ratingLabel(article.rating))}</span></div>`
-    : '';
+  // Both halves, or neither: a plaque with no word in it is a coloured box
+  // asserting a verdict it does not name. See `ReaderCopy.verdict`.
+  const rating =
+    article.rating && copy.verdict
+      ? `<div class="rating rating--${ratingTone(article.rating)}">` +
+        `<span class="rating__label">${escapeHtml(copy.verdict)}</span></div>`
+      : '';
 
   // The app's own date format wins over the publisher's wording: correctiv.org prints
   // "04. August 2026" where every list in the app reads "4. August 2026", and the
   // reader is the one screen a date row appears in twice. `publishedText` stays as the
   // fallback for a page with no parsable date — `formatDateDe` returns '' for one.
   const metaLine = [
-    article.authors.length > 0 ? `von ${article.authors.join(', ')}` : '',
+    article.authors.length > 0 ? copy.byline : '',
     formatDateDe(article.publishedAt) || article.publishedText,
-    `${article.readingMinutes} Min. Lesezeit`,
+    copy.readingTime,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -77,7 +157,7 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
    * includes the app, so that branch addressed nobody and the button offered them
    * what they already had. Removed with ADR 0018.
    */
-  const footer = `<p class="support-line">Ermöglicht durch Unterstützer:innen wie Sie. Danke, dass Sie dabei sind.</p>`;
+  const footer = `<p class="support-line">${escapeHtml(copy.support)}</p>`;
 
   return `<!DOCTYPE html>
 <html lang="de" style="${rootStyle}">

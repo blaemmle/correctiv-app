@@ -157,7 +157,7 @@ export default function ArtikelScreen() {
     <View className="flex-1 bg-canvas">
       {article ? (
         <ReaderView
-          html={readerHtml(article, { textScale, isDark })}
+          html={readerHtml(article, intl, { textScale, isDark })}
           onNavigate={onNavigate}
           onScroll={onReaderScroll}
         />

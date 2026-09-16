@@ -79,7 +79,24 @@ export function formatTimeHm(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-/** "25 Min." — coarse episode length from seconds (podcast lists). */
+/**
+ * "25 Min." — coarse episode length from seconds (podcast lists).
+ *
+ * **The one German the core still renders that no check names**, and it is here
+ * rather than in the catalogue because lifting it is not a lift. `Min.` is not a
+ * sentence a caller could be handed: the result goes into
+ * `PodcastEpisode.durationLabel`, a FORMATTED string that
+ * `services/podcast.service.ts` builds, `data/podcasts.ts` and `data/backstage.ts`
+ * type out by hand, and `apps/mobile/src/lib/podcasts/offlineBundle.generated.ts`
+ * carries 132 of. Getting the word out means the model carrying `durationSec` and
+ * the two screens formatting it, which rewrites sample data and regenerates a
+ * bundle — worth doing, and not inside somebody else's string lift (#141).
+ *
+ * `packages/app-core/test/localisation-seam.test.ts` cannot see it, and that is
+ * not a hole to plug there: the net is the characters `äöüß„“`, and no cheap
+ * check catches a German word spelled with none of them. Named here instead, where
+ * the string is, the way the app names the four in `RecoveryScreen.tsx`.
+ */
 export function formatMinutesDe(sec: number): string {
   return `${Math.max(1, Math.round(sec / 60))} Min.`;
 }

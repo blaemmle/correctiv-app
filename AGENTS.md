@@ -149,6 +149,21 @@ that screen is rendered BY the error boundary, so the provider is inside the sub
 being caught. A third exemption arriving without a reason is the thing to argue about.
 ([ADR 0026](adr/0026-react-native-review-and-hardening.md) §6)
 
+**The core has vocabulary of its own and cannot use `defineMessages`.** What a
+playback failure says, how a fact-check verdict reads, the words the reader document
+prints: those belong to `packages/app-core`, which imports no React and so no
+`react-intl`. A core descriptor goes through `coreMessage()` in
+`packages/app-core/src/i18n/messages.ts`, **one call per descriptor** — measured:
+`@formatjs/cli` reads that call's single argument and reads a bare
+`{ id, defaultMessage }` literal, or a `defineMessages`-shaped block handed to the
+same function, as nothing at all. The function's name is typed a second time in
+`apps/mobile/package.json` under `i18n:extract`, so renaming it is two edits.
+`packages/app-core/test/localisation-seam.test.ts` is the counterpart net, over the
+core minus `src/data/`, which is content by the ADR's own question: *would this string
+still exist if the content came from a CMS?* Its three exemptions are German as INPUT
+rather than as output — a pattern matching correctiv.org's prose, a key in Yoast's
+JSON, the quotation marks an entity decoder produces.
+
 **A pull request is the exception, and German is the rule there.** Its title and body
 are an argument with the team about work that has not landed, and the people having
 that argument speak German. The line is the merge: what goes into the repository is
