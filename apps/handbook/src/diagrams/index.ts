@@ -44,8 +44,8 @@ export const DIAGRAMS: DiagramMeta[] = [
   {
     id: 'core-host',
     title: 'The core and its host',
-    lede: 'All behaviour on one side, all platform on the other. The only crossing is four named ports, and the two small files that answer them are the whole cost of adding a host.',
-    width: 960,
+    lede: 'All behaviour on one side, all platform on the other. The only crossing is five named ports, and the two small files that answer them are the whole cost of adding a host.',
+    width: 1100,
     height: 710,
     Figure: CoreAndHost,
     Drawing: CoreAndHostDrawing,
@@ -76,9 +76,9 @@ export const DIAGRAMS: DiagramMeta[] = [
   {
     id: 'inside-core',
     title: 'Inside the core',
-    lede: 'Fifty-four TypeScript files in seven layers. Imports point down the stack, the contracts sit at the bottom, and below them is a line nothing in the package crosses.',
+    lede: '55 TypeScript files in seven layers. Imports point down the stack, the contracts sit at the bottom, and below them is a line nothing in the package crosses.',
     width: 1040,
-    height: 710,
+    height: 746,
     Figure: InsideCore,
     Drawing: InsideCoreDrawing,
   },

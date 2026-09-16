@@ -1,0 +1,208 @@
+# Re-measures every source the app reads, against the live ones, once a week.
+#
+# WHY THIS IS ITS OWN WORKFLOW, and not a job in ci.yml. The figures on the
+# sources board can only be taken from outside a browser: the seven `/feed/` URLs
+# and the Icecast status document send no CORS header, which is the whole reason
+# they used to be typed by hand. A Node script has no such problem — and the
+# moment that script runs inside the quality gate, every pull request in this
+# repository depends on correctiv.org, salon5.correctiv.net, tube.funfacts.de and
+# youtube.com all being up. They are somebody else's uptime. A pull request about
+# a button must not turn red because a newsroom is redeploying.
+#
+# So: REPORT, NEVER GATE. Three ways were on the table and this is why the other
+# two lose.
+#
+#   A scheduled workflow that writes a summary and opens a pull request — this
+#   one. It runs on nobody's critical path, its output is a table on the run's own
+#   page, and its result reaches the repository as a diff somebody reads. A source
+#   that is down appears as a row with a reason on it and fails nothing.
+#
+#   A job inside ci.yml that always exits 0. Cheaper to write and strictly worse
+#   to read: a green check that is green whatever happened trains everybody to
+#   stop opening it, and the one time it mattered nobody would. It also pays the
+#   twenty-two requests on every pull request, including the ones that change a
+#   comment.
+#
+#   `continue-on-error: true` on a real job. The worst of the three, and it is
+#   worth saying why, because it is the obvious answer. It does not distinguish
+#   between the two failures that matter: "a source is down", which is a finding,
+#   and "the script is broken", which is a bug in this repository. Both become the
+#   same soft red mark that blocks nothing and says nothing, and the second one
+#   then hides behind the first for as long as anybody is willing to assume a feed
+#   is having a bad week. The script exits 0 for a source that did not answer and
+#   non-zero only when it measured nothing at all, and that distinction is the
+#   whole design; `continue-on-error` throws it away.
+#
+# The one thing here that CAN fail the run is publishing the result — the push and
+# the pull request. That is this repository's own plumbing rather than somebody
+# else's, and a scheduled job that silently stops recording its findings is how the
+# board goes stale again.
+name: Sources
+
+on:
+  # Mondays, early. Not daily: the article feeds publish weekly at best, so a
+  # daily run would mostly open a pull request that moves a timestamp, and a
+  # weekly diff nobody reads is the same as no diff at all.
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+# Only the publishing step needs these; the measurement needs nothing at all.
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sources
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    name: Measure the live sources
+    runs-on: ubuntu-latest
+    # Twenty-two requests, ten seconds of timeout each, two attempts, two seconds
+    # apart: a shade over seven minutes if every single source hangs. Fifteen
+    # leaves room for the install and cuts off a runner that is stuck on DNS.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # oxfmt comes from here: the script runs the repository's own formatter over
+      # its output, so the generated file cannot fail `oxfmt --check` in the gate
+      # it is committed into.
+      - name: Install dependencies
+        run: npm ci
+
+      # Writes the table to this run's summary itself, so a scheduled run that
+      # nobody watched still says what it found rather than only that it ran.
+      # Exits non-zero only if it measured nothing, which is a bug here.
+      - name: Measure
+        run: node apps/handbook/scripts/measure-sources.mjs
+
+      # Read off the file rather than assumed from the step above having passed.
+      #
+      # `grep -c` returns 1 when it matches nothing, so `$(grep -c …)` inside a
+      # `set -e` script ends the step at that line and every branch below it,
+      # including this whole guard, never runs. That is the same shape as a `grep`
+      # over a missing directory exiting 2 with an `if` around it, which has
+      # already cost this repository a check that printed success and deployed.
+      # Hence `|| true` on the substitution and a `test -f` before any of it.
+      - name: Read what the run actually produced
+        id: found
+        run: |
+          set -uo pipefail
+          FILE=apps/handbook/content/sources.measured.ts
+          test -f "$FILE" || { echo "::error::$FILE was not written"; exit 1; }
+
+          ROWS=$(grep -c "^      id: '" "$FILE" || true)
+          DOWN=$(grep -c '^      ok: false,' "$FILE" || true)
+          UP=$((ROWS - DOWN))
+          echo "rows=$ROWS" >> "$GITHUB_OUTPUT"
+          echo "down=$DOWN" >> "$GITHUB_OUTPUT"
+          echo "up=$UP" >> "$GITHUB_OUTPUT"
+          echo "$UP of $ROWS sources answered."
+
+          # A floor, not a comparison with zero. Thirteen is the smallest run the
+          # core's configuration can produce, and the script asserts the same
+          # thing from the other side; a file with three rows in it would satisfy
+          # "some rows exist" and be a broken run.
+          if [ "$ROWS" -lt 13 ]; then
+            echo "::error::only $ROWS rows were written; the script measured almost nothing"
+            exit 1
+          fi
+
+          # Nothing answered at all. That is the runner's network or a DNS
+          # failure, not a finding about any source, and committing it would
+          # replace a good measurement with an outage and redden the pull request
+          # it opened. Reported loudly, recorded nowhere.
+          if [ "$UP" -eq 0 ]; then
+            echo "::warning::no source answered — this run is not being committed"
+            {
+              echo ""
+              echo "**Nothing answered.** This looks like the runner rather than the sources,"
+              echo "so the committed measurement is left alone."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+
+      - name: Has anything moved
+        id: diff
+        if: steps.found.outputs.publish == 'true'
+        run: |
+          set -uo pipefail
+          if git diff --quiet -- apps/handbook/content/sources.measured.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing moved since the last committed run." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- apps/handbook/content/sources.measured.ts
+          fi
+
+      # German, because a pull request is an argument with the team about work
+      # that has not landed and the people having it speak German. What lands in
+      # the repository stays English — AGENTS.md draws that line at the merge.
+      #
+      # One long-lived branch, force-pushed: a weekly run should update the open
+      # pull request rather than stack a new one beside it every Monday.
+      #
+      # WORTH KNOWING: a pull request opened with GITHUB_TOKEN does not start
+      # ci.yml. The diff is one generated file and the tests that read it run
+      # locally on the reviewer's machine, so the trade is acceptable; closing and
+      # reopening the pull request by hand starts the gate if it is wanted.
+      - name: Open or update the pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UP: ${{ steps.found.outputs.up }}
+          DOWN: ${{ steps.found.outputs.down }}
+          ROWS: ${{ steps.found.outputs.rows }}
+        run: |
+          set -euo pipefail
+          BRANCH=chore/sources-measured
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$BRANCH"
+          git add apps/handbook/content/sources.measured.ts
+          git commit -m "Re-measure the live sources ($UP of $ROWS answered)"
+          # Plain --force, and not --force-with-lease: checkout@v4 fetches only the
+          # commit under test, so there is no remote-tracking ref for this branch
+          # and the lease is refused as stale every time the branch already
+          # exists. The branch is this workflow's alone and is rewritten from
+          # main's tip on every run, so there is nothing on it to lose.
+          git push --force origin "$BRANCH"
+
+          BODY=$(cat <<EOF
+          Automatisch gemessen von \`apps/handbook/scripts/measure-sources.mjs\`.
+          $UP von $ROWS Quellen haben geantwortet, $DOWN nicht.
+
+          Welche Quelle was geliefert hat, steht in der Zusammenfassung des Laufs:
+          $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          Eine Quelle, die nicht antwortet, ist ein Befund und kein Fehler. Sie
+          steht als Zeile mit Begründung in der Datei und auf dem Board, und sie
+          macht nichts rot.
+
+          Vor dem Merge lohnt ein Blick darauf, ob eine Zahl ein Argument in
+          \`SOURCES.md\` umstößt, etwa wenn \`lokal\` wieder veröffentlicht. Dann
+          schlägt \`apps/handbook/test/sources.test.ts\` fehl, und die offene Frage 3
+          hat sich selbst beantwortet.
+          EOF
+          )
+
+          if gh pr list --head "$BRANCH" --state open --json number --jq 'length' | grep -q '^0$'; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "Quellen neu gemessen: $UP von $ROWS erreichbar" \
+              --body "$BODY"
+          else
+            gh pr edit "$BRANCH" \
+              --title "Quellen neu gemessen: $UP von $ROWS erreichbar" \
+              --body "$BODY"
+          fi

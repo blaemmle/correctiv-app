@@ -14,12 +14,16 @@ import type { ReactNode } from 'react';
 import {
   COUNTS,
   FEEDS,
+  feedFigures,
+  gapAvailable,
+  MEASURED,
   MEASURED_ON,
+  PROBES,
   QUESTIONS,
   SOURCES,
   UNUSED,
 } from '../../content/sources.manifest';
-import type { Feed, Kind, SourceEntry, Status } from '../../content/sources.manifest';
+import type { Feed, Gap, Kind, SourceEntry, Status } from '../../content/sources.manifest';
 import { Badge } from '../ui/kit/badge';
 import { Segmented } from '../ui/kit/segmented';
 import { Button } from '../ui/kit/button';
@@ -35,7 +39,6 @@ type Severity = 'stale' | 'broken';
 /** The five marks the board draws: three product states, two health overlays. */
 type Mark = Status | Severity;
 type GroupBy = 'state' | 'kind';
-type Gap = (typeof UNUSED)[number];
 
 /**
  * A measured figure, so a date or a count is never mistaken for prose.
@@ -296,6 +299,7 @@ function feedRow(feed: Feed, index: number, family: SourceEntry): BoardRow {
   const key = feedId(feed.label);
   const severity: Severity | undefined = feed.health === 'healthy' ? undefined : feed.health;
   const questions = feedQuestions(feed, family);
+  const figures = feedFigures(feed);
 
   return {
     id: `row-${key}`,
@@ -310,9 +314,9 @@ function feedRow(feed: Feed, index: number, family: SourceEntry): BoardRow {
     reads: <code className={CODE}>{family.endpoint}</code>,
     measured: (
       <>
-        <span className={FIGURE}>{feed.posts}</span>
+        <span className={FIGURE}>{figures.posts}</span>
         <span className="block text-s text-on-canvas-muted">
-          newest: <span className={FIGURE}>{feed.newest}</span>
+          newest: <span className={FIGURE}>{figures.newest}</span>
         </span>
       </>
     ),
@@ -325,9 +329,18 @@ function feedRow(feed: Feed, index: number, family: SourceEntry): BoardRow {
     detail: (
       <>
         <p>
-          {feed.category}. Measured on <span className={FIGURE}>{MEASURED_ON}</span>: {feed.posts},
-          newest <span className={FIGURE}>{feed.newest}</span>.
+          {feed.category}. The run of <span className={FIGURE}>{MEASURED_ON}</span> found{' '}
+          {figures.posts}, newest <span className={FIGURE}>{figures.newest}</span>.
         </p>
+        {!figures.measured && (
+          <p>
+            <strong className="font-semibold text-on-canvas">
+              Neither the feed nor its category answered in that run
+            </strong>
+            , so the figures above are unknown rather than zero. What a failed probe found is on its
+            row in <code className={CODE}>apps/handbook/content/sources.measured.ts</code>.
+          </p>
+        )}
         {feed.note && <p>{prose(feed.note)}</p>}
         {/* The family note holds for all seven feeds, so it sits on the first, where the group starts. */}
         {index === 0 && <p>{prose(family.note)}</p>}
@@ -342,8 +355,8 @@ function feedRow(feed: Feed, index: number, family: SourceEntry): BoardRow {
     text: [
       feed.label,
       feed.category,
-      feed.posts,
-      feed.newest,
+      figures.posts,
+      figures.newest,
       feed.health,
       family.endpoint ?? '',
       family.module ?? '',
@@ -376,6 +389,14 @@ function readsCell(entry: SourceEntry): ReactNode {
 
 function sourceRow(entry: SourceEntry): BoardRow {
   const gap = GAP_BY_SOURCE.get(entry.id);
+  /*
+   * How many of the thing exist, and `undefined` when the last run could not say.
+   * Drawn as "unknown" rather than as zero: a source that did not answer and a
+   * source with nothing on it are different findings, and a dot chart of length
+   * zero would state the second while meaning the first.
+   */
+  const available = gap ? gapAvailable(gap) : undefined;
+  const probe = entry.probe ? PROBES.get(entry.probe) : undefined;
   // The one sample that stands in for nothing real says so in its own note, and
   // that sentence is the whole finding: on screen it is a series that does not exist.
   const invented = entry.status === 'sample' && /\binvents\b/i.test(entry.note);
@@ -391,19 +412,30 @@ function sourceRow(entry: SourceEntry): BoardRow {
     attention: gap !== undefined || invented,
     questions,
     reads: readsCell(entry),
-    measured: gap ? (
-      <span className={FIGURE}>
-        {gap.used} of {gap.available} used
-      </span>
-    ) : (
-      <span className="text-on-canvas-muted">no figure taken</span>
-    ),
+    measured:
+      gap && available !== undefined ? (
+        <span className={FIGURE}>
+          {gap.used} of {available} used
+        </span>
+      ) : probe?.ok === true && probe.posts !== undefined ? (
+        <span className={FIGURE}>{probe.posts.toLocaleString('en-GB')}</span>
+      ) : probe !== undefined ? (
+        <span className="text-on-canvas-muted">{probe.ok ? 'reachable' : 'did not answer'}</span>
+      ) : (
+        <span className="text-on-canvas-muted">nothing to measure</span>
+      ),
     chips: (
       <>
-        {gap && (
+        {gap && available !== undefined && (
           <Badge variant="outline">
             <CircleSlash2 aria-hidden="true" className="size-[0.875rem] shrink-0" />
-            Unused, {gap.available - gap.used} of {gap.available}
+            Unused, {available - gap.used} of {available}
+          </Badge>
+        )}
+        {probe?.ok === false && (
+          <Badge variant="outline">
+            <OctagonX aria-hidden="true" className="size-[0.875rem] shrink-0" />
+            Did not answer
           </Badge>
         )}
         {invented && (
@@ -453,6 +485,9 @@ const ROWS: BoardRow[] = SOURCES.flatMap((entry) =>
 );
 
 const ROW_BY_ID = new Map(ROWS.map((row) => [row.id, row]));
+/** What did not answer in the run this page is built from, named rather than counted. */
+const SILENT = MEASURED.probes.filter((probe) => !probe.ok);
+const ANSWERED = MEASURED.probes.length - SILENT.length;
 const AILING = FEEDS.filter((feed) => feed.health !== 'healthy');
 const LIVE_ROWS = ROWS.filter((row) => row.status === 'live').length;
 const MVP_WANTED = SOURCES.filter((s) => s.status === 'no-source' && s.mvp).length;
@@ -636,12 +671,14 @@ export function Sources() {
             >
               <p>
                 <strong className="font-semibold text-on-canvas">
-                  Every figure on this page was measured by hand on{' '}
+                  Every figure on this page was measured against the live sources on{' '}
                   <span className={FIGURE}>{MEASURED_ON}</span>, {ageInWords(MEASURED_ON)}
                 </strong>
-                , against the live sources, and typed into the manifest. This page cannot re-measure
-                them. The RSS feeds send no CORS header, so a browser cannot fetch them, and nothing
-                here refreshes on its own.
+                , by <code className={CODE}>apps/handbook/scripts/measure-sources.mjs</code> on{' '}
+                {MEASURED.where}. {ANSWERED} of {MEASURED.probes.length} sources answered, with a{' '}
+                {MEASURED.timeoutMs / 1000}-second timeout and {MEASURED.attempts} attempts each.
+                The browser rendering this page checked nothing and cannot: the RSS feeds send no
+                CORS header, which is why this is a script and not a refresh button.
               </p>
               {/*
               The age is worked out in the browser, not at build time. This page is
@@ -650,15 +687,32 @@ export function Sources() {
             */}
               {isStale(MEASURED_ON) && (
                 <p className="font-semibold text-on-canvas">
-                  That is more than {STALE_AFTER_DAYS} days ago. The article feeds publish weekly at
-                  best, so the post counts and the newest-post dates below have almost certainly
-                  moved. Measure again before quoting any of them.
+                  That is more than {STALE_AFTER_DAYS} days ago, so the weekly run that keeps this
+                  page current has not landed in a quarter. The post counts and the newest-post
+                  dates below have almost certainly moved.
                 </p>
               )}
-              <p>
-                If a figure looks wrong, measure again and edit the manifest. It is a record of one
-                day, not a monitor.
-              </p>
+              {/*
+              Named, never merely counted. A note that says "three sources did not
+              answer" is the same sentence whether three feeds are down or the
+              script probed nothing at all, and the second is the failure worth
+              seeing.
+            */}
+              {SILENT.length > 0 ? (
+                <p>
+                  <strong className="font-semibold text-on-canvas">
+                    {SILENT.length === 1 ? 'One source' : `${SILENT.length} sources`} did not
+                    answer:
+                  </strong>{' '}
+                  {SILENT.map(
+                    (probe) => `${probe.id} (${probe.reason ?? 'no reason recorded'})`,
+                  ).join('; ')}
+                  . That is a finding and not a failure — nothing in this repository turns a source
+                  being down into a red build.
+                </p>
+              ) : (
+                <p>Every source answered in that run, so nothing below is an unknown.</p>
+              )}
             </div>
           </header>
 
@@ -751,8 +805,8 @@ export function Sources() {
                       <span className="font-semibold text-on-canvas">{feed.label}</span>
                     </p>
                     <p className="text-m text-on-canvas-muted">
-                      {feed.category}: <span className={FIGURE}>{feed.posts}</span>, newest{' '}
-                      <span className={FIGURE}>{feed.newest}</span>.
+                      {feed.category}: <span className={FIGURE}>{feedFigures(feed).posts}</span>,
+                      newest <span className={FIGURE}>{feedFigures(feed).newest}</span>.
                     </p>
                     {feed.note && <p className="text-m text-on-canvas-muted">{prose(feed.note)}</p>}
                     <p className="mt-auto flex flex-wrap gap-sm pt-2xs text-m">
@@ -773,9 +827,9 @@ export function Sources() {
             </ul>
 
             <p className="mt-s max-w-content text-m text-on-canvas-muted">
-              The other {FEEDS.length - AILING.length} article feeds were reading as expected on{' '}
-              <span className={FIGURE}>{MEASURED_ON}</span>. A feed can be stale for a good reason,
-              which is what the note on each card is for.
+              The other {FEEDS.length - AILING.length} article feeds were reading as expected in the
+              run of <span className={FIGURE}>{MEASURED_ON}</span>. A feed can be stale for a good
+              reason, which is what the note on each card is for.
             </p>
           </section>
 
@@ -792,6 +846,7 @@ export function Sources() {
             <ul className="mt-s grid gap-xs sm:grid-cols-2 xl:grid-cols-4">
               {UNUSED.map((gap) => {
                 const sourceId = SOURCE_BY_GAP.get(gap.label);
+                const available = gapAvailable(gap);
                 return (
                   <li
                     key={gap.label}
@@ -802,21 +857,23 @@ export function Sources() {
                       <span className={cn(FIGURE, 'text-l font-bold text-on-canvas')}>
                         {gap.used}
                       </span>{' '}
-                      of <span className={FIGURE}>{gap.available}</span> used
+                      of <span className={FIGURE}>{available ?? 'unknown'}</span> used
                     </p>
-                    <div className="flex flex-wrap gap-3xs py-3xs" aria-hidden="true">
-                      {Array.from({ length: gap.available }, (_, index) => (
-                        <span
-                          key={index}
-                          className={cn(
-                            'size-[0.5rem] rounded-full border',
-                            index < gap.used
-                              ? 'border-on-canvas bg-on-canvas'
-                              : 'border-stroke-strong bg-canvas',
-                          )}
-                        />
-                      ))}
-                    </div>
+                    {available !== undefined && (
+                      <div className="flex flex-wrap gap-3xs py-3xs" aria-hidden="true">
+                        {Array.from({ length: available }, (_, index) => (
+                          <span
+                            key={index}
+                            className={cn(
+                              'size-[0.5rem] rounded-full border',
+                              index < gap.used
+                                ? 'border-on-canvas bg-on-canvas'
+                                : 'border-stroke-strong bg-canvas',
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
                     <p className="text-s leading-normal text-on-canvas-muted">
                       {prose(gap.note)}
                       {sourceId && (
@@ -935,8 +992,8 @@ export function Sources() {
             <div className="relative mt-s min-w-0 overflow-x-auto rounded-md border border-stroke">
               <table className="w-full min-w-[44rem] border-collapse text-left">
                 <caption className="border-b border-stroke bg-surface px-s py-xs text-left text-s text-on-canvas-muted">
-                  Every content source the app reads, stands in for, or still wants. Figures
-                  measured by hand on <span className={FIGURE}>{MEASURED_ON}</span>.
+                  Every content source the app reads, stands in for, or still wants. Figures from
+                  the run of <span className={FIGURE}>{MEASURED_ON}</span>.
                 </caption>
                 <thead>
                   <tr className="border-b border-stroke-strong">
@@ -1137,14 +1194,20 @@ export function Sources() {
 
           <footer className="min-w-0 space-y-xs border-t border-stroke pt-sm text-m text-on-canvas-muted">
             <p className="max-w-content">
-              Measured by hand on <span className={FIGURE}>{MEASURED_ON}</span>. The browser that
-              renders this page has not checked a single source, and cannot, because the RSS feeds
-              send no CORS header.
+              Two files, and the split is the point. Every row, state and sentence above is read
+              from <code className={CODE}>apps/handbook/content/sources.manifest.ts</code>, which a
+              test checks against the core&apos;s data directory: that is the argument, and it is
+              written by hand. Every count, date and listener figure is read from{' '}
+              <code className={CODE}>apps/handbook/content/sources.measured.ts</code>, which is
+              generated and must not be edited.
             </p>
             <p className="max-w-content">
-              Every row, count and figure above is read from{' '}
-              <code className={CODE}>apps/handbook/content/sources.manifest.ts</code>, which a test
-              checks against the core&apos;s data directory. When a figure changes, change it there.
+              To re-measure, run{' '}
+              <code className={CODE}>node apps/handbook/scripts/measure-sources.mjs</code>.{' '}
+              <code className={CODE}>.github/workflows/sources.yml</code> runs it weekly and opens a
+              pull request when anything has moved. It reports and never gates: a source that is
+              down, slow or has moved appears on this page and in that run&apos;s summary, and fails
+              nothing.
             </p>
           </footer>
         </div>
