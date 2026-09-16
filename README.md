@@ -44,7 +44,7 @@ evidence here.
 
 ## Getting started
 
-Node 20.19 or newer.
+Node 24, the current LTS. `.nvmrc` names it, so `nvm use` in this directory picks it up.
 
 ```bash
 npm install
