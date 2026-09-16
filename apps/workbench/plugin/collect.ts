@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildDecisions, type DecisionRecord } from './decisions.ts';
+import { buildDecisions, strikeEdges, type DecisionRecord, type Strike } from './decisions.ts';
 import { renderDoc, routeMap, type RenderedDoc } from './markdown.ts';
 import { adrNumber, adrRoute, DOCUMENTS } from './registry.ts';
 
@@ -45,6 +45,14 @@ export interface DocsModule {
    * carry: a standing, a date, and both ends of the retirement graph.
    */
   decisions: DecisionRecord[];
+  /**
+   * The retirement graph as edges, which is what the second drawing draws.
+   *
+   * Derived from `decisions` and shipped beside it rather than rebuilt in the
+   * browser, so that `plugin/decisions.ts` stays a build-time module and the
+   * drawing reads data rather than importing one.
+   */
+  strikes: Strike[];
   commit: string;
   repo: string;
 }
@@ -81,8 +89,10 @@ export function collectDocs(base = '/'): { module: DocsModule; files: string[] }
     return renderDoc(source, raw, routes, blobBase, base);
   });
 
+  const decisions = buildDecisions(docs, markdown);
+
   return {
-    module: { docs, decisions: buildDecisions(docs, markdown), commit: sha, repo: REPO },
+    module: { docs, decisions, strikes: strikeEdges(decisions), commit: sha, repo: REPO },
     files: sources.map((s) => join(ROOT, s.file)),
   };
 }

@@ -4,11 +4,15 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-import { ROOT } from '../plugin/collect.ts';
+import { collectDocs, ROOT } from '../plugin/collect.ts';
+import { strikeEdges, type DecisionRecord, type Strike } from '../plugin/decisions.ts';
+import { DIAGRAMS as META } from '../src/diagrams';
+import { ADVANCE, chainLayout } from '../src/diagrams/layout';
 
 const DIAGRAMS = join(ROOT, 'apps/workbench/src/diagrams');
 const CORE = join(ROOT, 'packages/app-core/src');
 const PORTS_FILE = join(CORE, 'ports/index.ts');
+const MANIFEST_FILE = join(ROOT, 'apps/workbench/content/sources.manifest.ts');
 
 /** The two drawings that draw the ports. The others draw something else. */
 const PORT_DRAWINGS = ['CoreAndHost.tsx', 'InsideCore.tsx'];
@@ -264,5 +268,520 @@ describe('the drawings, against what they draw', () => {
 
     expect(found).toBeGreaterThan(0);
     expect(wrong).toEqual([]);
+  });
+});
+
+const { module: DOCS } = collectDocs();
+const RECORDS = DOCS.decisions;
+const CHAIN = chainLayout(RECORDS, DOCS.strikes);
+
+/**
+ * The same source with its prose taken out, as `environment.test.ts` does it.
+ *
+ * Both files below argue about record numbers in their comments — which set of
+ * arcs the drawing no longer draws, and why one obvious derivation of them is
+ * wrong — and a check that no record number is typed would otherwise punish the
+ * two files for explaining themselves. Block comments and whole comment lines
+ * only.
+ */
+function code(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .filter((line) => !/^\s*(\/\/|\*)/.test(line))
+    .join('\n');
+}
+
+/**
+ * The decisions drawing, which is now a layout function over `adr/` rather than a
+ * picture.
+ *
+ * IT WAS A PICTURE, and that is what these checks are for. Every node, arc and
+ * label was typed; it drew 0001 through 0023; the lede above it read the count off
+ * `virtual:docs` and said thirty-six. Thirteen records were missing from the
+ * diagram about how this repository keeps its decisions straight, the file carried
+ * a comment admitting that its own list and its own drawing disagreed about 0014,
+ * and every check in this repository was green.
+ *
+ * So the interesting failure has MOVED, and none of what follows asserts "0034 is
+ * in the picture" — that is true by construction now, and a check for it would be
+ * a check on `Array.prototype.map`. What a generator can still do is drop a record
+ * on the way through, put two of them on one rung, draw an arc to a rung that is
+ * not there, run a label under the column beside it, or reach off its own canvas.
+ * Those are what these are.
+ *
+ * WHAT THEY CANNOT SEE. They assert the LAYOUT, which is the data the drawing maps
+ * over, and not the SVG a browser receives; nothing here renders React. A
+ * component that mapped half of `nodes` would pass, which is why the last check in
+ * this block reads the component's source for the two `map` calls and for the
+ * absence of any typed record number. And nothing here knows how wide a glyph
+ * actually is — see `ADVANCE` in `src/diagrams/layout.ts` for what that leaves to
+ * the screenshot.
+ */
+describe('the decisions drawing, against `adr/`', () => {
+  it('puts one rung on the axis for every record, in number order', () => {
+    expect(CHAIN.nodes.map((node) => node.number)).toEqual(RECORDS.map((record) => record.number));
+  });
+
+  it('gives no two records the same rung', () => {
+    const ys = CHAIN.nodes.map((node) => node.y);
+    expect(new Set(ys).size).toBe(ys.length);
+    // And they descend, because the axis IS the record sequence: a generator that
+    // sorted or grouped without saying so would still hand out distinct rungs.
+    expect(ys).toEqual(ys.toSorted((a, b) => a - b));
+  });
+
+  /**
+   * The count is typed nowhere, so it is held to `adr/` from both ends.
+   *
+   * `plugin/decisions.ts` already throws when a record file does not become a
+   * record. This is the other half: a record that became a record and then did not
+   * become a rung.
+   */
+  it('draws as many rungs as `adr/` holds records', () => {
+    expect(CHAIN.nodes.length).toBe(RECORDS.length);
+    expect(CHAIN.summary.records).toBe(RECORDS.length);
+  });
+
+  it('draws every strike the records state, and no arc the records do not', () => {
+    const stated = strikeEdges(RECORDS)
+      .map((edge) => `${edge.by}->${edge.of} x${edge.claims}`)
+      .toSorted();
+    const onTheAxis = CHAIN.arcs.map((arc) => `${arc.by}->${arc.of} x${arc.claims}`).toSorted();
+    expect(onTheAxis).toEqual(stated);
+    expect(CHAIN.summary.arcs).toBe(stated.length);
+  });
+
+  /**
+   * An arc with an end that is not on the axis has nowhere to point, and
+   * `M288 undefined C …` renders as nothing at all rather than as an error.
+   *
+   * `chainLayout` drops such an edge rather than drawing it, which is why the
+   * check above compares against the unfiltered list: between the two, an edge can
+   * be neither invented nor quietly thrown away.
+   */
+  it('points every arc at two rungs that exist', () => {
+    const rungs = new Map(CHAIN.nodes.map((node) => [node.number, node.y]));
+    const wrong: string[] = [];
+    for (const arc of CHAIN.arcs) {
+      if (!rungs.has(arc.by) || !rungs.has(arc.of)) {
+        wrong.push(`${arc.by} -> ${arc.of} ends on a record that is not drawn`);
+        continue;
+      }
+      // A record can only be made false by a later one, which is the rule the
+      // records' half of the graph is derived with. An arc the other way round
+      // would mean that rule had been lost between the records and the picture.
+      if (arc.by <= arc.of) wrong.push(`${arc.by} -> ${arc.of} does not run backwards in time`);
+      if (arc.claims < 1) wrong.push(`${arc.by} -> ${arc.of} draws an arc for no claim`);
+      if (!/^M[\d.]+ [\d.]+ C /.test(arc.path)) {
+        wrong.push(`${arc.by} -> ${arc.of} has no path: ${arc.path}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  /**
+   * The width is the claim the layout makes: height grows with the record count
+   * and width does not, because arcs are packed into lanes by overlap rather than
+   * given one each. A lane step that stopped dividing the gutter would put the
+   * outermost arcs off the left edge, where they are invisible and not missing.
+   */
+  it('keeps every arc inside the canvas however deep the nesting goes', () => {
+    const outside: string[] = [];
+    for (const arc of CHAIN.arcs) {
+      for (const point of arc.path.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)) {
+        const x = Number(point[1]);
+        const y = Number(point[2]);
+        if (x < 0 || x > CHAIN.width || y < 0 || y > CHAIN.height) {
+          outside.push(`${arc.by} -> ${arc.of} reaches ${x},${y}, outside the canvas`);
+        }
+      }
+    }
+    expect(outside).toEqual([]);
+  });
+
+  /**
+   * A generated layout that overlaps its own labels passes every other check
+   * there is.
+   *
+   * Per row, because the title column is cut to what each row has free rather than
+   * to one budget for the set: the longest title in `adr/` sits beside one of the
+   * shortest voider lists and the busiest voider list beside one of the shortest
+   * titles, and a single budget would cut both or neither.
+   */
+  it('leaves every title clear of the column beside it', () => {
+    const overlapping: string[] = [];
+    expect(CHAIN.numberX + 4 * ADVANCE.mono).toBeLessThan(CHAIN.titleX);
+    for (const node of CHAIN.nodes) {
+      if (node.label === '') continue;
+      const titleEnd = CHAIN.titleX + node.label.length * ADVANCE.title;
+      const columnStart = CHAIN.rightX - node.struckByText.length * ADVANCE.mono;
+      if (titleEnd > columnStart) {
+        overlapping.push(
+          `${node.number}: title ends at ${Math.round(titleEnd)}, column starts at ${Math.round(columnStart)}`,
+        );
+      }
+    }
+    expect(overlapping).toEqual([]);
+  });
+
+  /** A title cut short says so, and one that fits is printed whole. */
+  it('prints the record title, cut only where the row has no room', () => {
+    const byNumber = new Map(RECORDS.map((record) => [record.number, record]));
+    const wrong: string[] = [];
+    for (const node of CHAIN.nodes) {
+      if (node.title !== byNumber.get(node.number)?.title) {
+        wrong.push(`${node.number} carries a title the record does not`);
+      }
+      if (node.quiet) {
+        if (node.label !== '')
+          wrong.push(`${node.number} is drawn quiet and still carries a title`);
+        continue;
+      }
+      if (node.label === '') wrong.push(`${node.number} is drawn with no title at all`);
+      else if (node.label !== node.title && !node.label.endsWith('…')) {
+        wrong.push(`${node.number}'s title was cut without saying so`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  /**
+   * `quiet` is the drawing's own word and not a standing: a record that stands,
+   * struck nothing and was struck by nothing, drawn as a dot with no title.
+   *
+   * It is the one piece of hierarchy in the picture, so a bug that made every
+   * record quiet — or none — would empty the drawing or crowd it, and fail nothing
+   * else here.
+   */
+  it('marks a record quiet exactly when nothing is recorded either way', () => {
+    const wrong: string[] = [];
+    for (const record of RECORDS) {
+      const node = CHAIN.nodes.find((candidate) => candidate.number === record.number);
+      const nothing =
+        record.standing === 'stands' && record.voids.length === 0 && record.voidedBy.length === 0;
+      if (node?.quiet !== nothing) {
+        wrong.push(
+          `${record.number} is drawn ${node?.quiet ? 'quiet' : 'loud'} against its record`,
+        );
+      }
+    }
+    expect(wrong).toEqual([]);
+    expect(CHAIN.summary.quiet).toBe(CHAIN.nodes.filter((node) => node.quiet).length);
+  });
+
+  /** The standings the caption counts are the standings the records carry. */
+  it('counts the three standings the way the records do', () => {
+    const count = (standing: string) => RECORDS.filter((r) => r.standing === standing).length;
+    expect(CHAIN.summary.stands).toBe(count('stands'));
+    expect(CHAIN.summary.partlyStruck).toBe(count('partly-struck'));
+    expect(CHAIN.summary.withdrawn).toBe(count('withdrawn'));
+    expect(CHAIN.summary.stands + CHAIN.summary.partlyStruck + CHAIN.summary.withdrawn).toBe(
+      RECORDS.length,
+    );
+  });
+
+  /**
+   * The size the index publishes is the size the drawing actually is.
+   *
+   * `DiagramMeta` carries a width and a height so a page can place a drawing
+   * without rendering it, and the two fixed drawings have theirs typed. This one's
+   * height is a function of the record count, so a number typed there would be the
+   * old defect moved one file across.
+   */
+  it('publishes the size it computed, and the count in its lede', () => {
+    const meta = META.find((diagram) => diagram.id === 'decisions');
+    expect(meta).toBeDefined();
+    expect(meta?.height).toBe(CHAIN.height);
+    expect(meta?.width).toBe(CHAIN.width);
+    expect(meta?.lede.startsWith(`${RECORDS.length} records`)).toBe(true);
+  });
+
+  /**
+   * And the property everything above rests on: nothing in the drawing is typed.
+   *
+   * Source-level, because it is a claim about how the file is written rather than
+   * about what it computes. A single `0014` back in the markup is the old defect
+   * returning, and it would pass every check above by sitting beside the generated
+   * rungs rather than instead of them.
+   *
+   * The two `map` calls are the other half. The checks above assert the layout,
+   * and the layout is only the drawing if the drawing draws all of it.
+   */
+  it('types no record number, and draws every rung and arc the layout gives it', () => {
+    const drawing = code(readFileSync(join(DIAGRAMS, 'DecisionsChain.tsx'), 'utf8'));
+    const layout = code(readFileSync(join(DIAGRAMS, 'layout.ts'), 'utf8'));
+
+    expect([...drawing.matchAll(/\b0\d{3}\b/g)].map((hit) => hit[0])).toEqual([]);
+    expect([...layout.matchAll(/\b0\d{3}\b/g)].map((hit) => hit[0])).toEqual([]);
+    expect(drawing).toMatch(/LAYOUT\.nodes\.map\(/);
+    expect(drawing).toMatch(/LAYOUT\.arcs\.map\(/);
+  });
+});
+
+/**
+ * The third drawing, which nothing checked at all until now, and which is not
+ * redrawn here.
+ *
+ * Its caption spells two figures — how many content sources are live, and how many
+ * are files standing in for one — and both are typed beside a row array that is
+ * also typed. That is a weaker arrangement than the drawing above and it stays
+ * that way today; what follows is the cheap half.
+ *
+ * WHAT CANNOT BE HELD TO THE MANIFEST, and it is the first thing a reader will
+ * ask. `content/sources.manifest.ts` counts CAPABILITIES — articles, the
+ * newsletter archive, search, podcasts, live radio, YouTube, PeerTube — and this
+ * drawing draws HOSTS, with the first three of those all answering at
+ * correctiv.org. So the manifest's live count is seven and the caption's is five,
+ * and both are right. Holding one to the other would mean teaching this file which
+ * endpoint belongs to which host, and that mapping is stated nowhere in the
+ * repository: it would be a third place to keep in step, which is the arrangement
+ * `AGENTS.md` says to reach for last.
+ *
+ * WHAT CAN. Two things, and neither needs that mapping:
+ *
+ *   The caption against the drawing's OWN rows, which is the failure that actually
+ *   happened to the decisions drawing: a row added and the sentence left alone.
+ *
+ *   Each row's STATE against the manifest. `standsIn` is the manifest's word for a
+ *   file standing in for a service, which is exactly what this drawing's dashed
+ *   wire means, so a source that goes live — beabee and Faktenforum are the two
+ *   waiting to — loses its `standsIn` and gains an `endpoint`, and this fails while
+ *   the drawing still draws it as a file.
+ */
+describe('the services drawing, against the sources manifest', () => {
+  const MANIFEST = readFileSync(MANIFEST_FILE, 'utf8');
+  const valuesOf = (key: string): string =>
+    [...MANIFEST.matchAll(new RegExp(`${key}:\\s*'([^']*)'`, 'g'))]
+      .map((hit) => hit[1])
+      .join(' | ');
+  const STANDS_IN = valuesOf('standsIn');
+  const ENDPOINTS = valuesOf('endpoint');
+
+  /**
+   * The rows the drawing draws, off the AST rather than off the file's text.
+   *
+   * The same reason `ports()` above is: a row written across four lines, a
+   * `detail` holding a brace, a trailing comma where a semicolon was expected — a
+   * regex is wrong about each of those silently, and the parser is wrong about
+   * none of them. A row is an object literal carrying both a `name` and a `state`,
+   * which is what the content band is built from and what nothing else in that
+   * file is.
+   */
+  function rows(): { name: string; state: string }[] {
+    const file = join(DIAGRAMS, 'Services.tsx');
+    const source = ts.createSourceFile(
+      'Services.tsx',
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    const found: { name: string; state: string }[] = [];
+    const visit = (node: ts.Node): void => {
+      if (ts.isObjectLiteralExpression(node)) {
+        const read = (key: string): string | null => {
+          const property = node.properties.find(
+            (candidate): candidate is ts.PropertyAssignment =>
+              ts.isPropertyAssignment(candidate) && candidate.name.getText(source) === key,
+          );
+          return property && ts.isStringLiteralLike(property.initializer)
+            ? property.initializer.text
+            : null;
+        };
+        const name = read('name');
+        const state = read('state');
+        if (name !== null && state !== null) found.push({ name, state });
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+    return found;
+  }
+
+  const ROWS = rows();
+
+  it('finds the content rows it is about to check', () => {
+    expect(ROWS.length).toBeGreaterThan(4);
+    expect([...new Set(ROWS.map((row) => row.state))].toSorted()).toEqual(['live', 'sample']);
+  });
+
+  /**
+   * The caption's two spelled figures, against the rows underneath them.
+   *
+   * The phrasing is load-bearing and deliberately so: both patterns have to match
+   * or this fails, so rewording the sentence out from under the check turns the
+   * suite red rather than quiet. A count in front of the word is read as a claim
+   * about the total, which is the rule the port counts above are held to as well.
+   */
+  it('says how many sources are live and how many are files, and both are the number', () => {
+    const caption = readFileSync(join(DIAGRAMS, 'Services.tsx'), 'utf8');
+    const spelled = (pattern: RegExp): number => {
+      const hit = pattern.exec(caption);
+      // A throw rather than an expectation, because a caption that no longer says
+      // this has not failed a comparison — there is nothing left to compare, and
+      // the check would otherwise go quiet exactly when the sentence was reworded.
+      if (!hit) throw new Error(`the Services caption no longer says ${pattern}`);
+      const word = hit[1].toLowerCase();
+      const index = NUMBER_WORDS.indexOf(word);
+      return index >= 0 ? index : Number(word);
+    };
+
+    expect(spelled(/\b(\w+) content sources are live\b/i)).toBe(
+      ROWS.filter((row) => row.state === 'live').length,
+    );
+    expect(spelled(/\b(\w+) are files\b/i)).toBe(
+      ROWS.filter((row) => row.state === 'sample').length,
+    );
+  });
+
+  it('draws as a file exactly what the manifest still stands in for', () => {
+    const wrong: string[] = [];
+    for (const row of ROWS) {
+      const standsIn = STANDS_IN.includes(row.name);
+      const endpoint = ENDPOINTS.includes(row.name);
+      if (row.state === 'sample' && !standsIn) {
+        wrong.push(`${row.name} is drawn as a file and no manifest entry stands in for it`);
+      }
+      if (row.state === 'sample' && endpoint) {
+        wrong.push(`${row.name} is drawn as a file and the manifest gives it an endpoint`);
+      }
+      if (row.state === 'live' && standsIn) {
+        wrong.push(`${row.name} is drawn live and the manifest still stands in for it`);
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+});
+
+/**
+ * The drawing at fifty records, which is the size it was asked to still work at
+ * and which `adr/` will not reach for a year.
+ *
+ * THE CHECKS ABOVE HAVE A HOLE and this is it. Two of them — the one that keeps an
+ * arc inside the canvas, and the one that keeps a title clear of the column beside
+ * it — cannot fail against `adr/` as it stands: the deepest nesting today still
+ * divides the gutter comfortably, and the longest title in the set sits beside one
+ * of the shortest voider lists, so no row is anywhere near its budget. Both were
+ * verified against a deliberately broken layout and neither moved. A check with no
+ * coverage is a check that will be wrong in the direction nobody looks, so the
+ * input is made rather than read here.
+ *
+ * `chainLayout` takes records as an argument for exactly this reason. What is
+ * synthetic is only the input: the function, the geometry and the invariants are
+ * the ones the site renders.
+ *
+ * THE SHAPE OF THE SET is chosen to stress the two claims the layout makes, not to
+ * look like `adr/`. Titles run to a hundred and ten characters, past anything in
+ * the repository, so the truncation branch is actually taken. The strikes mix
+ * neighbours with long reaches, because lane depth comes from arcs that overlap and
+ * a set of short ones would nest no deeper than a set of two.
+ */
+const padded = (n: number): string => String(n).padStart(4, '0');
+
+describe('the decisions drawing, at a size `adr/` has not reached', () => {
+  const LONG = 60;
+
+  function synthetic(): { records: DecisionRecord[]; strikes: Strike[] } {
+    const number = padded;
+    const titles = [
+      'One core, two hosts',
+      'The handbook draws the app’s components, and the rendering that counts',
+      'A decision whose heading runs on well past anything in this repository today, to take the branch that cuts a title short and marks the cut',
+    ];
+
+    const struckIn = new Map<number, number[]>();
+    const strikes: Strike[] = [];
+    for (let n = 2; n <= LONG; n += 1) {
+      for (const [step, every] of [
+        [1, 3],
+        [5, 7],
+        [23, 2],
+        [40, 3],
+      ]) {
+        const target = n - step;
+        if (n % every !== 0 || target < 1) continue;
+        strikes.push({ by: number(n), of: number(target), claims: (n % 6) + 1 });
+        struckIn.set(target, [...(struckIn.get(target) ?? []), n]);
+      }
+    }
+
+    const records: DecisionRecord[] = [];
+    for (let n = 1; n <= LONG; n += 1) {
+      const voidedBy = (struckIn.get(n) ?? []).map(number).toSorted();
+      const voids = strikes
+        .filter((s) => s.by === number(n))
+        .map((s) => s.of)
+        .toSorted();
+      records.push({
+        number: number(n),
+        route: `/decisions/${number(n)}`,
+        title: titles[n % titles.length],
+        date: '2026-09-16',
+        status: 'accepted',
+        standing: voidedBy.length > 0 ? 'partly-struck' : 'stands',
+        note: 'accepted',
+        caveats: [],
+        struck: voidedBy.flatMap((by) =>
+          Array.from({
+            length: strikes.find((s) => s.by === by && s.of === number(n))?.claims ?? 1,
+          }).map(() => ({ claim: 'a claim', clause: 'struck', by: [by] })),
+        ),
+        voidedBy,
+        voids,
+      });
+    }
+    return { records, strikes };
+  }
+
+  const { records, strikes } = synthetic();
+  const BIG = chainLayout(records, strikes);
+
+  it('grows downwards and not sideways', () => {
+    expect(BIG.nodes.length).toBe(LONG);
+    // The claim the file makes: height follows the count, width does not.
+    expect(BIG.height).toBeGreaterThan(CHAIN.height);
+    expect(BIG.width).toBe(CHAIN.width);
+  });
+
+  it('still gives every record a rung of its own, in order', () => {
+    const ys = BIG.nodes.map((node) => node.y);
+    expect(new Set(ys).size).toBe(ys.length);
+    expect(ys).toEqual(ys.toSorted((a, b) => a - b));
+  });
+
+  it('still keeps every arc on the canvas, at a lane depth `adr/` has not reached', () => {
+    // The point of the set: it nests deeper than the repository does, so the lane
+    // packing is doing something here rather than handing out one lane each.
+    expect(BIG.lanes).toBeGreaterThan(CHAIN.lanes);
+    expect(BIG.arcs.length).toBe(strikes.length);
+    const outside = BIG.arcs.filter((arc) =>
+      [...arc.path.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].some(
+        (point) => Number(point[1]) < 0 || Number(point[1]) > BIG.width,
+      ),
+    );
+    expect(outside.map((arc) => `${arc.by} -> ${arc.of}`)).toEqual([]);
+  });
+
+  /**
+   * The branch `adr/` does not take: a title too long for the room its row has.
+   *
+   * Both halves matter. A title that is cut has to say so, and a layout that cut
+   * every title to be safe would pass an overlap check while throwing away the
+   * words — so the short titles in the set have to come through whole.
+   */
+  it('cuts a title that does not fit, marks the cut, and leaves the rest whole', () => {
+    const cut = BIG.nodes.filter((node) => node.label.endsWith('…'));
+    const whole = BIG.nodes.filter((node) => node.label !== '' && node.label === node.title);
+    expect(cut.length).toBeGreaterThan(0);
+    expect(whole.length).toBeGreaterThan(0);
+
+    const overlapping = BIG.nodes.filter(
+      (node) =>
+        node.label !== '' &&
+        BIG.titleX + node.label.length * ADVANCE.title >
+          BIG.rightX - node.struckByText.length * ADVANCE.mono,
+    );
+    expect(overlapping.map((node) => node.number)).toEqual([]);
   });
 });

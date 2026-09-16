@@ -41,18 +41,20 @@ export const LEAD = 'stroke-stroke';
 export const BOUNDARY = 'stroke-accent stroke-2';
 /** An amendment a record makes to an earlier one, stated in the record itself. */
 export const ARC = 'fill-none stroke-on-canvas-muted';
-/** The same relation, but recorded only in the index, so it is drawn as weaker. */
+/** A relation drawn as weaker than a stated one, because it is inferred. */
 export const ARC_INDEX = 'fill-none stroke-stroke-strong [stroke-dasharray:2_3]';
-/** A correction to a living document, which is rewritten rather than annotated. */
-export const ARC_DOC = 'fill-none stroke-on-canvas-muted [stroke-dasharray:6_4]';
 /*
- * The arrowheads. A marker does not inherit from the line that references it, it
- * inherits from where it is defined, so each one carries its own fill and the
- * two of them match the two weights of arc above.
+ * The arrowhead. A marker does not inherit from the line that references it, it
+ * inherits from where it is defined, so it carries its own fill.
+ *
+ * There were three more roles here — a lighter arrowhead, a dashed arc into a
+ * living document, and a hatch — and all three belonged to the hand-drawn
+ * decisions chain. It generates itself from `adr/` now and draws neither the
+ * index's prose relations nor the living documents, because neither can be
+ * derived from a record; `diagrams/layout.ts` carries that reasoning. A named
+ * role with no drawing behind it is the vocabulary going stale on its own.
  */
 export const MARKER = 'fill-on-canvas-muted stroke-none';
-export const MARKER_LIGHT = 'fill-stroke-strong stroke-none';
-export const HATCH = 'stroke-stroke';
 
 /** A record with nothing recorded against it, drawn small on the axis. */
 export const NODE_QUIET = 'fill-stroke-strong stroke-none';
