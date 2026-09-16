@@ -113,7 +113,7 @@ describe('the decision records the board is built from', () => {
  * over the repository rewrites it as happily as it rewrites anything else, and the
  * link dies with nothing red: the record is still there, only nothing points at it any
  * more. This is not hypothetical. The pass that made `apps/handbook` into
- * `apps/workbench` ([ADR 0037](../../adr/0037-the-whole-site-is-the-workbench.md))
+ * `apps/workbench` ([ADR 0037](../../../adr/0037-the-whole-site-is-the-workbench.md))
  * rewrote four such links to `0024-the-workbench-owns-the-root.md` and
  * `0027-the-workbench-draws-the-apps-components.md`, neither of which is a file,
  * and every check in the repository stayed green.

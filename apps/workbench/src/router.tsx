@@ -30,9 +30,9 @@ export function href(route: string): string {
  * A route is a promise to whoever pasted it into a chat, a README or a browser
  * bookmark, and this site has two such promises outstanding. `/preview.html` was
  * the device frame while it was a page of the app's own export
- * ([ADR 0014](../../adr/0014-the-preview-shell-as-a-package.md)); `/workbench` was
+ * ([ADR 0014](../../../adr/0014-the-preview-shell-as-a-package.md)); `/workbench` was
  * it while this site was called the handbook
- * ([ADR 0024](../../adr/0024-the-handbook-owns-the-root.md)). Both now name the
+ * ([ADR 0024](../../../adr/0024-the-handbook-owns-the-root.md)). Both now name the
  * same view, `/preview`, and both are answered here rather than dying.
  *
  * **`/preview.html` used to be a file in `public/` and cannot be one any more.**
