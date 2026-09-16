@@ -42,9 +42,10 @@ import { expoPlatform } from '@/lib/platform/expo';
 import { coreStore, useAppStore, useIsAdmitted } from '@/lib/store/core';
 import { useColors, useIsDark } from '@/lib/theme';
 
-// Hand the core its platform capabilities before anything reads a store. Storage
-// and bundled content come from the adapter; the audio backend is composed in
-// here, so this one line is the whole answer to "what does this host give the core".
+// Hand the core its platform capabilities before anything reads a store. Storage,
+// bundled content and the error reporter come from the adapter; the audio backend
+// is composed in here, so this one line is the whole answer to "what does this
+// host give the core".
 configurePlatform({ ...expoPlatform, audio: expoAudio });
 
 /**
@@ -165,10 +166,25 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     // screen nobody can dismiss, which is the failure this boundary exists for.
     SplashScreen.hideAsync();
 
-    // THE PLACE AN ERROR REPORT LEAVES THE APP. Issue #95 replaces this one line
-    // with the call to whichever crash reporter is chosen; no provider is picked
-    // yet, so for now it goes to the log and nowhere else.
-    console.error('[app] render failed, showing the recovery screen:', error);
+    /**
+     * THE PLACE AN ERROR REPORT LEAVES THE APP, and it now leaves through the
+     * port. `ErrorReporter` is the host's, implemented in `lib/platform/expo.ts`,
+     * and today that implementation is the log line this call replaces — so the
+     * log is the provider rather than a stand-in for one. Issue #95 chooses a real
+     * sink, and it changes that file and not this one
+     * ([ADR 0032](../../../adr/0032-a-port-for-the-error-report-before-a-provider-for-it.md)).
+     *
+     * Reached on `expoPlatform` directly rather than through the core's
+     * `platform()`, because the boundary is the host's half of the arrangement and
+     * has no business reading the registration the core holds for its own callers.
+     *
+     * `cause` is the thrown thing, unchanged. The rendered message goes to the
+     * recovery screen below, where a person can quote it back to us; this half is
+     * for a machine and gets the error itself. No `context`, because the boundary
+     * genuinely has none — what it knows is that a render failed, and inventing
+     * more is the thing the port's contract forbids.
+     */
+    expoPlatform.errors.report({ domain: 'render', code: 'render-failed', cause: error });
   }, [error]);
 
   // `error` is typed `Error`, but React hands over whatever was thrown, and a

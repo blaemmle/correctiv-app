@@ -288,6 +288,50 @@ describe('a browser that refuses localStorage', () => {
   });
 });
 
+/**
+ * The fifth port, and the one file issue #95 changes.
+ *
+ * Asserted here rather than left to the boundary's own suite, because what that
+ * suite can show is that the boundary reports; what this one shows is that the
+ * port this app registers is not the core's no-op. Those are different claims and
+ * the second is the one that makes reporting real: the core reports through
+ * `platform().errors`, and until this adapter answers it, every report the core
+ * makes goes nowhere and looks exactly as it does today.
+ */
+describe('the error reporter', () => {
+  it('logs the domain, the code, the context and the cause itself', () => {
+    const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const cause = new Error('HTTP 502');
+
+    expoPlatform.errors.report({
+      domain: 'podcasts',
+      code: 'series-unreachable',
+      context: { handle: 'klima', replacedBy: 'nothing' },
+      cause,
+    });
+
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged.mock.calls[0]?.[0]).toBe('[podcasts] series-unreachable');
+    expect(logged.mock.calls[0]?.[1]).toEqual({ handle: 'klima', replacedBy: 'nothing' });
+    // The thrown object, not a string of it. A sink wants the stack, and this file
+    // is not the place that decides how an Error is serialised.
+    expect(logged.mock.calls[0]?.[2]).toBe(cause);
+    logged.mockRestore();
+  });
+
+  it('reports one line per report, with no queue in front of it', () => {
+    // Retry, batching and offline queueing are policy about a service nobody has
+    // chosen (ADR 0032), so the absence of them is the behaviour, not an omission.
+    const logged = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    expoPlatform.errors.report({ domain: 'render', code: 'render-failed' });
+    expoPlatform.errors.report({ domain: 'render', code: 'render-failed' });
+
+    expect(logged).toHaveBeenCalledTimes(2);
+    logged.mockRestore();
+  });
+});
+
 /** One write through each port, which is what opens both stores. */
 async function expoPlatformWrite(host: CorePlatform): Promise<void> {
   await host.keyValue.setString('store.settings', '{}');

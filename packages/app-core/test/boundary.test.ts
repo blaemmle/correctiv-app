@@ -175,7 +175,13 @@ describe('core stays platform-free', () => {
     // Anything the core needs from its host must appear in ports/index.ts — one
     // file to read to know what implementing a new host costs.
     const ports = readFileSync(join(SRC, 'ports/index.ts'), 'utf8');
-    for (const port of ['KeyValueStore', 'BlobStore', 'ContentBundle', 'AudioBackend']) {
+    for (const port of [
+      'KeyValueStore',
+      'BlobStore',
+      'ContentBundle',
+      'AudioBackend',
+      'ErrorReporter',
+    ]) {
       expect(ports).toMatch(new RegExp(`export interface ${port}`));
     }
     expect(ports).toMatch(/export interface CorePlatform/);
