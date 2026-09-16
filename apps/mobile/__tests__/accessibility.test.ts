@@ -1,0 +1,486 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
+
+import ts from 'typescript';
+
+/**
+ * What a screen reader is handed, read off the JSX.
+ *
+ * Issue #102 counted the app's accessibility as incremental rather than absent —
+ * 46 `accessibilityLabel`, 41 `accessibilityRole`, 5 `accessibilityState` — and
+ * asked for the gaps to be closed. A count like that rots the moment somebody adds
+ * a screen, and none of the four mistakes below is visible to anything else in
+ * `npm run check`: typecheck sees valid props, oxlint sees valid JSX, and a
+ * screenshot shows a control that looks perfect and announces nothing. TalkBack and
+ * VoiceOver are the real oracle and they are not in CI, so this is the weaker one
+ * available on this side: that the props still reach the control.
+ *
+ * WHY A PARSER AND NOT A REGULAR EXPRESSION. `colour-tiers.test.ts` reads source as
+ * text because a colour token is a word on a line, and a line is all the context it
+ * needs. Three of the four rules here are about a JSX element's CHILDREN — whether
+ * a label is reachable from inside a `<Pressable>` — which means knowing where the
+ * element ends. A regular expression cannot, and the hand-rolled scanner that
+ * pretends to is the thing that produces false positives on exactly the nested
+ * markup this app is made of. `typescript` is already a root devDependency and
+ * parses TSX in the version the repo compiles with, so the tree is the real one.
+ *
+ * WHAT IT DOES NOT PROVE, and it is most of accessibility: that the announced name
+ * is the right name ("Button" passes, and names the glyph rather than the action),
+ * that focus order is sensible, that a control is reachable by swipe, that the
+ * contrast holds, or that anything fits at 200 % system font. Those need a device
+ * and a screen reader — `screens/tools/tour-a11y.sh` is the walk, `screens/` is
+ * where its pictures go, and the issue's "done when" is written against TalkBack and
+ * VoiceOver, not against this file.
+ */
+const SRC = join(__dirname, '..', 'src');
+
+/**
+ * The gallery, excluded for the reason `colour-tiers.test.ts` and
+ * `localisation-seam.test.ts` exclude it, and so that the three checks read one app
+ * rather than three: it is a developer's catalogue of the components, read by
+ * nobody else, and its specimens are deliberately bare.
+ */
+const DEVELOPER_ONLY = /^gallery\//;
+
+/** Path under `src/`, with `/` on every OS. */
+const under = (path: string) => relative(SRC, path).split(sep).join('/');
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return entry.endsWith('.tsx') ? [path] : [];
+  });
+}
+
+const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
+
+/**
+ * The elements that take a touch. React Native's four, by the name they are written
+ * under — this reads a syntax tree and not a type, so a component that wraps one
+ * (`Button`, `NavCard`, `HeaderButton`) is checked where it is DECLARED and not at
+ * its 40-odd call sites, which is the right place for a prop that belongs to the
+ * control.
+ */
+const INTERACTIVE = new Set([
+  'Pressable',
+  'TouchableOpacity',
+  'TouchableHighlight',
+  'TouchableWithoutFeedback',
+]);
+
+/**
+ * The components that render no text OF THEIR OWN, so that a control containing
+ * only these announces nothing. Both halves of the list are the same statement and
+ * are kept in one place because the walk treats them identically: it recurses
+ * through them and collects nothing.
+ *
+ *  - `View`, `Card`, `Bleed` are boxes. Their children decide.
+ *  - `Ionicons`, `ActivityIndicator`, `Thumbnail` are a glyph, a spinner and a
+ *    picture. A control wrapping one of these and nothing else is the icon-only
+ *    button the issue names, and it is silent unless it carries its own label.
+ *
+ * **Everything not on this list counts as text-bearing**, including a component
+ * this file has never heard of. That is the conservative direction on purpose: the
+ * check cannot see inside `<ClaimStatusTag/>` from here, so assuming it speaks
+ * costs a missed violation, while assuming it is silent would fail a control that
+ * is perfectly fine. A miss is a gap; a false alarm is a check people turn off.
+ *
+ * Measured against the app rather than imagined, and held to it by the stale-entry
+ * assertion below — a list of everything would make the labelling rule vacuous and
+ * nothing else in the file would notice.
+ */
+const RENDERS_NO_TEXT = new Set([
+  'View',
+  'Card',
+  'Bleed',
+  'Ionicons',
+  'ActivityIndicator',
+  'Thumbnail',
+]);
+
+/** The image elements, which need a name or an explicit silence. */
+const IMAGES = new Set(['Image', 'ImageBackground']);
+
+/**
+ * The props that mark an image as decorative, in every spelling the three platforms
+ * accept. React Native's two (`accessibilityElementsHidden` on iOS,
+ * `importantForAccessibility` on Android), `accessible={false}`, expo-image's `alt`
+ * and the ARIA pair react-native-web maps. Any one of them is a decision; the point
+ * of the rule is that SOME decision was made.
+ */
+const DECORATIVE = new Set([
+  'accessible',
+  'accessibilityElementsHidden',
+  'importantForAccessibility',
+  'aria-hidden',
+  'alt',
+  'aria-label',
+  'accessibilityLabel',
+]);
+
+const LABEL_PROPS = new Set(['accessibilityLabel', 'aria-label', 'accessibilityLabelledBy']);
+
+interface Control {
+  /** Path under `src/`, with `/` on every OS. */
+  file: string;
+  line: number;
+  tag: string;
+  role: boolean;
+  label: boolean;
+  /** Text a screen reader could read off the children, without leaving this file. */
+  speaks: boolean;
+  /** `{...rest}` present, so a prop may also arrive from the call site. */
+  spread: boolean;
+}
+
+interface Named {
+  file: string;
+  line: number;
+  tag: string;
+  props: string[];
+}
+
+const openingOf = (node: ts.JsxElement | ts.JsxSelfClosingElement) =>
+  ts.isJsxSelfClosingElement(node) ? node : node.openingElement;
+
+const tagOf = (node: ts.JsxElement | ts.JsxSelfClosingElement) => openingOf(node).tagName.getText();
+
+const attributesOf = (node: ts.JsxElement | ts.JsxSelfClosingElement) =>
+  openingOf(node).attributes.properties;
+
+const propNames = (node: ts.JsxElement | ts.JsxSelfClosingElement) =>
+  attributesOf(node)
+    .filter((prop) => !ts.isJsxSpreadAttribute(prop))
+    .map((prop) => prop.name.getText());
+
+/** The string a prop was literally given, or `undefined` when it is an expression. */
+function literalOf(prop: ts.JsxAttribute): string | undefined {
+  const value = prop.initializer;
+  if (!value) return undefined;
+  if (ts.isStringLiteral(value)) return value.text;
+  if (!ts.isJsxExpression(value) || !value.expression) return undefined;
+  const inner = value.expression;
+  if (ts.isStringLiteral(inner) || ts.isNoSubstitutionTemplateLiteral(inner)) return inner.text;
+  return undefined;
+}
+
+/**
+ * Whether anything under this control would be spoken.
+ *
+ * `{item.title}` and a bare `Weiter` both count, and so does any element whose tag
+ * is not in `RENDERS_NO_TEXT` — see that list for why an unknown component is
+ * assumed to speak. An expression is counted as text unless it is only JSX, because
+ * `{count}` is a word on screen and `{open ? <A/> : null}` is not.
+ */
+function speaks(node: ts.JsxElement): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) return;
+    if (ts.isJsxText(child)) {
+      if (child.text.trim()) found = true;
+      return;
+    }
+    if (ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) {
+      if (!RENDERS_NO_TEXT.has(tagOf(child))) {
+        found = true;
+        return;
+      }
+      // A box: its children decide. Its own props cannot speak.
+      if (ts.isJsxElement(child)) child.children.forEach(visit);
+      return;
+    }
+    if (ts.isJsxExpression(child)) {
+      if (!child.expression) return;
+      let holdsJsx = false;
+      const look = (inner: ts.Node): void => {
+        if (
+          ts.isJsxElement(inner) ||
+          ts.isJsxSelfClosingElement(inner) ||
+          ts.isJsxFragment(inner)
+        ) {
+          holdsJsx = true;
+        }
+        inner.forEachChild(look);
+      };
+      look(child.expression);
+      if (!holdsJsx) {
+        found = true;
+        return;
+      }
+      child.expression.forEachChild(visit);
+      return;
+    }
+    child.forEachChild(visit);
+  };
+  node.children.forEach(visit);
+  return found;
+}
+
+interface Reading {
+  controls: Control[];
+  images: Named[];
+  /** Every `accessibilityLabel=""` and `accessibilityLabel={' '}`, anywhere. */
+  blankLabels: Named[];
+  /** Every `allowFontScaling={false}` and `maxFontSizeMultiplier={1}`, anywhere. */
+  optOuts: Named[];
+  /** Tag names seen inside a control, so `RENDERS_NO_TEXT` can be held to the app. */
+  childTags: Set<string>;
+}
+
+function read(): Reading {
+  const out: Reading = {
+    controls: [],
+    images: [],
+    blankLabels: [],
+    optOuts: [],
+    childTags: new Set(),
+  };
+
+  for (const path of FILES) {
+    const file = under(path);
+    const source = ts.createSourceFile(
+      path,
+      readFileSync(path, 'utf8'),
+      ts.ScriptTarget.Latest,
+      /* setParentNodes */ true,
+      ts.ScriptKind.TSX,
+    );
+    const lineOf = (node: ts.Node) =>
+      source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
+
+    const visit = (node: ts.Node): void => {
+      if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+        const tag = tagOf(node);
+        const names = propNames(node);
+        const spread = attributesOf(node).some(ts.isJsxSpreadAttribute);
+        const line = lineOf(node);
+
+        if (INTERACTIVE.has(tag)) {
+          out.controls.push({
+            file,
+            line,
+            tag,
+            role: names.includes('accessibilityRole'),
+            label: names.some((name) => LABEL_PROPS.has(name)),
+            speaks: ts.isJsxElement(node) ? speaks(node) : false,
+            spread,
+          });
+          const collect = (child: ts.Node): void => {
+            if (ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) {
+              out.childTags.add(tagOf(child));
+            }
+            child.forEachChild(collect);
+          };
+          if (ts.isJsxElement(node)) node.children.forEach(collect);
+        }
+
+        if (IMAGES.has(tag)) out.images.push({ file, line, tag, props: names });
+
+        for (const prop of attributesOf(node)) {
+          if (ts.isJsxSpreadAttribute(prop)) continue;
+          const name = prop.name.getText();
+          if (LABEL_PROPS.has(name)) {
+            const literal = literalOf(prop);
+            if (literal !== undefined && literal.trim() === '') {
+              out.blankLabels.push({ file, line: lineOf(prop), tag, props: [name] });
+            }
+          }
+          if (name === 'allowFontScaling' || name === 'maxFontSizeMultiplier') {
+            const value = prop.initializer;
+            const off =
+              value !== undefined &&
+              ts.isJsxExpression(value) &&
+              value.expression !== undefined &&
+              (value.expression.kind === ts.SyntaxKind.FalseKeyword ||
+                (ts.isNumericLiteral(value.expression) && Number(value.expression.text) <= 1));
+            if (off) out.optOuts.push({ file, line: lineOf(prop), tag, props: [name] });
+          }
+        }
+      }
+      node.forEachChild(visit);
+    };
+    visit(source);
+  }
+
+  return out;
+}
+
+const app = read();
+
+const at = ({ file, line }: { file: string; line: number }) => `${file}:${line}`;
+
+describe('a control reaches a screen reader', () => {
+  it('reads the app it is checking (guards against a silently empty walk)', () => {
+    // A walk that parsed nothing writes no offenders, and every assertion below
+    // passes over it. Three numbers rather than one, because each rule reads a
+    // different part of the tree and a parser that returned only opening tags
+    // would still satisfy the first.
+    expect(FILES.length).toBeGreaterThan(50);
+    expect(app.controls.length).toBeGreaterThan(30);
+    expect(app.childTags.size).toBeGreaterThan(5);
+  });
+
+  it('names every control, from a label or from its own text', () => {
+    // The icon-only button, which is the issue's third bullet. A control whose
+    // children are all in `RENDERS_NO_TEXT` and which carries no label of its own
+    // is announced by TalkBack as its role and nothing else — "Schaltfläche",
+    // twelve times down a screen.
+    //
+    // No exception list, and nothing to excuse: the fix is one prop, and the
+    // argument about what it should SAY (the action, not the glyph) is the part a
+    // reviewer has to make, which is why a missing one is a failure rather than a
+    // line to add here.
+    const silent = app.controls
+      .filter((control) => !control.label && !control.speaks && !control.spread)
+      .map((control) => `${at(control)} → <${control.tag}> has no label and no text child`);
+
+    expect(silent).toEqual([]);
+  });
+
+  it('writes no empty accessibilityLabel', () => {
+    // `accessibilityLabel=""` is worse than none: an empty name does not fall back
+    // to the children, it replaces them, so a control that read fine before goes
+    // silent. It is also what a half-finished label looks like, and it typechecks.
+    const blank = app.blankLabels.map((use) => `${at(use)} → <${use.tag}> ${use.props[0]}=""`);
+
+    expect(blank).toEqual([]);
+  });
+
+  it('turns the system font size off nowhere', () => {
+    // Issue #102: "keep content reachable rather than switching scaling off".
+    // `allowFontScaling={false}` and `maxFontSizeMultiplier={1}` are the two ways
+    // to make a label ignore the reader's own setting, and both look like a fix for
+    // the clipping that `tour-a11y.sh` photographs. The clipping is the bug.
+    const off = app.optOuts.map((use) => `${at(use)} → <${use.tag}> ${use.props[0]} opts out`);
+
+    expect(off).toEqual([]);
+  });
+});
+
+/**
+ * The controls that do not declare a role, with what that costs each one.
+ *
+ * A `Pressable` with a text child announces its text, so it is not silent — it is
+ * announced as TEXT. TalkBack then offers no "Doppeltippen zum Aktivieren", skips
+ * it in controls-only navigation, and VoiceOver's rotor does not list it. That is
+ * an invisible difference in a screenshot and a whole screen's difference to
+ * somebody swiping through it.
+ *
+ * A ratchet rather than a failure, and a small one: these two are the app's
+ * remainder, both one prop from done. The reason is per entry rather than a shared
+ * note, because the two are not the same case and only one of them is obviously a
+ * button.
+ */
+const WITHOUT_A_ROLE: Record<string, string> = {
+  'components/feed/ArticleRow.tsx:16':
+    'the compact row under "Neueste Recherchen"; announced as its headline, opens the reader',
+  'components/home/EarlyAccessCard.tsx:37':
+    'the whole card is the target, and its last line ("Jetzt lesen →") already reads like one',
+};
+
+describe('the controls that still announce as text only', () => {
+  const missing = app.controls.filter((control) => !control.role && !control.spread).map(at);
+
+  it('acquires no new control without a role', () => {
+    const arrivals = missing.filter((where) => !WITHOUT_A_ROLE[where]);
+
+    expect(arrivals.sort()).toEqual([]);
+  });
+
+  it('excuses nothing that has since been given one', () => {
+    // The direction a one-sided list cannot do, and the one that makes this
+    // finishable: the last `accessibilityRole` to arrive takes the last entry above
+    // with it, and then the app has no remainder rather than a tolerated one.
+    //
+    // It also fails when a listed control MOVES, because the excuse is addressed by
+    // line. That is deliberate. A line number in an excuse is the thing that goes
+    // quietly wrong — the entry stays, the control it named has gone, and the next
+    // control to land on that line inherits the permission.
+    const stale = Object.keys(WITHOUT_A_ROLE).filter((where) => !missing.includes(where));
+
+    expect(stale.sort()).toEqual([]);
+  });
+});
+
+/**
+ * The images that declare neither a name nor a silence.
+ *
+ * An `<Image>` with no `accessibilityLabel` is read by iOS as its file name or not
+ * at all, and by Android as nothing — so a decorative image and a load-bearing one
+ * are indistinguishable from outside, which is the whole point of marking one.
+ *
+ * The app has exactly one `<Image>`, inside `Thumbnail`, and which of the two it is
+ * has not been decided: the frame is a cover beside a headline on a feed card
+ * (decorative, and `accessibilityElementsHidden` is the answer) and the only content
+ * of a rail tile (not decorative). Listed rather than guessed, because guessing puts
+ * `alt=""` on a picture somebody needed.
+ */
+const IMAGES_WITHOUT_A_DECISION: Record<string, string> = {
+  'components/ui/Thumbnail.tsx:60':
+    'cover art; decorative beside a headline and load-bearing in a rail tile, and the same component renders both',
+};
+
+describe('every image is named or marked decorative', () => {
+  it('finds images at all (guards against a walk that matched no <Image>)', () => {
+    expect(app.images.length).toBeGreaterThan(0);
+  });
+
+  const undeclared = app.images
+    .filter((image) => !image.props.some((name) => DECORATIVE.has(name)))
+    .map(at);
+
+  it('acquires no new undeclared image', () => {
+    const arrivals = undeclared.filter((where) => !IMAGES_WITHOUT_A_DECISION[where]);
+
+    expect(arrivals.sort()).toEqual([]);
+  });
+
+  it('excuses nothing that has since been declared', () => {
+    const stale = Object.keys(IMAGES_WITHOUT_A_DECISION).filter(
+      (where) => !undeclared.includes(where),
+    );
+
+    expect(stale.sort()).toEqual([]);
+  });
+});
+
+/**
+ * **What a green run here does NOT mean**, in assertions where it can be held and in
+ * prose where it cannot, and at the end rather than buried — the rules above are
+ * four mistakes, not a definition of accessible.
+ *
+ * Invisible to this file, every one of them a real defect:
+ *
+ *  - **A label that is wrong.** "Bild", "Schaltfläche", the glyph's name instead of
+ *    the action. The rule is that one exists, and no parser judges the words.
+ *  - **A label that is not a string.** `accessibilityLabel={item.title}` passes, and
+ *    the title can be empty — the blank-label rule reads literals only.
+ *  - **A prop arriving through `{...rest}`.** `Button` spreads after its own
+ *    accessibility props, so a caller can blank one, and the three rules above skip
+ *    a control with a spread rather than guess. One control in the app has one.
+ *  - **Focus order, and reachability by swipe.** A tree order is not a reading
+ *    order, and nothing here reads either.
+ *  - **Touch target size**, deliberately. It is 44×44 in the issue and 48×48 dp on
+ *    Android, and it is not computable here: a target's height is its text's line
+ *    box plus padding written as utility classes, times whatever the reader's font
+ *    scale is — three numbers, none of them in the JSX. A rule over the classes
+ *    alone would pass the buttons that grow with their text and fail the icons that
+ *    `hitSlop` already covers, which is a check that fires on the wrong twelve
+ *    sites. It is measured on the device instead, from `uiautomator`'s own bounds:
+ *    `screens/tools/tour-a11y.sh`, which reports every clickable node under 48 dp.
+ *  - **Anything at 200 % font.** Clipping, overlap, a control pushed off screen.
+ *    Same tour, and the pictures are the evidence.
+ */
+describe('the list the walk is held to', () => {
+  it('excuses only components the app actually puts inside a control', () => {
+    // `RENDERS_NO_TEXT` is the one list that can make the labelling rule vacuous:
+    // every name on it is a component the walk collects nothing from, so a stale
+    // entry is a standing permission for a component that no longer exists and a
+    // generous one is an excuse for a component that speaks. Held to the app, it
+    // can only be as long as the app makes it.
+    const stale = [...RENDERS_NO_TEXT].filter((tag) => !app.childTags.has(tag));
+
+    expect(stale.sort()).toEqual([]);
+  });
+});
