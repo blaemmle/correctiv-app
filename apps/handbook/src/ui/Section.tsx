@@ -64,6 +64,17 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
  * the section they live in. Mounted and `hidden` keeps them, and `hidden` is
  * `display: none`, so a shut section is out of the accessibility tree either way.
  *
+ * **And `hidden` has to be written here, because `forceMount` is what takes it
+ * away.** Radix does not hide a closed body itself; it asks `Presence` whether
+ * the body is still there and writes `hidden={!present}` from the answer.
+ * `forceMount` pins that answer to "present" for ever — `isOpen = open ||
+ * isPresent` inside `CollapsibleContentImpl`, and `isPresent` never goes false —
+ * so the attribute this component was relying on was never written. Every
+ * section of every panel opened and stayed open: the address took the toggle, the
+ * trigger's `data-state` flipped, the chevron turned, and the body did not move.
+ * The prop spread lands after Radix's own `hidden`, so saying it here is what
+ * decides it.
+ *
  * The hover is `surface` on the panel's own `canvas`, which is the inverse of
  * the dock this came from: `SidePanel` paints `canvas`, so a row that hovered to
  * `canvas` hovered to no change at all.
@@ -109,7 +120,7 @@ export function Section({
             />
           </CollapsibleTrigger>
         </h3>
-        <CollapsibleContent forceMount className="overflow-hidden">
+        <CollapsibleContent forceMount hidden={!open} className="overflow-hidden">
           <SlotTarget id={id} className="flex flex-col gap-s px-s pb-s" />
         </CollapsibleContent>
       </section>
