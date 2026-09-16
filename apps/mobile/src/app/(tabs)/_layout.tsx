@@ -72,6 +72,14 @@ const IS_IOS = Platform.OS === 'ios';
  *
  * Re-measure it rather than trust it: it is a property of these five German words
  * at this screen width, and renaming a tab or shipping a second language moves it.
+ *
+ * **`__tests__/tab-bar-labels.test.ts` is what makes that sentence able to fail.**
+ * It cannot re-measure — no test can put five words on a 1080 px bar and look at
+ * them — so it pins the inputs instead: the five German strings in the catalogue,
+ * the five ids declared below, this number as written here, and that one language
+ * ships. When it goes red the number is not wrong, it is no longer known to be
+ * right, and the answer is `OUT=out/a11y bash screens/tools/tour-a11y.sh` rather
+ * than an edit to the test. The one input it cannot see is the screen width.
  */
 const LABELS_FIT_UP_TO = 1.3;
 
