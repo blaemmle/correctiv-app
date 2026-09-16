@@ -44,7 +44,7 @@ All of that was true, and none of it is ours to argue any more. A page surface i
 `canvas`; white on a red button is the primitive `white`. They are different tokens
 now and can move independently, which is exactly what the essay wished for.
 
-## Decision
+## 1. Decision
 
 **Adopt all three tiers, and express the dark scheme at the semantic one.**
 

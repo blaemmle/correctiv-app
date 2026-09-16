@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { collectDocs, ROOT } from '../plugin/collect.ts';
+import { decisionNumber } from '../plugin/markdown.ts';
 import { FEEDS } from '../content/sources.manifest.ts';
 import { feedId, slug } from '../src/lib/slug.ts';
 
@@ -54,10 +55,21 @@ describe('the fragment identifier', () => {
     // of `renderDoc`, so a heading renderer that stopped calling this would fail
     // here rather than in a comment. The `-n` suffix is the de-duplicator's, and
     // a document with two headings of the same name is ordinary.
+    //
+    // One exception, and it is deliberate: a decision in `adr/` is addressed by
+    // its number, so `### 6. German and English …` is `#6` and not a slug of its
+    // words. That is the point of the numbers — a slug dies on the reword a number
+    // survives — and `test/decision-numbers.test.ts` holds the other end of it. Every
+    // other heading of a record still slugs, which is what the filter below keeps
+    // asserting.
     const { module } = collectDocs();
     const wrong = module.docs.flatMap((doc) =>
       doc.headings
-        .filter((h) => h.id !== slug(h.text) && !new RegExp(`^${slug(h.text)}-\\d+$`).test(h.id))
+        .filter((h) => {
+          const numbered = doc.route.startsWith('/decisions/') ? decisionNumber(h.text) : null;
+          if (numbered !== null) return h.id !== String(numbered);
+          return h.id !== slug(h.text) && !new RegExp(`^${slug(h.text)}-\\d+$`).test(h.id);
+        })
         .map((h) => `${doc.route}: ${h.id} ≠ ${slug(h.text)}`),
     );
     expect(wrong).toEqual([]);

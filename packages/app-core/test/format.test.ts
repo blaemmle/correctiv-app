@@ -14,7 +14,7 @@ import {
  * separate measurements stand behind that, and neither covers the other:
  *
  * - Both constructors exist on `hermes-android 250829098.0.17` (arm64), the runtime
- *   this app ships on Android — ADR 0026, section 6, which measured which `Intl`
+ *   this app ships on Android — ADR 0026 §6, which measured which `Intl`
  *   constructors are present and says to confirm on a device, and on iOS separately.
  * - The German data itself came out of that confirmation: an Android 16 / API 36
  *   x86_64 emulator run on 2026-09-14, recorded in pull request #135.

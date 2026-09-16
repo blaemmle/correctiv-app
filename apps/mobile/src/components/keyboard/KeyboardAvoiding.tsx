@@ -83,14 +83,14 @@ export type KeyboardAvoidingProps = {
  * y 414–510 and the avoiding box 58–844 with a ~73pt footer, so a ~336pt keyboard
  * leaves the scroller 58–435 and cuts the field 21pt after its top edge. The
  * escalation for that is named and not taken: `react-native-keyboard-controller`'s
- * `KeyboardAwareScrollView` (ADR 0026, section 2), a dependency to add when a layout
+ * `KeyboardAwareScrollView` (ADR 0026 §2), a dependency to add when a layout
  * demands it rather than in advance.
  *
  * `keyboardVerticalOffset` stays 0, and that is a measured fact about these three
  * screens rather than a default worth keeping: none of them sits under a native
  * stack header. The door is rendered in place of the whole route tree, and the form
  * and search draw the app's own bar. If one of them ever takes the platform's
- * header (ADR 0026, section 9) the offset it then needs is `useHeaderHeight()` from
+ * header (ADR 0026 §9) the offset it then needs is `useHeaderHeight()` from
  * `@react-navigation/elements`.
  *
  * On web this is a plain `View`: react-native-web's `KeyboardAvoidingView` drops

@@ -54,6 +54,8 @@
     "offline-articles": "npm run offline-articles -w @correctiv/mobile",
     "offline-podcasts": "npm run offline-podcasts -w @correctiv/mobile",
     "i18n:extract": "npm run i18n:extract -w @correctiv/mobile",
+    "adr:new": "node scripts/adr.mjs new",
+    "adr:lock": "node scripts/adr.mjs lock",
     "handbook": "npm run dev -w @correctiv/handbook",
     "build:handbook": "npm run build -w @correctiv/handbook",
     "handbook:renders": "npm run renders -w @correctiv/handbook",

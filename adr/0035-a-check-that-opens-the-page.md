@@ -35,7 +35,7 @@ to go for "make this fail", and walking its ladder produces nothing:
    would have caught this exact defect and nothing else, and it would have had to name
    the three modules, which is a list, which rots.
 
-## Decision
+## 1. Decision
 
 **A check that starts each build path, opens the page in a headless browser, and fails if
 what comes back is not the handbook**, printing what the browser said.

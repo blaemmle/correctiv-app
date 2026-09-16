@@ -24,7 +24,7 @@ first**, because it is the one that needs no design.
 Four mechanisms. Each is stronger than the one below it, and a rule goes as high up this
 ladder as it can. "Would a test catch it" is the last question to ask, not the first.
 
-### Mechanism 1 — make it a type error
+### 1. Mechanism 1 — make it a type error
 
 Where the set is closed and TypeScript can see it, an exhaustive `Record` makes an
 omission a compile error:
@@ -44,7 +44,7 @@ does not build.
 This is the cheapest mechanism and the most often missed, because it needs the set to be
 named as a type before anybody notices there is a set.
 
-### Mechanism 2 — generate the type from the world
+### 2. Mechanism 2 — generate the type from the world
 
 Most of what must not be forgotten is not a union somebody typed. It is the filesystem,
 the token source, the route tree. TypeScript cannot read a directory. **A generator can,
@@ -65,7 +65,7 @@ do is close the loop into a `Record`. **The component catalogue is the first can
 it, and a new component then fails to compile rather than failing a test somebody has to
 have written.
 
-### Mechanism 3 — take the primitive away
+### 3. Mechanism 3 — take the primitive away
 
 Where the rule is "do not use X directly", the answer is to make X unreachable and offer
 the thing that cannot be got wrong.
@@ -82,7 +82,7 @@ The cost is a wrapper nobody can bypass, which is also the benefit, and the fail
 is a wrapper so awkward that people reach around it. That is a design problem, not a
 reason to skip the mechanism.
 
-### Mechanism 4 — read the source, and only for what no type can see
+### 4. Mechanism 4 — read the source, and only for what no type can see
 
 Some facts are structurally invisible to the type system. German characters in a file.
 An import of a platform SDK. A CSS rule in a built artefact. A class name assembled from

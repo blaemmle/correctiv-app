@@ -31,7 +31,7 @@ way to be same-origin, and it is the one way that also forces the shell to live
 wherever the app's export lives. A site root the app does not occupy is impossible
 under it.
 
-## Decision
+## 1. Decision
 
 **The handbook is the site. The app is a directory inside it.**
 

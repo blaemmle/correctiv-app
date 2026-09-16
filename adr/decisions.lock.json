@@ -1,0 +1,267 @@
+{
+  "0001": {
+    "slugs": ["monorepo-and-platform-free-core"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0002": {
+    "slugs": ["vite-8-rolldown-evaluation"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0003": {
+    "slugs": ["audio-capability-spike"],
+    "decisions": {
+      "1": ["Consequence for the stack decision"]
+    }
+  },
+  "0004": {
+    "slugs": ["react-native-pivot"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0005": {
+    "slugs": ["react-native-over-nativescript"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0006": {
+    "slugs": ["one-core-two-hosts"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0007": {
+    "slugs": ["removing-the-nativescript-host"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0008": {
+    "slugs": ["uniwind-over-nativewind"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0009": {
+    "slugs": ["redux-toolkit-for-the-cores-state"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0010": {
+    "slugs": ["design-tokens-as-a-shared-package"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0011": {
+    "slugs": ["naming-the-app-for-release"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0012": {
+    "slugs": ["a-list-virtualizer-for-the-unbounded-lists"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0013": {
+    "slugs": ["native-tabs-and-a-web-tab-bar-of-its-own"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0014": {
+    "slugs": ["the-preview-shell-as-a-package"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0015": {
+    "slugs": ["reading-correctiv-org-through-its-rest-api"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0016": {
+    "slugs": ["a-door-at-the-root-and-an-entitlement-not-an-amount"],
+    "decisions": {
+      "1": ["A render branch, not a redirect"],
+      "2": ["An entitlement, never an amount"],
+      "3": ["A `session` slice beside `membership`, not a field on it"],
+      "4": ["Simulated, and said so on the screen"],
+      "5": ["Four states on one surface"],
+      "6": ["Sign-out lives in Einstellungen"]
+    }
+  },
+  "0017": {
+    "slugs": ["native-rendering-as-the-rule-a-webview-for-the-exception"],
+    "decisions": {
+      "1": ["Native rendering stays the rule, and the webview is the exception"],
+      "2": ["The exception is detected, not judged"]
+    }
+  },
+  "0018": {
+    "slugs": ["removing-the-guest"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0019": {
+    "slugs": ["identity-lives-in-the-session"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0020": {
+    "slugs": ["no-contribution-in-the-app"],
+    "decisions": {
+      "1": ["The app sets no contribution"],
+      "2": ["The label is the part with a rule behind it"]
+    }
+  },
+  "0021": {
+    "slugs": ["the-board-is-a-plugin-and-the-screens-are-data"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0022": {
+    "slugs": ["three-tiers-of-colour-and-a-dark-scheme-that-names-roles"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0023": {
+    "slugs": ["the-host-constructs-the-store"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0024": {
+    "slugs": ["the-handbook-owns-the-root"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0025": {
+    "slugs": ["the-published-app-is-a-production-bundle"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0026": {
+    "slugs": ["react-native-review-and-hardening"],
+    "decisions": {
+      "1": ["Rozenite, which replaces the Redux debugger rather than joining it"],
+      "2": ["Keyboard-aware inputs, as a usability requirement"],
+      "3": ["Notification delivery stays deferred until it is decided how they are sent"],
+      "4": ["MMKV as the single storage engine, with a bounded cache"],
+      "5": ["An error boundary, and an error report whose provider is not chosen yet"],
+      "6": ["German and English from the first string, and German is the only one that ships"],
+      "7": ["Tablet is in scope, and accessibility is the work beside it"],
+      "8": ["Commit hooks, which format rather than complain"],
+      "9": ["Navigation headers: the platform's on iOS and Android, ours on web"]
+    }
+  },
+  "0027": {
+    "slugs": ["the-handbook-draws-the-apps-components"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0028": {
+    "slugs": ["one-shell-and-a-route-that-declares-its-context"],
+    "decisions": {
+      "1": ["The route declares, and the page fills"],
+      "2": ["The address, on every route"],
+      "3": ["Two defaults that look inconsistent and are not"],
+      "4": ["Below 1024, the context is the page"],
+      "5": ["The frame moves to the component's own page"],
+      "6": ["Every card draws, and there is nothing to press"],
+      "7": ["The square is the column, and a crop says it is one"],
+      "8": ["The registry's roster is the app's own catalogue"],
+      "9": ["The environment is the app's, and it was short by five things"],
+      "10": ["One environment, exported once"],
+      "11": ["The card's link is over the drawing, not on it"],
+      "12": ["A visible way past the app's door (issue #112)"]
+    }
+  },
+  "0029": {
+    "slugs": ["the-handbook-keeps-its-own-primitives"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0030": {
+    "slugs": ["the-platforms-header-and-ours-on-web"],
+    "decisions": {
+      "1": ["Decision"],
+      "2": ["The two exceptions, named so they are a decision"]
+    }
+  },
+  "0031": {
+    "slugs": ["four-mechanisms-for-this-must-not-be-forgotten"],
+    "decisions": {
+      "1": ["Mechanism 1 — make it a type error"],
+      "2": ["Mechanism 2 — generate the type from the world"],
+      "3": ["Mechanism 3 — take the primitive away"],
+      "4": ["Mechanism 4 — read the source, and only for what no type can see"]
+    }
+  },
+  "0032": {
+    "slugs": ["a-port-for-the-error-report-before-a-provider-for-it"],
+    "decisions": {
+      "1": ["A fifth port, with a no-op default"],
+      "2": ["What a report carries: a code, not a sentence"],
+      "3": ["Where reporting is allowed to happen"]
+    }
+  },
+  "0033": {
+    "slugs": ["one-text-size-for-the-whole-app-the-systems-by-default"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0034": {
+    "slugs": ["one-component-for-the-two-sided-row"],
+    "decisions": {
+      "1": ["A two-sided row is a component, and the class is banned"],
+      "2": ["The tab bar drops four labels above 130 %, and the threshold is measured"],
+      "3": ["One line for the word break, and it stops at the headlines"]
+    }
+  },
+  "0035": {
+    "slugs": ["a-check-that-opens-the-page"],
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0036": {
+    "slugs": ["the-home-screen-becomes-data"],
+    "decisions": {
+      "1": ["The configurator is built for us, and the document is designed for the newsroom"],
+      "2": ["Fixed places that get filled, not blocks that get arranged"],
+      "3": ["A place carries either a pinned item or a rule, and the rule is what runs unattended"],
+      "4": ["A small document the app fetches and stores"],
+      "5": ["Fetched at launch and on every return to the foreground, with a floor between tries"],
+      "6": ["No version number in the document"],
+      "7": ["An unknown place is drawn past, and reported"],
+      "8": ["A pinned item that has vanished falls back to the place's rule"],
+      "9": ["Both ends validate, and the app keeps the last good copy"],
+      "10": ["The first launch with no network gets a default layout shipped in the bundle"],
+      "11": ["Scenarios are named, live in the repository, and the name goes in the address"],
+      "12": ["A scenario is the same file as a real configuration, only named"],
+      "13": ["A scenario declares whether it pulls live content or uses fixed sample data"],
+      "14": ["One definition of the places, and everything else derived from it"],
+      "15": ["The configurator writes a file into the repository, as a pull request"],
+      "16": ["Offline media downloads are a later decision"]
+    }
+  }
+}

@@ -36,8 +36,9 @@ narrower case than the one that was originally made.
 
 ## Decision
 
-**Native rendering stays the rule. The webview is the exception, and it is built
-early rather than kept as a fallback.**
+### 1. Native rendering stays the rule, and the webview is the exception
+
+It is built early rather than kept as a fallback.
 
 ### Why native stays the rule
 
@@ -73,7 +74,7 @@ The seam is already there: on native the reader *is* a WebView, given
 header-hiding query parameter the scope describes is the same component in a new state,
 not a new renderer.
 
-### The exception is detected, not judged
+### 2. The exception is detected, not judged
 
 "Where native does not work" grows silently if it is decided per article, and nobody
 finds out how often it was decided. Both conditions are already visible in the code and

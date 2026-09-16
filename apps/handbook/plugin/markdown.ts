@@ -30,6 +30,29 @@ export interface RetiredClaim {
   by: string[];
 }
 
+/**
+ * The number a decision heading opens with, which is the whole of its address.
+ *
+ * A record numbers its decisions — `### 6. German and English from the first
+ * string` — and the repository cites them as `ADR 0026 §6`. The site has to answer
+ * `/decisions/0026#6`, so the id is the number and **not** a slug of the words.
+ *
+ * That is the point rather than a shortcut. A slug is derived from the heading
+ * text, so rewording a heading silently retires every link into it, which is
+ * exactly the failure the numbers were introduced to end. An id taken from the
+ * number survives a reword, because a reword does not change which decision it is.
+ *
+ * Only in a decision record. `N.` at the front of a heading means a number here;
+ * in a document that happens to open a heading with a figure it means nothing, and
+ * an id of `3` on `ARCHITECTURE.md` would be an address nobody meant to mint.
+ */
+export function decisionNumber(headingText: string): number | null {
+  const hit = /^(\d{1,3})\.\s/.exec(headingText.trim());
+  if (!hit) return null;
+  const n = Number(hit[1]);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 export interface RenderedDoc {
   id: string;
   file: string;
@@ -244,16 +267,20 @@ export function renderDoc(
   const headings: Heading[] = [];
   const seen = new Map<string, number>();
   const md = new Marked({ gfm: true });
+  const isRecord = source.route.startsWith('/decisions/');
 
   md.use({
     renderer: {
       heading(token: Tokens.Heading) {
         const text = this.parser.parseInline(token.tokens);
-        const base = slug(stripTags(text)) || 'section';
+        const label = stripTags(text);
+        // The number, where the record wrote one, so `#6` is the address of §6.
+        const numbered = isRecord ? decisionNumber(label) : null;
+        const base = numbered === null ? slug(label) || 'section' : String(numbered);
         const n = seen.get(base) ?? 0;
         seen.set(base, n + 1);
         const id = n === 0 ? base : `${base}-${n}`;
-        headings.push({ depth: token.depth, id, text: stripTags(text) });
+        headings.push({ depth: token.depth, id, text: label });
         return `<h${token.depth} id="${id}">${text}</h${token.depth}>\n`;
       },
       /**
