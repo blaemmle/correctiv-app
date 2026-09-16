@@ -124,8 +124,9 @@ export function DirectPreview({
  * says what was asked for, and `'system'` is the one value where those differ.
  *
  * So `storedAppearance()` is the value and the class change is only the signal
- * that it moved — `theme.ts` writes both, in that order, and nothing else writes
- * the stored one. Taken from there rather than as a prop because `useAppearance`
+ * that it moved — `theme.ts` writes the value in the click and the class one
+ * commit later, in that order, and nothing else writes the stored one. Taken from
+ * there rather than as a prop because `useAppearance`
  * is `useState` held in `App.tsx`, and a second call to it would be a second,
  * independent setting.
  *
