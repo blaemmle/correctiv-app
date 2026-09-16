@@ -114,10 +114,10 @@ exactly as written. It is why the proxy exists rather than a second port.
 package, `tools/preview`". **Struck in place**, because the package is gone. ~~The shell
 is a route of `apps/handbook` now, `/workbench`.~~ Both names have moved,
 `apps/workbench` and `/preview` ([ADR 0037](0037-the-whole-site-is-the-workbench.md));
-that it is a route of the site rather than a package of its own is unchanged. Its reasoning for not being a host,
-that `apps/*` means a host of the core and a dev tool is not one, is why it sat in
-`tools/` and is worth reading; the handbook is a genuine second thing with screens,
-which is the difference.
+that it is a route of the site rather than a package of its own is unchanged. Its
+reasoning for not being a host, that `apps/*` means a host of the core and a dev tool
+is not one, is why it sat in `tools/` and is worth reading; the handbook is a genuine
+second thing with screens, which is the difference.
 
 0014's "What it costs" section named three costs that the move removed: the build
 step before the app runs (`npm run preview`), the generated output in the app's tree,
