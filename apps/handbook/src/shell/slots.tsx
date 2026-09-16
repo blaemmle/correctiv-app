@@ -81,6 +81,11 @@ export function SlotProvider({
  * `as="span"` for the one target that sits inside a button: a section's tags are
  * in the collapsible's trigger, and a `div` inside a `button` is content a
  * browser is allowed to reparent.
+ *
+ * `data-slot` names it in the rendered document. A slot target is empty in the
+ * markup — its content arrives from somewhere else in the tree — so without the
+ * attribute it is an anonymous div, and both devtools and
+ * `test/shell/section.test.tsx` would have to identify it by its class list.
  */
 export function SlotTarget({
   id,
@@ -99,7 +104,7 @@ export function SlotTarget({
     return () => register(id, null);
   }, [id, register]);
 
-  return <Element ref={ref as never} className={className} />;
+  return <Element ref={ref as never} data-slot={id} className={className} />;
 }
 
 /**
