@@ -35,9 +35,9 @@ work and deciding what lands. What keeps it honest is checkable. Every architect
 choice is recorded in [`adr/`](adr/README.md), and a claim that a later decision made
 false is struck through where it stands, with a link to the record that voided it,
 instead of being quietly rewritten. Every source the app reads is inventoried in
-[SOURCES.md](SOURCES.md), measured by hand against the live source on a day the file
-states, with that date typed a second time into the site's manifest and a test that
-fails when the two part. `npm run check` at the root runs typecheck, lint, format and
+[SOURCES.md](SOURCES.md), and a weekly job measures all of them against the live
+sources and opens a pull request with what moved, so the figures and the day they were
+taken are generated rather than typed. `npm run check` at the root runs typecheck, lint, format and
 tests in seconds, and [TROUBLESHOOTING.md](TROUBLESHOOTING.md) collects the
 defects that passed exactly that, which is why a green check is not treated as
 evidence here.

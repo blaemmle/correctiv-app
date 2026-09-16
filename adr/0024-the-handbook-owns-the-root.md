@@ -5,7 +5,8 @@ Status: accepted, 2026-09-04.
 ## Context
 
 The repository's documentation is the part of it that no code review would produce.
-`SOURCES.md` carries figures measured by hand against live sources and ten editorial
+`SOURCES.md` carries figures ~~measured by hand against live sources~~ — measured by a
+weekly job since #114, which opens a pull request with what moved — and ten editorial
 questions nobody has answered. `adr/` carries a chain of records and, more usefully,
 a chain of which claims each later one made false. None of it is reachable without a
 clone, and the people who most need the source inventory are the ones least likely to
