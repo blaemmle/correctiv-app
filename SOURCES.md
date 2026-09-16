@@ -11,9 +11,9 @@ proposal.
 them, because a browser cannot re-take them: the RSS feeds and the Icecast status
 document send no `Access-Control-Allow-Origin`, so the published board could only
 print what somebody had typed. Node has no CORS.
-[`apps/handbook/scripts/measure-sources.mjs`](apps/handbook/scripts/measure-sources.mjs)
+[`apps/workbench/scripts/measure-sources.mjs`](apps/workbench/scripts/measure-sources.mjs)
 now hits every one of them with a plain `GET`, writes
-[`apps/handbook/content/sources.measured.ts`](apps/handbook/content/sources.measured.ts),
+[`apps/workbench/content/sources.measured.ts`](apps/workbench/content/sources.measured.ts),
 and the board renders that beside the day of the run and how long ago it was.
 [`.github/workflows/sources.yml`](.github/workflows/sources.yml) re-takes it weekly. A
 source that is down, slow or has moved shows up there as a row with a reason on it and
@@ -51,7 +51,7 @@ Three rows need an editorial answer rather than a code change:
   currently shows the project as a teaser and loads nothing.
 - **`lokal` has published nothing since 2025-05-28.** The project works; the category
   does not. The app presents it as a content source. That date is the argument behind
-  question 3, so `apps/handbook/test/sources.test.ts` holds the manifest's "stale"
+  question 3, so `apps/workbench/test/sources.test.ts` holds the manifest's "stale"
   against the run and fails if the feed starts moving again — at which point the
   question has answered itself and this paragraph is wrong.
 - **`salon5` as a category is nearly empty**, which is correct: Salon5 publishes audio.

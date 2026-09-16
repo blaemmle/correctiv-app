@@ -463,11 +463,11 @@ export interface DevHandle {
    * and renders `+not-found`. Measured 2026-09-10: every framed route did, `/app/`
    * included. The published export has no such trouble and no handle either, so
    * the shell falls back to the address there — see `driveRoute` in the
-   * handbook's `workbench/frame/handle.ts` for the pair.
+   * workbench's `preview/frame/handle.ts` for the pair.
    *
    * Navigating this way leaves the address behind: the router writes `/gespeichert`,
-   * which is a path on the HANDBOOK's origin, and a reload of the frame would then
-   * land on the handbook's own 404. The shell puts the address back from its poll,
+   * which is a path on the WORKBENCH's origin, and a reload of the frame would then
+   * land on the workbench's own 404. The shell puts the address back from its poll,
    * because it is the one that knows what the frame's address is supposed to be.
    */
   router: typeof router;

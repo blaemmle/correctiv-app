@@ -9,7 +9,7 @@
 #                   path and publishes it.
 #   android       — Android APK of the app, and only when the change could reach it.
 #                   It costs a quarter of an hour against the other two together
-#                   costing two minutes, and the handbook, the ADRs and the
+#                   costing two minutes, and the workbench, the ADRs and the
 #                   screenshots cannot break a native build. `check` works out which
 #                   kind of change this is; see the step that does it.
 #
@@ -77,7 +77,7 @@ jobs:
 
       # Whether the Android job has anything to say about this change. It is the
       # expensive job by an order of magnitude, and a whole class of change cannot
-      # reach it: the handbook is a separate site, `tools/` ships with nothing, and
+      # reach it: the workbench is a separate site, `tools/` ships with nothing, and
       # the ADRs and the screenshots are read by people. Everything else runs it,
       # because the list below is what to SKIP and a new directory therefore
       # defaults to building. Any doubt, including this step failing, also builds:
@@ -108,7 +108,7 @@ jobs:
             echo "native=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          SKIP='^(apps/handbook/|tools/|screens/|adr/|docs/|\.vscode/|\.github/workflows/(pages|sources)\.yml$|[^/]+\.md$|[^/]+\.png$|\.editorconfig$)'
+          SKIP='^(apps/workbench/|tools/|screens/|adr/|docs/|\.vscode/|\.github/workflows/(pages|sources)\.yml$|[^/]+\.md$|[^/]+\.png$|\.editorconfig$)'
           if grep -Ev "$SKIP" changed.txt > reaching.txt; then
             echo "native=true" >> "$GITHUB_OUTPUT"
             echo "Android build runs; these files reach it:"
@@ -178,26 +178,26 @@ jobs:
           done
           echo "web export OK — $(find dist -name '*.html' | wc -l) routes, no unsupported-platform stubs"
 
-      # The handbook is the other half of what Pages publishes, and it can break on
+      # The workbench is the other half of what Pages publishes, and it can break on
       # its own: it reads the repository's Markdown at build time, so a document
       # renamed or a link rewritten to a path that no longer exists fails here and
       # nowhere else. Its tests run in the `check` job; this is the build.
-      - name: Build the handbook
-        run: npm run build -w @correctiv/handbook
+      - name: Build the workbench
+        run: npm run build -w @correctiv/workbench
 
-      - name: Assert the handbook is not silently empty
+      - name: Assert the workbench is not silently empty
         run: |
           set -euo pipefail
-          test -f apps/handbook/dist/404.html || {
-            echo "::error::apps/handbook/dist/404.html is missing — every deep link would 404 on Pages."
+          test -f apps/workbench/dist/404.html || {
+            echo "::error::apps/workbench/dist/404.html is missing — every deep link would 404 on Pages."
             exit 1
           }
-          # A handbook that shipped no documents still renders its navigation.
-          grep -rq "platform-free" apps/handbook/dist/assets/*.js || {
-            echo "::error::the handbook bundle carries none of the repository's documents."
+          # A workbench that shipped no documents still renders its navigation.
+          grep -rq "platform-free" apps/workbench/dist/assets/*.js || {
+            echo "::error::the workbench bundle carries none of the repository's documents."
             exit 1
           }
-          echo "handbook OK"
+          echo "workbench OK"
 
       # And the step above is not enough, which is what issue #160 cost. Grepping
       # the bundle proves the documents reached it; it cannot prove the page mounts,
@@ -205,14 +205,14 @@ jobs:
       # `require()` inside a runtime condition, the production build hoisted that to
       # a namespace import and merely warned, and the DEV SERVER hoisted it to a
       # default import of a module that exports nothing — a link-time SyntaxError
-      # that emptied every route of `npm run handbook` while every check here stayed
+      # that emptied every route of `npm run workbench` while every check here stayed
       # green. Two agents built themselves ways around the blank page rather than
       # reporting it, because the green tick said the site was fine.
       #
       # Installed rather than assumed. The script fails rather than skips when it
       # finds no browser, which is the safe direction and the wrong red: the day a
       # runner image drops Chrome, this job goes red on every pull request in the
-      # repository with a message about the handbook. Two lines put the browser in
+      # repository with a message about the workbench. Two lines put the browser in
       # the job that needs it and name where it went.
       - name: Install Chrome for the render check
         id: chrome
@@ -222,13 +222,13 @@ jobs:
 
       # So both paths get opened in a browser, the built one first because it is
       # already on disk. `scripts/renders.mjs` starts the dev server itself, the way
-      # `npm run handbook` does.
-      - name: Assert the handbook actually renders, on both build paths
+      # `npm run workbench` does.
+      - name: Assert the workbench actually renders, on both build paths
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: |
-          npm run handbook:renders:dist
-          npm run handbook:renders
+          npm run workbench:renders:dist
+          npm run workbench:renders
 
       - name: Upload web bundle
         uses: actions/upload-artifact@v4

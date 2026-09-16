@@ -263,5 +263,14 @@
       "15": ["The configurator writes a file into the repository, as a pull request"],
       "16": ["Offline media downloads are a later decision"]
     }
+  },
+  "0037": {
+    "slugs": ["the-whole-site-is-the-workbench"],
+    "decisions": {
+      "1": ["The site is the workbench, and the directory is `apps/workbench`"],
+      "2": ["The device frame is `/preview`, and \"handbook\" keeps the documents"],
+      "3": ["Both moved addresses are answered by the site, and by no stub file"],
+      "4": ["The ADRs keep the names they were written with"]
+    }
   }
 }

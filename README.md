@@ -1,4 +1,4 @@
-![The CORRECTIV app in the handbook's workbench](docs/readme-header.png)
+![The CORRECTIV app in the workbench's device frame](docs/readme-header.png)
 
 # CORRECTIV app
 
@@ -7,7 +7,7 @@ fact checks, Salon5 radio, CrowdNewsroom callouts, the Faktenforum and the membe
 club. This repository holds the app, the platform-free core it is built on, the design
 tokens they are drawn with, and the site that publishes all of it.
 
-## Start with the handbook
+## Start with the workbench
 
 **[faktenforum.github.io/correctiv-app](https://faktenforum.github.io/correctiv-app/)**
 is the front door, and the app is a link inside it. One site carries the repository's
@@ -18,7 +18,7 @@ to `main`. Four addresses worth going to directly:
 
 | | |
 | --- | --- |
-| [`/workbench`](https://faktenforum.github.io/correctiv-app/workbench) | The app itself in a phone or tablet frame, with an inspector for its state, its console, its palette and its layout. No install, no emulator. |
+| [`/preview`](https://faktenforum.github.io/correctiv-app/preview) | The app itself in a phone or tablet frame, with an inspector for its state, its console, its palette and its layout. No install, no emulator. |
 | [`/sources`](https://faktenforum.github.io/correctiv-app/sources) | What each part of the app reads: a live source, sample data standing in for an API that does not exist yet, or nothing at all. |
 | [`/decisions`](https://faktenforum.github.io/correctiv-app/decisions) | Every architecture record, and which of their claims a later one has made false. |
 | [`/architecture`](https://faktenforum.github.io/correctiv-app/architecture) | One core, its ports, and the article path end to end. |
@@ -57,11 +57,11 @@ npm run build:web   # static export to apps/mobile/dist/
 Only `npm run android` needs the Android toolchain, JDK 17 and an Android SDK with
 `ANDROID_HOME` set. iOS is maintained in code and has not been built.
 
-The handbook and its workbench are two servers locally, and the site's dev server
+The workbench and the app are two servers locally, and the site's dev server
 proxies the app under itself so that the frame and the app stay one origin:
 
 ```bash
-npm run handbook    # the site, at localhost:5173
+npm run workbench   # the site, at localhost:5173
 npm run app         # the app it frames, at localhost:8081/app/
 ```
 
@@ -82,7 +82,7 @@ before you want the demo to show recent articles.
   no UI framework and no platform SDK.
 - [`apps/mobile`](apps/mobile) is the app, on Expo and React Native, for iOS, Android
   and web.
-- [`apps/handbook`](apps/handbook) is the published site, including `/workbench`.
+- [`apps/workbench`](apps/workbench) is the published site, including `/preview`.
 - [`packages/design-tokens`](packages/design-tokens) and [`tokens/`](tokens/README.md)
   are the colours, spacing and type scale, vendored from CORRECTIV's design tokens.
 

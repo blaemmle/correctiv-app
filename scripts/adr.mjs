@@ -3,7 +3,7 @@
  * The two things about `adr/` that a person cannot check by looking.
  *
  * `new` allocates the next record number. `lock` adds newly written decisions to
- * `adr/decisions.lock.json`, the ledger `apps/handbook/test/decision-numbers.test.ts`
+ * `adr/decisions.lock.json`, the ledger `apps/workbench/test/decision-numbers.test.ts`
  * holds the records against.
  *
  * Neither writes prose. A script that invented the skeleton of a record would be
@@ -48,7 +48,7 @@ const SLUG = /^(0\d{3})-(.*)\.md$/;
 /**
  * A decision heading, and the number it opens with.
  *
- * The same shape `apps/handbook/plugin/markdown.ts` reads to mint the anchor, and
+ * The same shape `apps/workbench/plugin/markdown.ts` reads to mint the anchor, and
  * deliberately a second implementation of it rather than a shared import: this is
  * plain Node and that is TypeScript inside a workspace. The two cannot drift
  * quietly, because the test reads the records with the TypeScript one and compares

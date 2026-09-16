@@ -85,7 +85,7 @@ const OUT = resolve(APP, 'src/gallery/components.generated.ts');
  *    the extension a rule rather than an assumption.
  *  - **PascalCase, and it must contain a lower-case letter.** `sampleTarget` is
  *    callable and lower case; `HEADER_COPY` and `READER_BASE_URL` are capitalised
- *    and are not components. `apps/handbook/scripts/api.mjs` draws the same line
+ *    and are not components. `apps/workbench/scripts/api.mjs` draws the same line
  *    with a real type graph — "a capitalised callable", `componentSignature` —
  *    and it is the same line for the same reason: nothing under `src/components`
  *    is both callable and capitalised except a component. This reads spelling
@@ -226,7 +226,7 @@ export function exportedComponents(source) {
  * is the shape this walk refuses to address.
  *
  * **The address is two segments, `folder/Name`, and three readers spend it**: the
- * gallery groups its page by the first segment, `apps/handbook/scripts/api.mjs`
+ * gallery groups its page by the first segment, `apps/workbench/scripts/api.mjs`
  * prints a component's import line as `@/components/<folder>/<name>`, and `?c=`
  * carries the whole string between the two sites. So `reader/parts/Foo.tsx` has
  * no good answer here. Taking the top folder — which is what this did — addresses
@@ -273,7 +273,7 @@ export function declaredComponents() {
     .flatMap((file) => {
       // A file directly under `src/components` has no folder over it. There is
       // none today; one added tomorrow gets the address `components/Name` here
-      // and in the handbook's reference, which uses the same fallback.
+      // and in the workbench's reference, which uses the same fallback.
       const folder = file.includes('/') ? file.slice(0, file.indexOf('/')) : 'components';
       return exportedComponents(readFileSync(join(COMPONENTS, file), 'utf8')).map((name) => ({
         id: `${folder}/${name}`,
@@ -314,7 +314,7 @@ export function render() {
         `so these would be addressed wrong or folded together silently:\n` +
         nested.map((file) => `  src/components/${file}`).join('\n') +
         `\nMove each one up to \`<folder>/<Name>.tsx\`, or change the address in this ` +
-        `script, in \`src/gallery/catalogue.tsx\` and in \`apps/handbook/scripts/api.mjs\` ` +
+        `script, in \`src/gallery/catalogue.tsx\` and in \`apps/workbench/scripts/api.mjs\` ` +
         `together — see \`nestedComponentFiles\` for why those three go together.`,
     );
   }
@@ -331,7 +331,7 @@ export function render() {
  * Every component \`src/components\` contains, addressed \`folder/Name\`.
  *
  * The address is the app's own and is the same string on both sides of the seam:
- * the gallery's entry, the handbook's reference row, and \`?c=\` between the two
+ * the gallery's entry, the workbench's reference row, and \`?c=\` between the two
  * sites. The platform suffix is deliberately not part of it — \`ReaderView.tsx\`
  * and \`ReaderView.web.tsx\` are one member here.
  *

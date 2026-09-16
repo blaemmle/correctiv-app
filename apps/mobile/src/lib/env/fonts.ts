@@ -5,7 +5,7 @@
  * the fonts through one call and `lib/theme/font-assets.ts` keeps exactly one
  * importer. The list of files stays there; this is only the loading.
  *
- * Both hosts call it, and the second one is why it exists. The handbook applies
+ * Both hosts call it, and the second one is why it exists. The workbench applies
  * the family NAMES — `Typo` writes `fontFamily: 'SourceSans3_400Regular'` into a
  * TextStyle — and for a while loaded no file behind them, so a browser fell back
  * to its standard face, which is a serif. Every drawn component read as Times,

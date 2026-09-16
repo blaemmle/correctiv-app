@@ -169,9 +169,9 @@ function Action({
  * locally, `/correctiv-app/app/gallery` gives `/correctiv-app/components` on Pages.
  *
  * Resolved against THIS window and assigned to the TOP one, and both halves of that
- * matter. In the workbench this page is an iframe, so navigating the frame renders
- * the whole handbook, activity bar and status bar and all, inside a 393px device
- * frame — and the workbench's route poll then writes `/components` into its own
+ * matter. In the preview this page is an iframe, so navigating the frame renders
+ * the whole workbench, activity bar and status bar and all, inside a 393px device
+ * frame — and the preview's route poll then writes `/components` into its own
  * address as if the app were on that route. Resolving against the top window instead
  * would drop the base path, because the shell sits one directory above the app.
  */
@@ -183,14 +183,14 @@ function leaveApp(relative: string): void {
 /**
  * The two ways out of a filtered view, and the seam this page sits on.
  *
- * The gallery draws the components and the handbook's reference describes them, and
+ * The gallery draws the components and the workbench's reference describes them, and
  * for a long time those were two places with no way from one to the other. This is
  * one half of the way; `pages/Components.tsx` is the other.
  *
- * **Back to the reference is web-only, and that is not a shortcut.** The handbook is
+ * **Back to the reference is web-only, and that is not a shortcut.** The workbench is
  * a website: on the device there is nothing at the other end of that link. It leads
  * somewhere wrong in exactly one place that does have a browser, the app's own dev
- * server, which serves the app and not the handbook, so `../components` is the app's
+ * server, which serves the app and not the workbench, so `../components` is the app's
  * unmatched route there. The address bar says why.
  *
  * The component travels as a query and not as the row's anchor. An anchor has to
@@ -242,16 +242,16 @@ function shown(only: string | undefined): Folder[] {
 }
 
 /**
- * The key the handbook writes when it opens this app's door for a frame.
+ * The key the workbench writes when it opens this app's door for a frame.
  *
- * Spelled here and in `apps/handbook/src/workbench/frame/seed.ts`, and nowhere
- * else; `apps/handbook/test/workbench/seed.test.ts` fails if the two spellings
+ * Spelled here and in `apps/workbench/src/preview/frame/seed.ts`, and nowhere
+ * else; `apps/workbench/test/preview/seed.test.ts` fails if the two spellings
  * part. Read with a `try`, because touching `localStorage` is what throws when
  * site data is switched off, and a gallery must not fail to render over it.
  */
-const SEEDED_KEY = 'handbook:seeded';
+const SEEDED_KEY = 'workbench:seeded';
 
-function seededByTheHandbook(): boolean {
+function seededByTheWorkbench(): boolean {
   try {
     return globalThis.localStorage?.getItem(SEEDED_KEY) !== null;
   } catch {
@@ -262,7 +262,7 @@ function seededByTheHandbook(): boolean {
 /**
  * Whoever is signed in here did not sign in, said on the page.
  *
- * Issue #112. The app's door is a render branch on the session, and the handbook
+ * Issue #112. The app's door is a render branch on the session, and the workbench
  * writes one into storage before it points a frame at this route, so a component
  * can be drawn without anybody signing in first. That is the affordance the issue
  * asks for and this line is the other half of it: a door that quietly opens is
@@ -272,13 +272,13 @@ function seededByTheHandbook(): boolean {
  * returning `null` outside a development build is still pre-rendered into the
  * export as a blank public page, so guarding a component is not the same as
  * keeping something out of a build. The bypass is not in this bundle at all — it
- * is the handbook's code — and what is here is one line that appears only when a
- * key the handbook wrote is present.
+ * is the workbench's code — and what is here is one line that appears only when a
+ * key the workbench wrote is present.
  */
 function SeededNote() {
   return (
     <Typo variant="text-s" color="on-canvas-muted" className="mb-2xs">
-      Session seeded by the handbook, not signed in.
+      Session seeded by the workbench, not signed in.
     </Typo>
   );
 }
@@ -290,7 +290,7 @@ function SeededNote() {
 export function Gallery({ only, bare }: { only?: string; bare?: boolean }) {
   const groups = shown(only);
   const found = groups.length > 0;
-  const seeded = seededByTheHandbook();
+  const seeded = seededByTheWorkbench();
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
       <ScrollView
@@ -308,7 +308,7 @@ export function Gallery({ only, bare }: { only?: string; bare?: boolean }) {
       >
         {/*
           The furniture, and why a frame does without it. `bare` is for the
-          handbook's `/components`, where each row draws its own component in a
+          workbench's `/components`, where each row draws its own component in a
           393px frame. Everything here is already on the page around that frame,
           twice in the case of the two links: they point at the reference and at
           this gallery, and the reader clicking them is on the reference looking

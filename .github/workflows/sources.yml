@@ -93,7 +93,7 @@ jobs:
       # Exits non-zero only if it measured nothing, or if the formatter rejected
       # what it emitted — both are bugs here and neither is a source being down.
       - name: Measure
-        run: node apps/handbook/scripts/measure-sources.mjs
+        run: node apps/workbench/scripts/measure-sources.mjs
 
       # Read off the file rather than assumed from the step above having passed.
       #
@@ -116,7 +116,7 @@ jobs:
         id: found
         run: |
           set -euo pipefail
-          FILE=apps/handbook/content/sources.measured.ts
+          FILE=apps/workbench/content/sources.measured.ts
           test -f "$FILE" || { echo "::error::$FILE was not written"; exit 1; }
 
           # All three patterns tolerate indentation, and each is checked against
@@ -160,7 +160,7 @@ jobs:
           # three Icecast mounts, three YouTube feeds and the five fixed rows.
           # Twenty-four. It read thirteen once, with a comment calling thirteen the
           # smallest run the configuration can produce, and a run that had lost
-          # eleven rows sailed through. `apps/handbook/test/sources.test.ts` holds
+          # eleven rows sailed through. `apps/workbench/test/sources.test.ts` holds
           # this literal against the committed run, so adding a feed fails a test
           # rather than quietly lowering what counts as a complete measurement.
           if [ "$ROWS" -lt 24 ]; then
@@ -200,12 +200,12 @@ jobs:
         if: steps.found.outputs.publish == 'true'
         run: |
           set -euo pipefail
-          if git diff --quiet -- apps/handbook/content/sources.measured.ts; then
+          if git diff --quiet -- apps/workbench/content/sources.measured.ts; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Nothing moved since the last committed run." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git --no-pager diff --stat -- apps/handbook/content/sources.measured.ts
+            git --no-pager diff --stat -- apps/workbench/content/sources.measured.ts
           fi
 
       # The repository's own gate, over the file this run would commit, because
@@ -274,7 +274,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -B "$BRANCH"
-          git add apps/handbook/content/sources.measured.ts
+          git add apps/workbench/content/sources.measured.ts
           git commit -m "Re-measure the live sources ($UP of $ROWS answered)"
           # Plain --force, and not --force-with-lease: checkout@v4 fetches only the
           # commit under test, so there is no remote-tracking ref for this branch
@@ -291,7 +291,7 @@ jobs:
           > **`npm run check` ist auf dieser Messung rot.** Der Auszug steht in der
           > Zusammenfassung des Laufs. Zwei Lesarten, und nur eine ist ein Fehler:
           > Widerspricht die Messung einer Gesundheitsbewertung in
-          > `apps/handbook/content/sources.manifest.ts`, dann ist das der Befund und
+          > `apps/workbench/content/sources.manifest.ts`, dann ist das der Befund und
           > die Bewertung gehört nachgezogen, bevor das hier gemergt wird.
           > Andernfalls ist das Skript kaputt.
           EOF
@@ -305,7 +305,7 @@ jobs:
           BODY=$(cat <<EOF
           $WARNING
 
-          Automatisch gemessen von \`apps/handbook/scripts/measure-sources.mjs\`.
+          Automatisch gemessen von \`apps/workbench/scripts/measure-sources.mjs\`.
           $UP von $ROWS Quellen haben geantwortet, $DOWN nicht.
 
           Welche Quelle was geliefert hat, steht in der Zusammenfassung des Laufs:

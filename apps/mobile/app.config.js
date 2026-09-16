@@ -11,7 +11,7 @@
 // workflow sets EXPO_BASE_URL.
 //
 // The dev server sets it too, in `package.json`'s `web` script, and to the same
-// `/app` the deploy uses. The handbook frames the app one directory below itself
+// `/app` the deploy uses. The workbench frames the app one directory below itself
 // in both modes, so a dev server serving from the root answered `/app/` with the
 // app's own 404 screen: expo-router reads the browser's path, and without a base
 // it has no route called `app`. The address to open the app on its own in

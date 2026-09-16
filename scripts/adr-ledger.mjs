@@ -23,7 +23,7 @@
  * a repository could.
  *
  * One implementation, imported by `scripts/adr.mjs` and by
- * `apps/handbook/test/decision-numbers.test.ts`. The heading parser is duplicated
+ * `apps/workbench/test/decision-numbers.test.ts`. The heading parser is duplicated
  * across those two on purpose — a disagreement between two parsers shows up as a
  * missing or an extra ledger entry, which is a red test. Nothing plays that role
  * for this comparison, so a second implementation of it would be a second thing to
@@ -43,7 +43,7 @@ const RECORD_NUMBER = /^0\d{3}$/;
 /**
  * A decision number as the ledger may spell it: `1`, `12`, never `0` and never `01`.
  *
- * Deliberately stricter than "a string of digits". `apps/handbook/plugin/markdown.ts`
+ * Deliberately stricter than "a string of digits". `apps/workbench/plugin/markdown.ts`
  * mints no id below 1, so a `## 0. Context` that reached the ledger would be a
  * section the ledger names as a decision and the site does not — which is exactly
  * what happened while the two parsers disagreed and nothing walked the ledger back
@@ -154,7 +154,7 @@ export function readLedger(text) {
       if (!DECISION_NUMBER.test(n)) {
         problems.push(
           `${number} §${n} is not a decision number. They start at 1 and carry no leading zero, ` +
-            `which is what \`decisionNumber\` in apps/handbook/plugin/markdown.ts mints.`,
+            `which is what \`decisionNumber\` in apps/workbench/plugin/markdown.ts mints.`,
         );
         sound = false;
         continue;

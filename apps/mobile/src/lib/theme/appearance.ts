@@ -40,7 +40,7 @@ export function useAppearance(): void {
 /**
  * The same, for a host that already has an appearance setting of its own.
  *
- * `apps/handbook` is a website with a light/dark/system control in its own
+ * `apps/workbench` is a website with a light/dark/system control in its own
  * header, and the components it draws have to follow THAT rather than the app's
  * stored preference — the app's store is not hydrated there, so every specimen
  * would sit at `'system'` while the page around it was explicitly dark.

@@ -39,9 +39,9 @@ const CATALOGUES: Record<Locale, Record<string, string>> = { de };
  *
  * Mounted inside `lib/env/AppEnvironment.tsx`, below the Redux Provider because
  * it reads the locale from the store, and there rather than in `app/_layout.tsx`
- * because the handbook draws the app's components through that same environment
+ * because the workbench draws the app's components through that same environment
  * ([ADR 0028](../../../../adr/0028-one-shell-and-a-route-that-declares-its-context.md)).
- * A component that formats a message would throw in the handbook otherwise.
+ * A component that formats a message would throw in the workbench otherwise.
  */
 /**
  * What a formatting failure does, and the one that matters is
@@ -58,7 +58,7 @@ const CATALOGUES: Record<Locale, Record<string, string>> = { de };
  *
  * **In development it throws.** That is the whole point: the screen is replaced by
  * the recovery screen and the message is unmissable, in the dev client, in the
- * workbench and under jest, where `__DEV__` is true as well. A missing entry is a
+ * preview and under jest, where `__DEV__` is true as well. A missing entry is a
  * defect somebody introduced minutes ago, and the cost of finding it then is a
  * reload.
  *
