@@ -7,6 +7,7 @@ import docsModule from 'virtual:docs';
 
 import type { DecisionRecord, Standing } from '../../plugin/decisions.ts';
 import { cn } from '../lib/cn';
+import { reasonFor, spaced } from '../lib/reason';
 import { href } from '../router';
 import { Slot } from '../shell/slots';
 import { Badge } from '../ui/kit/badge';
@@ -35,6 +36,15 @@ const SECTION_LEDE = 'mt-2xs max-w-content text-m text-on-canvas-muted';
 
 const RECORDS: DecisionRecord[] = docsModule.decisions;
 const BY_NUMBER = new Map(RECORDS.map((record) => [record.number, record]));
+
+/**
+ * The one line of *why* each row carries, computed once rather than per render.
+ *
+ * `src/lib/reason.ts` holds the rule and `test/reason.test.ts` holds it to the
+ * records. A row without a strike, and without a struck status line, has no entry
+ * here and draws no line.
+ */
+const REASONS = new Map(RECORDS.map((record) => [record.number, reasonFor(record)]));
 
 interface StandingLook {
   Icon: LucideIcon;
@@ -117,6 +127,51 @@ function Caveat({ text }: { text: string }) {
       <TriangleAlert aria-hidden="true" className="size-[0.875rem] shrink-0" />
       {text}
     </span>
+  );
+}
+
+/**
+ * The row's one line of *why*, under the title it belongs to.
+ *
+ * Under the TITLE, and not in the `Struck claims` column where the count it
+ * answers stands. That column is `w-[13rem]` and the median clause in `adr/` is
+ * 212 characters: put one there and the row is six lines tall and the column is a
+ * paragraph in a 13rem gutter. The wider argument is the same one either way — a
+ * reason belongs beside the decision it is about, and that column is the ledger
+ * of who struck what rather than a place to read.
+ *
+ * `line-clamp-1` and not `truncate`: text that refuses to wrap reports its whole
+ * string as the cell's minimum width, and the table then grows until the page
+ * scrolls sideways. `max-w-content` caps what the cell asks for from the other
+ * end, so one long clause cannot take the column off the shorter rows.
+ *
+ * The icon is the row's own standing icon, so the line reads as the strike's and
+ * not as a second subtitle for the record. The full clause, and every other one,
+ * is in the detail, which is truncated nowhere.
+ */
+function Reason({ record }: { record: DecisionRecord }) {
+  const reason = REASONS.get(record.number);
+  if (!reason) return null;
+  const { Icon } = STANDING_LOOK[record.standing];
+
+  return (
+    <p className="mt-3xs flex max-w-content items-start gap-3xs text-s leading-normal text-on-canvas-muted">
+      <Icon aria-hidden="true" className="mt-[0.15rem] size-[0.875rem] shrink-0" />
+      <span className="line-clamp-1 min-w-0">
+        {/* The line is a fragment of a document without this, and a screen reader
+          gets it with no warning that the row has changed subject. */}
+        <span className="sr-only">
+          {record.standing === 'withdrawn' ? 'Why it no longer stands: ' : 'Why it was struck: '}
+        </span>
+        {reason.lead !== '' && (
+          <>
+            <s>{reason.lead}</s>
+            {spaced(reason.text) ? ' ' : ''}
+          </>
+        )}
+        {reason.text}
+      </span>
+    </p>
   );
 }
 
@@ -269,10 +324,12 @@ function Tile({ value, name, count, checked, onSelect, standing, children }: Til
  * handbook holds no copy of any record, so the board cannot disagree with them.
  *
  * What a row deliberately does not carry: the index's sentence about the record
- * (it runs to fifty words on some rows and would make the board three lines tall),
- * the records this one voided claims in (every such edge is another row's incoming
- * edge, so drawing both would draw the graph twice), and the record's own status
- * word where it is the usual `accepted`. All three are in the detail.
+ * (it runs to fifty words on some rows and would make the board three lines tall,
+ * and the one exception is the withdrawn record, where that sentence is the reason
+ * and the row is the place a reader needs it), the records this one voided claims
+ * in (every such edge is another row's incoming edge, so drawing both would draw
+ * the graph twice), and the record's own status word where it is the usual
+ * `accepted`. All three are in the detail.
  */
 export function Decisions() {
   const [standing, setStanding] = useState<'all' | Standing>('all');
@@ -366,8 +423,9 @@ export function Decisions() {
               <p>
                 <span className={FIGURE}>{UNATTRIBUTED}</span> of those strikes name no later record
                 in their clause. They were struck by a re-measurement, or by a later section of the
-                same record, so they have no arrow to draw, and every clause is printed in the
-                row&apos;s detail below.
+                same record, so they have no arrow to draw and their clause is the only thing there
+                is to say about them. That is what a row says under its title: one clause, cut to
+                one sentence. The detail below has all of them, in full.
               </p>
               {CLAUSELESS > 0 && (
                 <p>
@@ -475,10 +533,12 @@ export function Decisions() {
               The board
             </h2>
             <p className={SECTION_LEDE}>
-              One row per record, oldest first. A row expands to the index&apos;s sentence about it,
-              every claim struck inside it with the clause that voided it, and both directions of
-              the retirement graph. Nothing here is truncated. The tiles above filter the board as
-              well.
+              One row per record, oldest first. A row carrying a strike says why under its title:
+              the clause of the newest one, cut to one sentence, and shown behind the text it struck
+              where it only reads attached to it. A row expands to the index&apos;s sentence about
+              it, every claim struck inside it with the clause that voided it in full, and both
+              directions of the retirement graph. Nothing in the detail is truncated. The tiles
+              above filter the board as well.
             </p>
 
             <div className="mt-s flex flex-wrap items-end gap-sm rounded-md border border-stroke bg-surface p-s">
@@ -629,27 +689,51 @@ export function Decisions() {
                                 )}
                               </span>
                             )}
+                            <Reason record={record} />
                           </td>
                           <td className="px-s py-xs">
                             {record.struck.length === 0 ? (
                               <span className="text-on-canvas-muted">none</span>
                             ) : (
                               <>
-                                <span className={cn(FIGURE, 'font-semibold text-on-canvas')}>
-                                  {record.struck.length}
-                                </span>
-                                <span className="ml-3xs text-s text-on-canvas-muted">
-                                  {record.struck.length === 1 ? 'claim' : 'claims'}
-                                </span>
-                                <span className="mt-3xs flex flex-wrap items-center gap-2xs">
+                                {/* The count, but not where it is 1. "1 claim"
+                                  says nothing a reader did not already get from
+                                  the standing chip, and the row now says why
+                                  instead — which is issue #166's point, kept
+                                  under its own rule that a fuller row drops the
+                                  number rather than stacking both. */}
+                                {record.struck.length > 1 && (
+                                  <>
+                                    <span className={cn(FIGURE, 'font-semibold text-on-canvas')}>
+                                      {record.struck.length}
+                                    </span>
+                                    <span className="ml-3xs text-s text-on-canvas-muted">
+                                      claims
+                                    </span>
+                                  </>
+                                )}
+                                <span
+                                  className={cn(
+                                    'flex flex-wrap items-center gap-2xs',
+                                    record.struck.length > 1 && 'mt-3xs',
+                                  )}
+                                >
+                                  <span className="text-s text-on-canvas-muted">by</span>
                                   {record.voidedBy.length > 0 ? (
-                                    <>
-                                      <span className="text-s text-on-canvas-muted">by</span>
-                                      {recordChips(record.voidedBy, reveal)}
-                                    </>
+                                    recordChips(record.voidedBy, reveal)
                                   ) : (
+                                    /* Not "by no later record". These are most of
+                                      the strikes on the board — the note above
+                                      counts them, out of the records rather than
+                                      from a number typed here — and reporting the
+                                      commonest case as an absence made the one
+                                      thing that IS known about them, the clause
+                                      now under the title, read as missing data.
+                                      What is true of all of them is that something
+                                      later found it out, and that the finding is
+                                      not a record with a number. */
                                     <span className="text-s text-on-canvas-muted">
-                                      by no later record
+                                      a later finding
                                     </span>
                                   )}
                                 </span>
