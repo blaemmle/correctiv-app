@@ -200,7 +200,7 @@ export function Landing() {
               </dt>
               <dd className="max-w-content text-m leading-relaxed text-on-canvas-muted">
                 The Expo app: iOS, Android and a web target. It holds the screens and one file
-                implementing the four ports.
+                implementing the ports.
               </dd>
             </div>
             <div className="grid gap-2xs py-s md:grid-cols-[16rem_1fr] md:gap-m">

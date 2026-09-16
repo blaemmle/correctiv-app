@@ -4,7 +4,7 @@ import { defineMessages, useIntl } from 'react-intl';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { SettingRow } from '@/components/profile/SettingRow';
-import { Button, Card, Chip, SafeAreaView, Typo } from '@/components/ui';
+import { Button, Card, Chip, SafeAreaView, SplitRow, Typo } from '@/components/ui';
 import { interests } from '@correctiv/app-core/data/interests';
 import { useCoreActions, useSelectedInterests, useSettings } from '@/lib/store/core';
 import { useDocumentTitle } from '@/lib/navigation/documentTitle';
@@ -105,7 +105,7 @@ export default function OnboardingScreen() {
       edges={['top', 'bottom']}
       className={mission ? 'flex-1 bg-accent' : 'flex-1 bg-canvas'}
     >
-      <View className="flex-row items-center justify-between px-m py-s">
+      <SplitRow className="px-m py-s">
         <View className="flex-row gap-2xs">
           {[0, 1, 2].map((i) => (
             <View
@@ -138,7 +138,7 @@ export default function OnboardingScreen() {
             </Typo>
           </Pressable>
         )}
-      </View>
+      </SplitRow>
 
       <ScrollView
         className="flex-1"

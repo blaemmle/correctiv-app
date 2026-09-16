@@ -28,7 +28,7 @@ const REPO_BLOB = `${docsModule.repo}/blob/${docsModule.commit}`;
  * one source and two renderings of it rather than two sources.
  */
 const DIAGRAMS: Record<string, ReactNode> = {
-  // Without its list: the document around it names the same four ports in a
+  // Without its list: the document around it names the same ports in a
   // paragraph and again in a table, and three tellings of one fact is two too
   // many. `/diagrams` still shows the list, where the drawing is the page.
   'core-host': <CoreAndHost alt={false} />,

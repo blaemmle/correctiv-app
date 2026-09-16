@@ -12,6 +12,7 @@ import { Handbook } from './pages/Handbook';
 import { Document } from './pages/Document';
 import { Landing } from './pages/Landing';
 import { Reference } from './pages/Reference';
+import { Decisions } from './pages/Decisions';
 import { Sources } from './pages/Sources';
 import { Workbench } from './pages/Workbench';
 import { ActivityBar } from './ui/ActivityBar';
@@ -190,6 +191,8 @@ export function App() {
         return <Reference />;
       case 'sources':
         return <Sources />;
+      case 'decisions':
+        return <Decisions />;
       case 'design':
         return <Design {...shell} />;
       case 'components':

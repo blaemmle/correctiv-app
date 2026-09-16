@@ -21,7 +21,7 @@ to `main`. Four addresses worth going to directly:
 | [`/workbench`](https://faktenforum.github.io/correctiv-app/workbench) | The app itself in a phone or tablet frame, with an inspector for its state, its console, its palette and its layout. No install, no emulator. |
 | [`/sources`](https://faktenforum.github.io/correctiv-app/sources) | What each part of the app reads: a live source, sample data standing in for an API that does not exist yet, or nothing at all. |
 | [`/decisions`](https://faktenforum.github.io/correctiv-app/decisions) | Every architecture record, and which of their claims a later one has made false. |
-| [`/architecture`](https://faktenforum.github.io/correctiv-app/architecture) | One core, four ports, and the article path end to end. |
+| [`/architecture`](https://faktenforum.github.io/correctiv-app/architecture) | One core, its ports, and the article path end to end. |
 
 The screens work end to end and the backends behind them do not exist yet. Sign-in,
 the club join, the callouts and the Faktenforum claims run on typed sample data shaped
@@ -35,9 +35,9 @@ work and deciding what lands. What keeps it honest is checkable. Every architect
 choice is recorded in [`adr/`](adr/README.md), and a claim that a later decision made
 false is struck through where it stands, with a link to the record that voided it,
 instead of being quietly rewritten. Every source the app reads is inventoried in
-[SOURCES.md](SOURCES.md), measured by hand against the live source on a day the file
-states, with that date typed a second time into the site's manifest and a test that
-fails when the two part. `npm run check` at the root runs typecheck, lint, format and
+[SOURCES.md](SOURCES.md), and a weekly job measures all of them against the live
+sources and opens a pull request with what moved, so the figures and the day they were
+taken are generated rather than typed. `npm run check` at the root runs typecheck, lint, format and
 tests in seconds, and [TROUBLESHOOTING.md](TROUBLESHOOTING.md) collects the
 defects that passed exactly that, which is why a green check is not treated as
 evidence here.

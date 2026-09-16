@@ -11,7 +11,8 @@
     "api": "node scripts/api.mjs",
     "measure-direct": "node scripts/measure-direct.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "measure-sources": "node scripts/measure-sources.mjs"
   },
   "devDependencies": {
     "@correctiv/app-core": "*",

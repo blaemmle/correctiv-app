@@ -4,7 +4,7 @@ import { defineMessages, useIntl, type MessageDescriptor } from 'react-intl';
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { KeyboardAvoiding } from '@/components/keyboard/KeyboardAvoiding';
-import { Button, Card, Hairline, Overline, SafeAreaView, Typo } from '@/components/ui';
+import { Button, Card, Hairline, Overline, SafeAreaView, SplitRow, Typo } from '@/components/ui';
 import { formatDateDe } from '@correctiv/app-core/lib/format';
 import type { SignInFailure } from '@correctiv/app-core/services/auth.service';
 import { accessShortfall, type AccessShortfall } from '@correctiv/app-core/stores/session';
@@ -311,7 +311,14 @@ function SignInForm() {
         )}
       </View>
 
-      <View className="mt-s flex-row items-center justify-between">
+      {/* Two links, side by side while they fit and stacked when they do not.
+          At 200 % system font they did neither: they met with no space between
+          them and the second one ran off the right edge, where a third of its
+          target was no longer on the screen (#158). `SplitRow` is what keeps
+          them apart, and `start` rather than the default because once they are
+          two lines the first line's link should not float against the second
+          one's. */}
+      <SplitRow align="start" className="mt-s">
         <TextLink
           label={intl.formatMessage(COPY.forgot)}
           onPress={() => openExternal(LINKS.reset)}
@@ -321,7 +328,7 @@ function SignInForm() {
           strong
           onPress={() => openExternal(LINKS.join)}
         />
-      </View>
+      </SplitRow>
     </>
   );
 }
@@ -406,14 +413,17 @@ function NoAccess({ shortfall }: { shortfall: AccessShortfall }) {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row items-baseline justify-between gap-s">
+    <SplitRow align="baseline">
       <Typo variant="text-m" color="on-canvas-muted">
         {label}
       </Typo>
-      <Typo variant="text-m" weight="semibold" className="flex-1 text-right">
+      {/* `shrink`, not `flex-1`: a flex basis of zero keeps the value on the
+          label's line at any width, which at 200 % is a column three characters
+          wide. With its own width it takes the line below instead. */}
+      <Typo variant="text-m" weight="semibold" className="shrink text-right">
         {value}
       </Typo>
-    </View>
+    </SplitRow>
   );
 }
 

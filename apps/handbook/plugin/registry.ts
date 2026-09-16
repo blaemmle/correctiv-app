@@ -38,7 +38,7 @@ export const DOCUMENTS: DocumentSource[] = [
     file: 'ARCHITECTURE.md',
     route: '/architecture',
     nav: 'Architecture',
-    blurb: 'What the system is: one core, four ports, and the article path end to end.',
+    blurb: 'What the system is: one core, its ports, and the article path end to end.',
   },
   {
     id: 'sources',
@@ -56,9 +56,21 @@ export const DOCUMENTS: DocumentSource[] = [
   {
     id: 'decisions',
     file: 'adr/README.md',
-    route: '/decisions',
-    nav: 'Decisions',
-    blurb: 'Why the repository is the way it is, and which claims have since expired.',
+    // Not `/decisions`: that is the board built from the records themselves, the
+    // same pair as `/sources` and this document's opposite number above. What is
+    // left here once the board carries the index is the part a table of rows
+    // cannot carry — the nine notes for readers of the older records, and the rule
+    // that says how an expired claim is marked.
+    //
+    // Not `/decisions/…` either, which would read better and be wrong twice:
+    // `pages/Landing.tsx` counts the records as the documents under that prefix
+    // and would say thirty-four, and `ui/Search.tsx` labels everything under it
+    // `ADR <segment>`, so the palette would offer "ADR notes". Both are right to
+    // assume a segment there is a record. `ui/ActivityBar.tsx` lights the
+    // Decisions rail for anything starting `/decisions`, which this still does.
+    route: '/decisions-notes',
+    nav: 'Decisions, the notes',
+    blurb: 'How an expired claim is marked, and nine notes for readers of the older records.',
   },
   {
     id: 'traps',

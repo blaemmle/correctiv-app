@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import type { SpotlightIssue } from '@correctiv/app-core/data/spotlight';
 import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 
-import { Card, Hairline, Overline, Typo } from '@/components/ui';
+import { Card, Hairline, Overline, SplitRow, Typo } from '@/components/ui';
 import { openExternal } from '@/lib/openExternal';
 import { useSpotlight } from '@/lib/store/core';
 
@@ -54,7 +54,7 @@ export function SpotlightBriefing({ onOpenArchive }: { onOpenArchive: () => void
 
   return (
     <Card tone="surface">
-      <View className="flex-row items-center justify-between">
+      <SplitRow>
         <Overline label="Spotlight" color="on-canvas" />
         <Pressable
           onPress={onOpenArchive}
@@ -67,7 +67,7 @@ export function SpotlightBriefing({ onOpenArchive }: { onOpenArchive: () => void
             {intl.formatMessage(COPY.allIssues)} →
           </Typo>
         </Pressable>
-      </View>
+      </SplitRow>
 
       {recent.map((issue) => (
         <IssueRow key={issue.id} issue={issue} />

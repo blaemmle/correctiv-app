@@ -105,10 +105,14 @@ A figure measured against the outside world goes wrong quietly, and no reviewer
 catches it because nothing about it looks wrong. A figure measured against **this
 repository** goes wrong the same way, and faster. Three such facts exist here:
 
-- The measuring day, in `SOURCES.md` and in `apps/handbook/content/sources.manifest.ts`.
-  Re-measuring means editing both, so a test fails when the two dates part, and the
-  board prints the age beside the date, worked out in the reader's browser, because a
-  published page sits at its address for months.
+- ~~The measuring day, in `SOURCES.md` and in `apps/handbook/content/sources.manifest.ts`.~~
+  Retired: the sources measure themselves now. A weekly job reaches all of them, writes
+  `apps/handbook/content/sources.measured.ts`, and opens a pull request with what moved;
+  the day comes out of that file and is typed nowhere. It reports and never gates,
+  because a live source that is down is somebody else's outage and not this repository's
+  fault. **This is the stronger answer whenever it is available**: a fact that can
+  re-take itself does not need two copies held in step, and the pair below still does
+  only because nothing can re-take it.
 - A claim and the record that voided it, which is the pair above.
 - The count of `always-light` / `always-dark` call sites, in the colour section above.
   It was exact when ADR 0022 typed it, four short a week later, and nothing failed.
