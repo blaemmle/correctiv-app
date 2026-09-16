@@ -133,7 +133,7 @@ export interface Entry {
 /**
  * One component's address, and the same string on both sides of the seam.
  *
- * The handbook's reference and this gallery are two views of one list, and a link
+ * The workbench's reference and this gallery are two views of one list, and a link
  * between them is only as good as the agreement on what a component is called.
  * `folder/name` is that agreement: it is what `src/components` already calls a
  * component, and it is what `?c=` carries in both directions.
@@ -935,7 +935,7 @@ type NoExcusedComponentIsListed<
 > = Both;
 
 /**
- * The catalogue the gallery and the handbook read.
+ * The catalogue the gallery and the workbench read.
  *
  * Spread rather than aliased: `LISTED` is a readonly tuple and both readers type
  * against `Folder[]` — `Gallery.tsx`'s `shown()` returns one. The copy is twelve

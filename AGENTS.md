@@ -22,18 +22,21 @@ taking state, never a store method.
 `apps/mobile` is the app. Its web export is published on every push to `main`, so
 anything that lands there is public.
 
-`apps/handbook` is the published site: the documentation, the source inventory, the
-diagrams, the core's reference, and the app in a device frame at `/workbench`. It
+`apps/workbench` is the published site: the documentation, the source inventory, the
+diagrams, the core's reference, and the app in a device frame at `/preview`. It
 reads the repository's Markdown in place and holds no copy of any document, which is
 the rule to keep: a second copy of `ARCHITECTURE.md` would be the one on the website
-and the one nobody edits.
+and the one nobody edits. "Handbook" is the documents area inside it, `/handbook`, and
+nothing wider; the ADRs were written when it was the name of the whole site, which
+`adr/README.md` says in a note.
 
 The device frame reaches into the app by same-origin property access, so the two
 halves have to be one origin. The Pages deploy assembles them into one artifact and
-the dev server proxies `/app`; do not give the handbook a second origin, because the
+the dev server proxies `/app`; do not give the workbench a second origin, because the
 browser refuses those property reads silently.
 ([ADR 0014](adr/0014-the-preview-shell-as-a-package.md),
-[ADR 0024](adr/0024-the-handbook-owns-the-root.md))
+[ADR 0024](adr/0024-the-handbook-owns-the-root.md),
+[ADR 0037](adr/0037-the-whole-site-is-the-workbench.md))
 
 `tools/` is the third place, for what is neither a host nor a library the app ships:
 `tools/figma-plugin` is what is left there.
@@ -105,9 +108,9 @@ A figure measured against the outside world goes wrong quietly, and no reviewer
 catches it because nothing about it looks wrong. A figure measured against **this
 repository** goes wrong the same way, and faster. Three such facts exist here:
 
-- ~~The measuring day, in `SOURCES.md` and in `apps/handbook/content/sources.manifest.ts`.~~
+- ~~The measuring day, in `SOURCES.md` and in `apps/workbench/content/sources.manifest.ts`.~~
   Retired: the sources measure themselves now. A weekly job reaches all of them, writes
-  `apps/handbook/content/sources.measured.ts`, and opens a pull request with what moved;
+  `apps/workbench/content/sources.measured.ts`, and opens a pull request with what moved;
   the day comes out of that file and is typed nowhere. It reports and never gates,
   because a live source that is down is somebody else's outage and not this repository's
   fault. **This is the stronger answer whenever it is available**: a fact that can
@@ -200,18 +203,18 @@ route, a bundle config or a platform split, run `npm run build:web`, then
 `node screens/tools/serve-clean.mjs apps/mobile/dist 8099` and open it. A plain
 static server maps no clean URLs and makes a working app look broken. After layout,
 screenshot it and look (`screens/tools/tour-android.sh`, compared against
-`screens/`), or open `/workbench`, which frames the web target at a phone or
+`screens/`), or open `/preview`, which frames the web target at a phone or
 tablet size and carries device, route, appearance and app state in its URL. Anything
 touching colour has to be seen in **both** appearance settings *and* with the setting
 on "System" against a dark device. That last combination is the app's default and is
 the one that has already shipped broken.
 
-**The handbook has two build paths and only one of them was ever checked.** Its
-production build ran green for a day while `npm run handbook` served a blank page on
+**The workbench has two build paths and only one of them was ever checked.** Its
+production build ran green for a day while `npm run workbench` served a blank page on
 every route, which is the path a person uses to look at their work.
-`npm run handbook:renders` and `npm run handbook:renders:dist` open each in a browser
+`npm run workbench:renders` and `npm run workbench:renders:dist` open each in a browser
 and fail if the shell did not mount; run both after touching `vite.app.mjs` or any
-module the handbook compiles out of `apps/mobile`.
+module the workbench compiles out of `apps/mobile`.
 
 **A picture that decided something goes into the pull request or the issue**, not only
 into the working directory. `screens/evidence/` is where it lives and

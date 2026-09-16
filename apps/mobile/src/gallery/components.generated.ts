@@ -5,7 +5,7 @@
  * Every component `src/components` contains, addressed `folder/Name`.
  *
  * The address is the app's own and is the same string on both sides of the seam:
- * the gallery's entry, the handbook's reference row, and `?c=` between the two
+ * the gallery's entry, the workbench's reference row, and `?c=` between the two
  * sites. The platform suffix is deliberately not part of it — `ReaderView.tsx`
  * and `ReaderView.web.tsx` are one member here.
  *

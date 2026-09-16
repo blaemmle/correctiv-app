@@ -44,8 +44,8 @@ import { withoutComments } from './support/source';
  * whether the entry shows anything. A specimen built with the wrong props, one
  * that renders an empty box, a component listed with `specimens: []` — all of
  * those pass here and are visible only to somebody looking at the gallery or at
- * `/workbench`. ADR 0027's rule applies to this check as much as to the
- * handbook's drawing: where two renderings disagree the app's is right, and
+ * `/preview`. ADR 0027's rule applies to this check as much as to the
+ * workbench's drawing: where two renderings disagree the app's is right, and
  * nothing automatic compares them.
  *
  * Three more blind spots the union inherits from the walk, each a PR to have
@@ -67,7 +67,7 @@ import { withoutComments } from './support/source';
  *    export the walk claims to see` below is the half of this that CAN fail.
  *
  * The catalogue is read as TEXT rather than imported, which is the same split
- * `apps/handbook/test/direct.test.ts` makes: importing it pulls in every
+ * `apps/workbench/test/direct.test.ts` makes: importing it pulls in every
  * component in the app and the `.tsx` transform for all of them, to answer a
  * question about a list of names. The `//`-inside-a-string limit every check
  * built on `support/source.ts` inherits applies here too; it is written down
@@ -164,7 +164,7 @@ describe('the component walk the generated union is built from', () => {
   });
 
   it('keeps one component per file, named after its file', () => {
-    // The address depends on it. `apps/handbook/scripts/api.mjs` prints a
+    // The address depends on it. `apps/workbench/scripts/api.mjs` prints a
     // component's import line as the folder's barrel or `@/components/<folder>/<name>`,
     // so a second component inside `Card.tsx` gets an import path that does not
     // resolve, and `?c=` gets an id no source link can answer. The union would
@@ -179,7 +179,7 @@ describe('the component walk the generated union is built from', () => {
   it('addresses no component in a nested folder', () => {
     // The address is `folder/Name` and has room for nothing else, so
     // `reader/parts/Foo.tsx` would be addressed `reader/Foo` — an import line the
-    // handbook cannot resolve, and the same union member as a `reader/Foo.tsx`
+    // workbench cannot resolve, and the same union member as a `reader/Foo.tsx`
     // beside it, with nothing to say the two folded together. The generator
     // throws rather than emitting that; this is the readable half of the same
     // refusal, and `nestedComponentFiles`' own comment argues the alternative.

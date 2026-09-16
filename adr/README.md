@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Thirty-six decisions shaped this repo. Read them when you want to know *why* something
+Thirty-seven decisions shaped this repo. Read them when you want to know *why* something
 is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it is.
 
 | | Decision | Status |
@@ -41,8 +41,9 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0034](0034-one-component-for-the-two-sided-row.md) | One component for the two-sided row, and a tab bar that stops pretending at 130 % | accepted and carried out the same day; retires the every-label claim in 0013, and is the prerequisite 0033 names |
 | [0035](0035-a-check-that-opens-the-page.md) | A check that opens the page, because nobody forgot anything | accepted, built; retires nothing, and argues why 0031's four mechanisms could not have caught a page that mounted nothing |
 | [0036](0036-the-home-screen-becomes-data.md) | The home screen becomes data, and the app survives what it does not know | accepted, **not built**; sixteen decisions from a product interview, retires nothing, narrows #163 to its last question and leaves that one to the source decision |
+| [0037](0037-the-whole-site-is-the-workbench.md) | The whole site is the workbench, and the device frame is `/preview` | accepted and carried out the same day; retires two of 0024's, renames nothing in here, and is why the note below exists |
 
-Nine notes for readers of the older ones:
+Ten notes for readers of the older ones:
 
 - ADR 0026's "What this has not delivered" section is two thirds out of date, and the
   strikes there say so rather than the section being rewritten. Its storage half was
@@ -72,6 +73,16 @@ Nine notes for readers of the older ones:
   way round.** In 0005, 0006 and 0007 the bare `apps/mobile` is the *deleted*
   NativeScript app, which is why 0007's decision line reads "`apps/mobile` is deleted.
   `apps/mobile-rn` is the app" and means two different directories.
+- The site directory was renamed from `apps/handbook` to `apps/workbench` on
+  2026-09-16, the package from `@correctiv/handbook` to `@correctiv/workbench`, and the
+  device frame's route from `/workbench` to `/preview`
+  ([ADR 0037](0037-the-whole-site-is-the-workbench.md)). Paths and addresses in the ADRs
+  are left as they were written, so read `apps/handbook` as today's `apps/workbench`.
+  **Do not read it the other way round, and here that is the reading that bites.** In
+  0014, 0024, 0025, 0026, 0028, 0035 and 0036 the bare `/workbench` is the *device
+  frame*, which is `/preview` today, and not the site that now carries the name; the
+  titles of 0024, 0027 and 0029 call the whole site "the handbook", which is today's
+  workbench and not today's `/handbook`, which is the documents area inside it.
 - ADRs 0002 and 0006 describe a NativeScript app that is no longer in the tree. They
   are records, not descriptions: neither has been rewritten, and 0007 says which of
   their statements have expired.

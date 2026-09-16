@@ -35,7 +35,7 @@ import { expoAudio } from '@/lib/audio/backend';
 import { stop as stopAudio } from '@/lib/audio/player';
 // Everything a component of this app needs around it before it draws: the
 // stylesheet, the fonts, the store, the safe area, the gesture root and the
-// appearance handed to Uniwind. The handbook wraps each specimen it draws in the
+// appearance handed to Uniwind. The workbench wraps each specimen it draws in the
 // same component, which is the whole reason it is one (ADR 0028).
 import { AppEnvironment, useAppFonts } from '@/lib/env/AppEnvironment';
 import { expoPlatform } from '@/lib/platform/expo';

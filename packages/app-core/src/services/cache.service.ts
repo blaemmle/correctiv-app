@@ -159,7 +159,7 @@ const MAX_ENTRY_BYTES = 768 * 1024;
  *
  * The web target is the other half of the argument. There the store is
  * `localStorage`, the per-origin quota is about 5 MiB, and since
- * [ADR 0024](../../../../adr/0024-the-handbook-owns-the-root.md) the handbook
+ * [ADR 0024](../../../../adr/0024-the-handbook-owns-the-root.md) the workbench
  * shares that origin with the app — so a budget near the quota would be an app
  * that evicts the site it is published inside.
  */
@@ -258,8 +258,8 @@ const memKey = (ns: string, key: string) => `${ns}:${key}`;
 /**
  * Exported because it is not an internal detail: the preview shell has to name the
  * very same blob to seed a feed's cache, and re-implements this from the outside
- * (`apps/handbook/src/workbench/frame/seed.ts`).
- * `apps/handbook/test/workbench/seed.test.ts` holds the two versions together —
+ * (`apps/workbench/src/preview/frame/seed.ts`).
+ * `apps/workbench/test/preview/seed.test.ts` holds the two versions together —
  * without it a changed hash makes every fixture silently do nothing.
  */
 export function fileKey(key: string): string {

@@ -252,7 +252,7 @@ describe('the bound survives a restart', () => {
   });
 
   it('adopts a blob nobody recorded, so a seeded fixture is evictable too', async () => {
-    // The workbench writes feed blobs straight into storage, and a lost ledger
+    // The preview writes feed blobs straight into storage, and a lost ledger
     // leaves the same shape behind. Reading one is what puts it back on the books.
     const seeded = JSON.stringify({ data: ['seeded'], ts: START });
     await host.blobs.write('feeds', `${fileKey('recherchen')}.json`, seeded);

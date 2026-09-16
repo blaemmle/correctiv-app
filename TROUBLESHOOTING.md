@@ -45,8 +45,8 @@ that owns it, not the UI tree. For audio that is
 `state:stopped` per player. `adb shell dumpsys window`, `pidof` and logcat are the
 equivalents for focus, liveness and errors.
 
-**The handbook has two build paths and they do not agree.** `npm run build:handbook`
-ran green while `npm run handbook` served an empty `#root` on every route, and the
+**The workbench has two build paths and they do not agree.** `npm run build:workbench`
+ran green while `npm run workbench` served an empty `#root` on every route, and the
 green one is the only one CI had. The cause was one file compiled twice:
 `apps/mobile/src/i18n/polyfills.ts` calls `require()` inside a runtime condition, the
 production build hoisted that to a namespace import and printed a warning the file
@@ -56,15 +56,15 @@ graph before a line of it evaluates. It stood for a day, in which two agents bui
 themselves ways around the blank page instead of reporting it: one served `dist`
 statically, the other wrote an entry point importing a single page. Both worked, which
 is the part worth noticing. → After anything that touches `vite.app.mjs`,
-`vite.config.ts`, or a module `apps/handbook` compiles out of `apps/mobile`, open
+`vite.config.ts`, or a module `apps/workbench` compiles out of `apps/mobile`, open
 both:
 
 ```bash
-npm run handbook:renders        # starts the dev server, asserts the page rendered
-npm run build:handbook && npm run handbook:renders:dist
+npm run workbench:renders        # starts the dev server, asserts the page rendered
+npm run build:workbench && npm run workbench:renders:dist
 ```
 
-`apps/handbook/scripts/renders.mjs` is what those run, and it is the only check in the
+`apps/workbench/scripts/renders.mjs` is what those run, and it is the only check in the
 repository that opens a browser. Three things have to hold, and the second is the one
 that is not obvious: the shell mounted, what mounted is not the error boundary standing
 in for a route that threw — it wraps the main area only, so a broken route still leaves
@@ -193,7 +193,7 @@ everything about how the page looks.
 ## The web target
 
 - **A development bundle ignores the base path when it matches routes, and the
-  door hides it.** The handbook publishes the app one directory below itself, at
+  door hides it.** The workbench publishes the app one directory below itself, at
   `/app/`, and `experiments.baseUrl` is what tells Expo Router to strip that
   prefix. A `--dev` bundle applies it to asset URLs and not to route matching, so
   every route under the base falls through to the app's own 404. What makes this
@@ -208,7 +208,7 @@ everything about how the page looks.
 
   → `build:web` exports production, and `pages.yml` fails the deploy if the
   handle is present, which is the tell for a `--dev` bundle. The published
-  workbench therefore has no store handle, and it says so on the panels that
+  preview therefore has no store handle, and it says so on the panels that
   need one. The same limit applies to the dev server, which is a `--dev` bundle
   by definition, ~~so locally the route field reaches the app's first screen and no
   further~~. Driving the app's own router instead of its address bar was tried on
@@ -219,10 +219,10 @@ everything about how the page looks.
   It is the fix, with a second half the 2026-09-05 attempt did not have.
   Re-measured on 2026-09-10 against both servers: the route field walks the whole
   app, and a reload inside the frame stays in it. `driveRoute` in
-  `apps/handbook/src/workbench/frame/handle.ts` sends the frame through the app's
+  `apps/workbench/src/preview/frame/handle.ts` sends the frame through the app's
   router; `keepFramePath` puts the base back on the address afterwards, because the
   **same fork skips `appendBaseUrl` in development too** — so every navigation, the
-  shell's and a tap in the app alike, writes a path on the *handbook's* origin, and
+  shell's and a tap in the app alike, writes a path on the *workbench's* origin, and
   a reload from there leaves the app entirely. That base-less address stands for at
   most one poll tick: sampled every 50 ms, the base was back within 50 ms of a driven
   route and within 250 ms of a tap. Nothing closes that window from the app side,
@@ -232,14 +232,14 @@ everything about how the page looks.
 
   What still has no way in is a route opened in its own tab: `/app/entdecken` typed
   into the address bar renders the app's own 404 against the dev server, which is
-  what the workbench's "open in a new tab" button does and what the Build panel now
+  what the preview's "open in a new tab" button does and what the Build panel now
   says. For that, open the app's own dev server directly at `localhost:8081/` and
   give up the inspector while you do, or serve a static export with
   `screens/tools/serve-clean.mjs`.
 
   **Any other frame has to do the same, and `about:blank` answers every question
   wrongly on the way.** `/components/<group>/<name>` draws its component in a frame
-  (`workbench/AppFrame.tsx`), so the mechanism above is shared rather than copied, and
+  (`preview/AppFrame.tsx`), so the mechanism above is shared rather than copied, and
   getting there cost three measurements on 2026-09-10. A frame whose `src` is set by
   script fires `about:blank`'s `load` before the app's, and even on the app's the
   handle can be on the window while the router is not mounted yet: that first
@@ -285,10 +285,10 @@ everything about how the page looks.
   ```
   `pages.yml` greps the built `index.html` for the prefix, because this failure has
   no other symptom before it is public.
-- **Two Vites in one tree, and a plugin reading the wrong one.** `apps/handbook`
+- **Two Vites in one tree, and a plugin reading the wrong one.** `apps/workbench`
   builds with Vite 8 and Rolldown. `vitest` has `vite` as a regular dependency,
   range `^5 || ^6 || ^7`, so npm used to hoist **7.3.6** to `node_modules/vite` and
-  leave the handbook's 8 in `apps/handbook/node_modules/vite`. A *plugin* resolves
+  leave the workbench's 8 in `apps/workbench/node_modules/vite`. A *plugin* resolves
   `vite` from where the plugin is installed, which is the root — so `uniwind/vite`'s
   own `require('vite/package.json')` reported 7 and it configured a Vite 8 build for
   esbuild. Everything still built; it was simply the wrong half of the plugin.
@@ -299,7 +299,7 @@ everything about how the page looks.
   8 at the top and vitest's 7 nested under `node_modules/vitest/node_modules/vite`.
   → The fix is `vite` in the **root** `package.json`'s devDependencies, which is
   what makes npm hoist the right one. Not `overrides`: that would force vitest onto
-  a major it does not declare. `apps/handbook/test/toolchain.test.ts` fails if the
+  a major it does not declare. `apps/workbench/test/toolchain.test.ts` fails if the
   root ever hands out a 7 again.
   ([ADR 0027](adr/0027-the-handbook-draws-the-apps-components.md))
 - **`react-native-web`'s `Switch` reads a different prop for the ON thumb.** Its
@@ -470,7 +470,7 @@ everything about how the page looks.
   `prefers-color-scheme` resolves to inside the embedded document. Measured on
   2026-09-10: setting that one property on the `<iframe>` moved the framed app's own
   `light` / `dark` class within a tick, no reload, no handle, so it works in the export
-  too. `workbench/AppFrame.tsx` carries it as `scheme-light dark:scheme-dark`, which
+  too. `preview/AppFrame.tsx` carries it as `scheme-light dark:scheme-dark`, which
   puts the site's own three states behind it. The app stays the authority when its
   setting is explicit, because Uniwind then writes the class from the setting and never
   consults the query.
@@ -483,16 +483,16 @@ everything about how the page looks.
   site switched, the framed app followed the site in all three of its settings. Set the
   site's appearance and use the real device scheme.
 - **Persisting a setting from the effect that applies it is a delete on every page
-  that opens.** The handbook's `useAppearance` wrote the reader's choice to
+  that opens.** The workbench's `useAppearance` wrote the reader's choice to
   `localStorage` in the same effect that stamps the class, so the write ran on mount
   as well as on a change — and because "system" is the key being *absent*, a document
   that had read "system" wrote it by calling `removeItem` on somebody else's choice.
   One document would be harmless; this site runs more than one on the origin, because
-  `workbench/AppFrame.tsx` frames `<base>/app<route>` and a static host answers every
+  `preview/AppFrame.tsx` frames `<base>/app<route>` and a static host answers every
   path the app's export does not contain with the site's own `404.html`, which is a
   second copy of the site. Issue #131: the setting came back on the device scheme and
   the key was gone, with nothing in the bundle that names the key except the site's own
-  hook. Typecheck, lint and 137 handbook tests were green throughout, and so was every
+  hook. Typecheck, lint and 137 workbench tests were green throughout, and so was every
   single-tab browser walk. → **A read is not a fact about what the reader wants**, only
   about what the store said when that document started, so only a click may write.
   `theme.ts` keeps one writer, `rememberAppearance`, reached from the setter alone, and
@@ -510,7 +510,7 @@ everything about how the page looks.
 
 - **`t=dark` in a preview URL does nothing on a static export, and says nothing while
   it does nothing.** `expo export` sets `__DEV__` false, so the export carries no dev
-  handle: `/workbench`'s appearance panel disables itself, and the shell accepts
+  handle: `/preview`'s appearance panel disables itself, and the shell accepts
   `t=dark` in the hash and ignores it. A screenshot round driven that way produces
   "dark" images that are all light. → Drive the scheme from the browser instead —
   `emulateMedia({colorScheme:'dark'})`, or DevTools — with the app's own setting left

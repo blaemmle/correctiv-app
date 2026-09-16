@@ -20,15 +20,15 @@
  * Imported for its side effect by `i18n/Localisation.tsx`, whose module body runs
  * before any provider mounts. Nothing else should import it.
  *
- * **The handbook does not compile this file at all**, and that is the fix for
+ * **The workbench does not compile this file at all**, and that is the fix for
  * [#160](https://github.com/faktenforum/correctiv-app/issues/160) rather than a
  * convenience. A bundler that is not Metro hoists the three `require` calls out of
- * the condition and into imports, and the two halves of the handbook's toolchain
+ * the condition and into imports, and the two halves of the workbench's toolchain
  * disagree about which kind: the production build read `(ns.default || ns)` and
  * printed three `IMPORT_IS_UNDEFINED` warnings, documented in this very
  * paragraph as expected, while its dev server emitted a DEFAULT import of
  * `locale-data/de.js` — a module that exports nothing — and every page of
- * `npm run handbook` went blank on a link-time `SyntaxError`. The handbook's
+ * `npm run workbench` went blank on a link-time `SyntaxError`. The workbench's
  * runtime is a browser, which has both objects, so `vite.app.mjs` replaces this
  * module with an empty one and the argument is written there. Nothing below
  * changes for Metro, which is the only bundler this file is written for.

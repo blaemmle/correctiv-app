@@ -35,8 +35,8 @@ import { withoutComments } from './support/source';
  * and they are the surfaces the exceptions above sit on.
  *
  * Nearly this check already existed in the wrong app,
- * `apps/handbook/test/styles.test.ts`, which forbids a colour LITERAL because the
- * handbook decides no colour. This one is about a token that means the wrong thing,
+ * `apps/workbench/test/styles.test.ts`, which forbids a colour LITERAL because the
+ * workbench decides no colour. This one is about a token that means the wrong thing,
  * which is the mistake a repository with a palette actually makes.
  */
 const SRC = join(__dirname, '..', 'src');
@@ -61,7 +61,7 @@ const utility = (tokens: string) =>
  * quoted name is not enough on its own — `tone="emphasis"` is a `Badge` variant
  * that happens to be named after the old token, and `type Tone = 'emphasis' | …`
  * declares it. So the line has to be applying a colour as well, which is the same
- * device `apps/handbook/test/styles.test.ts` uses to tell a hex it applies from a
+ * device `apps/workbench/test/styles.test.ts` uses to tell a hex it applies from a
  * hex it is talking about.
  */
 const quoted = (tokens: string) => new RegExp(`(?<![\\w-])['"](${tokens})['"](?![\\w-])`, 'g');
@@ -165,7 +165,7 @@ function tally(found: Use[]): Record<string, Record<string, number>> {
  *  - a colour that is not a token at all. Two hex literals live in `src` today
  *    (`VideoFrame.tsx` `#000`, `ClaimStatusTag.tsx` `#2e7d4f`) and `app.json` ships
  *    `#ffffff` as the splash and adaptive-icon background, which is literally the
- *    white page on a dark phone this tier is about. `apps/handbook/test/styles.test.ts`
+ *    white page on a dark phone this tier is about. `apps/workbench/test/styles.test.ts`
  *    is the check for a literal; extending it to two more hosts is its own argument.
  *
  * None of these is accommodated here, and none should be quietly: each one is a PR

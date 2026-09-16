@@ -48,9 +48,13 @@ to the app's dev server on port 8081, with `ws: true` so the app's own reload so
 survives, and the browser again sees one origin. Against a static export, the
 assembled tree is served whole.
 
-**The old address keeps working.** `/preview.html` is a redirect stub in the handbook
+~~**The old address keeps working.** `/preview.html` is a redirect stub in the handbook
 that carries its query string to `/workbench`, because that address is in `RELEASE.md`
-and in links people already have.
+and in links people already have.~~ The promise is kept and the mechanism is not: the
+stub is gone and both `/preview.html` and `/workbench` are answered by a table in the
+site's own router, because a file called `preview.html` is what GitHub Pages serves for
+the clean URL `/preview`, which the frame now lives at
+([ADR 0037](0037-the-whole-site-is-the-workbench.md), measured).
 
 ## Why not the alternatives
 
@@ -107,8 +111,10 @@ capability "silently, because the browser simply refuses the property access", s
 exactly as written. It is why the proxy exists rather than a second port.
 
 [ADR 0014](0014-the-preview-shell-as-a-package.md), its decision line: "A workspace
-package, `tools/preview`". **Struck in place**, because the package is gone. The shell
-is a route of `apps/handbook` now, `/workbench`. Its reasoning for not being a host,
+package, `tools/preview`". **Struck in place**, because the package is gone. ~~The shell
+is a route of `apps/handbook` now, `/workbench`.~~ Both names have moved,
+`apps/workbench` and `/preview` ([ADR 0037](0037-the-whole-site-is-the-workbench.md));
+that it is a route of the site rather than a package of its own is unchanged. Its reasoning for not being a host,
 that `apps/*` means a host of the core and a dev tool is not one, is why it sat in
 `tools/` and is worth reading; the handbook is a genuine second thing with screens,
 which is the difference.

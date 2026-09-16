@@ -31,7 +31,7 @@ export const SALON5_RADIO_COPY = defineMessages({
  * **A function and not a constant, and that is the whole point of this file.** It
  * was `SALON5_RADIO`, an object holding two of the descriptors above under `title`
  * and `artist` — the keys a lock screen wants strings in. Nothing built a track
- * from it, measured across the app, the handbook and the tests on 2026-09-15, so
+ * from it, measured across the app, the workbench and the tests on 2026-09-15, so
  * the first thing that did would have been the first thing to find out: a
  * descriptor is an ordinary object, `${…}` renders it `[object Object]`, and a
  * platform API taking `any` metadata would have posted that to the notification
