@@ -1,4 +1,4 @@
-# ADR 0034 — A check that opens the page, because nobody forgot anything
+# ADR 0035 — A check that opens the page, because nobody forgot anything
 
 Status: accepted, 2026-09-16. Built: `apps/handbook/scripts/renders.mjs`, both modes, in
 CI. It is the first check in this repository that starts a browser.

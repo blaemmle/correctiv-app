@@ -7,7 +7,7 @@
  * **Why a browser, when six source-reading tests are cheaper.** ADR 0031's four
  * mechanisms are about a thing somebody forgot to do, and nobody forgot anything
  * here: the work was done, it was correct, and it did not run. No type, no generator
- * and no reading of a file can see that, which is the argument ADR 0034 makes at
+ * and no reading of a file can see that, which is the argument ADR 0035 makes at
  * length. Issue #160 is the case. `apps/mobile/src/i18n/polyfills.ts` calls `require()` inside a
  * runtime condition; the production build hoisted that to a namespace import and
  * warned, and the dev server hoisted it to a DEFAULT import of a module that exports
