@@ -60,13 +60,33 @@ export type SplitRowProps = {
  * ends in two ellipses touching across a 12 px gap, which is the tab bar's
  * picture in that issue and is the thing being fixed rather than a fix for it.
  * Truncation is acceptable where a separation survives it; a side that can go to
- * its own line does not need to be truncated at all. A caller that genuinely
- * wants one side to give instead — a value column that should stay on the
- * heading's line — says so on that child (`className="shrink"`), because it is
- * that child's property and not the row's.
+ * its own line does not need to be truncated at all.
+ *
+ * **And `shrink` on a child is not a way out of the wrap.** This docblock said it
+ * was, and it is worth writing down why that was wrong rather than quietly
+ * deleting it: flexbox breaks lines BEFORE it flexes. An item whose hypothetical
+ * size does not fit moves to the next line, and only then is what is left on a
+ * line shrunk to fit. So under `flex-wrap` a `shrink`ing child wraps at exactly
+ * the width it would have wrapped at without it. The door's and the profile's
+ * label/value rows carry `shrink text-right` on the value and are the measurement:
+ * at 200 % the value sits on its own line at the label's left edge, `text-right`
+ * drawing nothing, in both appearance settings
+ * (`screens/evidence/158-shortfall-rows-at-200-light.webp` and the three beside
+ * it). What `shrink` is genuinely for there is the other case — React Native
+ * defaults `flexShrink` to 0, so without it a value too wide for the whole row
+ * draws outside the card instead of wrapping inside its own column.
  *
  * **What it does not do**: keep the two sides on one line. A caller that needs
  * that needs a different component, and probably needs to know why.
+ *
+ * **That is deliberately not a prop**, and it could not usefully be one on a
+ * child: the wrap belongs to the row, so only the row could refuse it. A
+ * `nowrap` prop would hand back the exact defect this component exists to stop,
+ * under a name that reads like a layout choice — and no call site wants it, since
+ * the rows that do wrap were photographed at 200 % and read whole. The question
+ * to answer first is what the row should do when the two sides do not fit, and
+ * "stay on one line" is not an answer to it.
+ *
  * `__tests__/split-rows.test.ts` holds the app to this one, so a new
  * `justify-between` written by hand fails rather than reaching a device at 200 %
  * unnoticed.

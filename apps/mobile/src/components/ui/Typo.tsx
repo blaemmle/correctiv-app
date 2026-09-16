@@ -44,9 +44,47 @@ export type TypoProps = TextProps & {
 };
 
 /**
- * The canonical text component. The variant decides typeface, size and line
- * height, `color` the colour token, `className` the layout. That keeps typography
- * true to the tokens and independent of Android's fontWeight behaviour.
+ * Where Android may divide a word too long for its line, one answer per variant.
+ *
+ * A `Record` rather than `variant.startsWith('headline')`, which is what this was
+ * and is ADR 0031's own example of mechanism 1 standing where a string test was.
+ * The prefix classified `button` by accident — it is neither prose nor a headline
+ * and nobody had decided about it — and it would have classified the twelfth
+ * variant the same way, silently. As a record, a variant added to
+ * `typography.generated.ts` stops this file compiling until somebody answers.
+ *
+ * `none` on the headlines is measured and the reason is at the call site below.
+ * `none` on `button` is a decision: a control's label is a name rather than a
+ * sentence, and a name divided across two lines reads as a fault in the control.
+ * It is `Typo variant="button"` this governs, not `ui/Button`, which sets
+ * `typography.button` on a `Text` of its own.
+ */
+const HYPHENATION: Record<TypoVariant, 'none' | 'normal'> = {
+  'text-article': 'normal',
+  'text-s': 'normal',
+  'text-m': 'normal',
+  'text-l': 'normal',
+  'headline-xs': 'none',
+  'headline-s': 'none',
+  'headline-m': 'none',
+  'headline-l': 'none',
+  'headline-xl': 'none',
+  'headline-xxl': 'none',
+  button: 'none',
+};
+
+/**
+ * The app's text component: the variant decides typeface, size and line height,
+ * `color` the colour token, `className` the layout. That keeps typography true to
+ * the tokens and independent of Android's fontWeight behaviour.
+ *
+ * **Not every line of text in the app, and the exceptions are worth knowing**
+ * because what this component declares does not reach them. `ui/Button`,
+ * `ui/Badge` and `ui/Chip` each render a `Text` of their own with a
+ * `typography[...]` style, so none of them is hyphenated whatever the table above
+ * says. That is right for all three — they draw one short label in a box sized
+ * for it — and it is the reason a rule that belongs to every line of text has to
+ * be stated somewhere other than here.
  */
 export function Typo({
   variant = 'text-m',
@@ -96,7 +134,7 @@ export function Typo({
        * Before `{...rest}`, so a caller can still turn it off for a line that must
        * not be divided.
        */
-      android_hyphenationFrequency={variant.startsWith('headline') ? 'none' : 'normal'}
+      android_hyphenationFrequency={HYPHENATION[variant]}
       style={[typography[variant], override, { color: colors[color] }, style]}
       {...rest}
     />

@@ -351,7 +351,18 @@ function impactLine(intl: IntlShape, memberSince: string | null, hasArticles: bo
   return intl.formatMessage(COPY.impactSince, { months, articles });
 }
 
-/** One label/value line in the membership card. */
+/**
+ * One label/value line in the membership card.
+ *
+ * `shrink text-right` is the guard against a value wider than the whole row, and
+ * not a way of keeping it on the label's line: `SplitRow` wraps, and a flex line
+ * breaks before anything on it is shrunk. At 200 % system font this card reads
+ * with "Stufe" over its value, left aligned, and "Zugang über" beside its own,
+ * right aligned, because only the first one is too long for the row — one card,
+ * two readings, both whole. Photographed in both appearance settings as
+ * `screens/evidence/158-membership-rows-at-200-light.webp` and its dark twin;
+ * `ui/SplitRow`'s docblock carries the argument.
+ */
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <SplitRow align="baseline">

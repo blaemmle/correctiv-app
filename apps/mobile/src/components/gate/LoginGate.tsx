@@ -417,9 +417,17 @@ function Row({ label, value }: { label: string; value: string }) {
       <Typo variant="text-m" color="on-canvas-muted">
         {label}
       </Typo>
-      {/* `shrink`, not `flex-1`: a flex basis of zero keeps the value on the
-          label's line at any width, which at 200 % is a column three characters
-          wide. With its own width it takes the line below instead. */}
+      {/* `shrink` does NOT keep the value on the label's line, and this comment
+          used to say that it did. `SplitRow` wraps, and a flex line breaks before
+          anything on it is shrunk, so at 200 % the value takes the line below and
+          `text-right` draws nothing — photographed in both appearance settings as
+          `screens/evidence/158-shortfall-rows-at-200-light.webp` and its dark
+          twin, and readable, which is why the layout stands as it is. What the two
+          classes are for is the case one step further out: React Native defaults
+          `flexShrink` to 0, so without `shrink` a value wider than the whole row
+          draws past the card's border instead of wrapping inside its own column,
+          and `text-right` is what sets those wrapped lines against the card's
+          right edge. */}
       <Typo variant="text-m" weight="semibold" className="shrink text-right">
         {value}
       </Typo>

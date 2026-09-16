@@ -56,9 +56,17 @@ sites each forgot:
 
 **Not shrink, which is the other obvious answer.** Shrinking both sides ends in two
 ellipses touching across a 12 px gap — which is the tab bar's picture in that issue and
-is the thing being fixed, not a fix for it. A caller that genuinely wants one side to
+is the thing being fixed, not a fix for it. ~~A caller that genuinely wants one side to
 give says so on that child (`className="shrink"`), because it is that child's property
-and not the row's.
+and not the row's.~~ Struck, because it cannot work: flexbox breaks lines before it
+flexes, so under this row's own `flex-wrap` a `shrink`ing child wraps at exactly the
+width it would have wrapped at without it. Measured on the two label/value rows that
+carry `shrink text-right` — the door's access shortfall and the profile's membership
+card — where at 200 % the value sits on its own line at its label's left edge and
+`text-right` draws nothing
+(`screens/evidence/158-membership-rows-at-200-light.webp` and the three beside it).
+There is no child-side escape from the wrap and `SplitRow` grows no prop for one; its
+docblock carries the argument.
 
 **`apps/mobile/__tests__/split-rows.test.ts` holds the app to it.** `justify-between`
 appears in `SplitRow.tsx` and in two excused files, each with a written reason: the
@@ -93,12 +101,25 @@ from its title rather than from the visible label, checked with `uiautomator dum
 
 ### One line for the word break, and it stops at the headlines
 
-`Typo` sets `android_hyphenationFrequency="normal"` on the body variants and `none` on
-the `headline-*` ones. Android breaks a word too long for the line wherever the line
-happens to end and prints no hyphen, which is how the hero's teaser read
-`Gebäud / emodernisierungsgesetz`. German compounds are longer than the lines a phone
-draws, so this is a property of the language and belongs at the one component every
-line of text in this app goes through.
+`Typo` answers it per variant, from a `Record<TypoVariant, 'none' | 'normal'>`:
+`normal` on the body sizes, `none` on the `headline-*` ones and on `button`. Android
+breaks a word too long for the line wherever the line happens to end and prints no
+hyphen, which is how the hero's teaser read `Gebäud / emodernisierungsgesetz`. German
+compounds are longer than the lines a phone draws, so this is a property of the
+language and belongs at the component the app's prose is set in.
+
+**Not "the one component every line of text goes through", which is what this record
+said and is false.** `ui/Button`, `ui/Badge` and `ui/Chip` each render a `Text` of
+their own with a `typography[…]` style and never touch `Typo`, so none of the three is
+hyphenated whatever that table says. It is right for all three — one short label in a
+box sized for it — and it is the reason the declaration was written as a rule about
+prose rather than as a rule about text.
+
+It is also a `Record` rather than the `variant.startsWith('headline')` this was
+written as. The prefix test classified `button` by accident, nobody having decided
+about it, and would have classified the twelfth variant the same way in silence; the
+record is [ADR 0031](0031-four-mechanisms-for-this-must-not-be-forgotten.md)'s
+mechanism 1 standing where mechanism 4 would otherwise be needed.
 
 It is the same declaration as `flex-wrap`, one layer down: telling the layout engine
 what to do when the content is wider than the line rather than leaving it to guess.
@@ -118,6 +139,15 @@ the same answer.
 the date takes the one under it, `SPOTLIGHT` keeps its line and `Alle Ausgaben →` takes
 the one under it. That is a layout nobody drew, and it is the readable one.
 
+**And a label/value row that reads two ways in one card.** The membership card at
+200 % puts `Stufe` over its value, left aligned, and `Zugang über` beside its own,
+right aligned, because only the first is too long for the row. Photographed in both
+appearance settings, since a wrapped side lands at `flex-start` and no `text-right` on
+it survives that: `screens/evidence/158-membership-rows-at-200-{light,dark}.webp` and
+`158-shortfall-rows-at-200-{light,dark}.webp`. Every value is whole and nothing leaves
+the card, which is the requirement; one card reading two ways is the price, and it is
+smaller than a value that meets its label.
+
 **Four unlabelled glyphs above 130 %.** ADR 0013 argued for `labeled` because
 `Entdecken` (a compass) and `Mitmachen` (three figures) are the two nobody can name
 from the glyph, and that argument is unchanged and still right. What it did not
@@ -126,11 +156,20 @@ not between a label and a glyph, it is between a glyph and `Entde…Media…` �
 ADR 0013 sentence is struck for that reason and no other.
 
 **The one label that is left is still truncated.** At 200 % the selected tab reads
-`Entde…` on Entdecken and `Media…` on Mediathek, because Material gives every item a
-fifth of the width whether the others are labelled or not. That is the issue's own
-standard met and not exceeded: truncation is acceptable where a separation survives it,
-and there is nothing beside it to run into. `unlabeled` would remove the ellipsis and
-the name with it, which is worse.
+`Entde…` on Entdecken and `Media…` on Mediathek. **Measured rather than assumed, after
+a review doubted the reason given here**, which was that Material gives every item a
+fifth of the width: `uiautomator dump` with `selected` on at 200 % puts all five items
+at exactly 216 px on a 1080 px bar, the selected one included, and the selected item's
+label view fills its own 216 px and no more. So the reading is right and so is the
+reason, and the doubt was worth having — `LABEL_VISIBILITY_SELECTED` is the constant
+Material 2's `BottomNavigationView` used for its *shifting* mode, which did widen the
+selected item at the others' expense, and the name survived into
+`com.google.android.material:material:1.13.0`, the version `react-native-screens`
+compiles against, where the behaviour did not. The mode chooses which labels are
+drawn and nothing about the widths. That is the issue's own standard met and not
+exceeded: truncation is acceptable where a separation survives it, and there is
+nothing beside it to run into. `unlabeled` would remove the ellipsis and the name with
+it, which is worse.
 
 **A headline can still break inside a word at 200 %.** The rule that keeps 100 %
 untouched is the rule that leaves the display sizes unhyphenated, and those are the
@@ -140,8 +179,18 @@ same rule. No headline in the app's own copy is a single word longer than a line
 ## What is open
 
 **Whether 130 % is the right threshold anywhere but here.** It is a property of five
-German words at 1080 px, re-measured whenever a tab is renamed, and there is no way to
-compute it from inside the app. A second language moves it and nothing would say so.
+German words at 1080 px and there is no way to compute it from inside the app.
+
+~~A second language moves it and nothing would say so.~~ Something says so now:
+`apps/mobile/__tests__/tab-bar-labels.test.ts` pins the five German strings, the five
+ids, the number as `_layout.tsx` spells it and the fact that one language ships, and
+fails when any of the four moves. It is AGENTS.md's rule that the check ships with the
+fact, arriving late — this record named the drift and left it, which is the half of a
+"what is open" entry that does nothing. The check cannot re-measure and does not
+pretend to: a red run means the number is no longer known to be right, and the answer
+is another round of `screens/tools/tour-a11y.sh`. **The screen width is the one input
+it still cannot see**, so 1080 px remains an assumption this repository cannot hold
+anybody to.
 
 **The bar at 130 % itself.** Two pixels between `Mediathek` and `Mitmachen` is legible
 and is not comfortable. Whether that step should also drop the labels is a design
