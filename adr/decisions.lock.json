@@ -1,0 +1,246 @@
+{
+  "0001": {
+    "slug": "monorepo-and-platform-free-core",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0002": {
+    "slug": "vite-8-rolldown-evaluation",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0003": {
+    "slug": "audio-capability-spike",
+    "decisions": {
+      "1": ["Consequence for the stack decision"]
+    }
+  },
+  "0004": {
+    "slug": "react-native-pivot",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0005": {
+    "slug": "react-native-over-nativescript",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0006": {
+    "slug": "one-core-two-hosts",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0007": {
+    "slug": "removing-the-nativescript-host",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0008": {
+    "slug": "uniwind-over-nativewind",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0009": {
+    "slug": "redux-toolkit-for-the-cores-state",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0010": {
+    "slug": "design-tokens-as-a-shared-package",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0011": {
+    "slug": "naming-the-app-for-release",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0012": {
+    "slug": "a-list-virtualizer-for-the-unbounded-lists",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0013": {
+    "slug": "native-tabs-and-a-web-tab-bar-of-its-own",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0014": {
+    "slug": "the-preview-shell-as-a-package",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0015": {
+    "slug": "reading-correctiv-org-through-its-rest-api",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0016": {
+    "slug": "a-door-at-the-root-and-an-entitlement-not-an-amount",
+    "decisions": {
+      "1": ["A render branch, not a redirect"],
+      "2": ["An entitlement, never an amount"],
+      "3": ["A `session` slice beside `membership`, not a field on it"],
+      "4": ["Simulated, and said so on the screen"],
+      "5": ["Four states on one surface"],
+      "6": ["Sign-out lives in Einstellungen"]
+    }
+  },
+  "0017": {
+    "slug": "native-rendering-as-the-rule-a-webview-for-the-exception",
+    "decisions": {
+      "1": ["Native rendering stays the rule, and the webview is the exception"],
+      "2": ["The exception is detected, not judged"]
+    }
+  },
+  "0018": {
+    "slug": "removing-the-guest",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0019": {
+    "slug": "identity-lives-in-the-session",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0020": {
+    "slug": "no-contribution-in-the-app",
+    "decisions": {
+      "1": ["The app sets no contribution"],
+      "2": ["The label is the part with a rule behind it"]
+    }
+  },
+  "0021": {
+    "slug": "the-board-is-a-plugin-and-the-screens-are-data",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0022": {
+    "slug": "three-tiers-of-colour-and-a-dark-scheme-that-names-roles",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0023": {
+    "slug": "the-host-constructs-the-store",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0024": {
+    "slug": "the-handbook-owns-the-root",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0025": {
+    "slug": "the-published-app-is-a-production-bundle",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0026": {
+    "slug": "react-native-review-and-hardening",
+    "decisions": {
+      "1": ["Rozenite, which replaces the Redux debugger rather than joining it"],
+      "2": ["Keyboard-aware inputs, as a usability requirement"],
+      "3": ["Notification delivery stays deferred until it is decided how they are sent"],
+      "4": ["MMKV as the single storage engine, with a bounded cache"],
+      "5": ["An error boundary, and an error report whose provider is not chosen yet"],
+      "6": ["German and English from the first string, and German is the only one that ships"],
+      "7": ["Tablet is in scope, and accessibility is the work beside it"],
+      "8": ["Commit hooks, which format rather than complain"],
+      "9": ["Navigation headers: the platform's on iOS and Android, ours on web"]
+    }
+  },
+  "0027": {
+    "slug": "the-handbook-draws-the-apps-components",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0028": {
+    "slug": "one-shell-and-a-route-that-declares-its-context",
+    "decisions": {
+      "1": ["The route declares, and the page fills"],
+      "2": ["The address, on every route"],
+      "3": ["Two defaults that look inconsistent and are not"],
+      "4": ["Below 1024, the context is the page"],
+      "5": ["The frame moves to the component's own page"],
+      "6": ["Every card draws, and there is nothing to press"],
+      "7": ["The square is the column, and a crop says it is one"],
+      "8": ["The registry's roster is the app's own catalogue"],
+      "9": ["The environment is the app's, and it was short by five things"],
+      "10": ["One environment, exported once"],
+      "11": ["The card's link is over the drawing, not on it"],
+      "12": ["A visible way past the app's door (issue #112)"]
+    }
+  },
+  "0029": {
+    "slug": "the-handbook-keeps-its-own-primitives",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0030": {
+    "slug": "the-platforms-header-and-ours-on-web",
+    "decisions": {
+      "1": ["Decision"],
+      "2": ["The two exceptions, named so they are a decision"]
+    }
+  },
+  "0031": {
+    "slug": "four-mechanisms-for-this-must-not-be-forgotten",
+    "decisions": {
+      "1": ["Mechanism 1 — make it a type error"],
+      "2": ["Mechanism 2 — generate the type from the world"],
+      "3": ["Mechanism 3 — take the primitive away"],
+      "4": ["Mechanism 4 — read the source, and only for what no type can see"]
+    }
+  },
+  "0032": {
+    "slug": "a-port-for-the-error-report-before-a-provider-for-it",
+    "decisions": {
+      "1": ["A fifth port, with a no-op default"],
+      "2": ["What a report carries: a code, not a sentence"],
+      "3": ["Where reporting is allowed to happen"]
+    }
+  },
+  "0033": {
+    "slug": "one-text-size-for-the-whole-app-the-systems-by-default",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  },
+  "0034": {
+    "slug": "one-component-for-the-two-sided-row",
+    "decisions": {
+      "1": ["A two-sided row is a component, and the class is banned"],
+      "2": ["The tab bar drops four labels above 130 %, and the threshold is measured"],
+      "3": ["One line for the word break, and it stops at the headlines"]
+    }
+  },
+  "0035": {
+    "slug": "a-check-that-opens-the-page",
+    "decisions": {
+      "1": ["Decision"]
+    }
+  }
+}

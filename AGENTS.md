@@ -84,6 +84,20 @@ are listed in the ADR, and are the only three the check above will excuse.
 
 ## Decisions
 
+**`npm run adr:new` gives the number.** Not the highest in `adr/` plus one: on
+2026-09-16 two agents read that off the same tree, wrote 0034 twice, and git merged
+them without a conflict because the slugs differed. It also reads the open pull
+requests and `origin/main`, and it exits non-zero rather than printing an unverified
+number when it could not reach one of them.
+
+**Every decision inside a record carries a number**, `N. ` at the front of its
+heading, so `ADR 0026 §6` still points at the same decision in a year. A heading that
+argues for a decision takes none. `npm run adr:lock` records each number's text in
+`adr/decisions.lock.json` and refuses anything that is a move rather than a reword —
+the ledger is append-only, a removed decision leaves its number behind as a gap, and
+the file deliberately cannot be regenerated, because regenerating it is exactly the
+operation that would accept a renumbering in silence.
+
 `adr/` records **why**, not what. Add one when a choice would otherwise have to be
 argued from scratch later: a dependency swapped, a boundary moved, a capability
 measured and rejected. Not for ordinary work, and not for anything the code already

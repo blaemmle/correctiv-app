@@ -41,7 +41,7 @@ and its label visibility and nothing else — no padding, no minimum gap, no sec
 
 ## Decision
 
-### A two-sided row is a component, and the class is banned
+### 1. A two-sided row is a component, and the class is banned
 
 `apps/mobile/src/components/ui/SplitRow.tsx`. It owns the two things the eleven call
 sites each forgot:
@@ -76,7 +76,7 @@ mechanism 2 on [ADR 0031](0031-four-mechanisms-for-this-must-not-be-forgotten.md
 ladder, and it is there rather than in AGENTS.md because all four defects passed review
 and a green check: a convention that can only be broken silently is not one.
 
-### The tab bar drops four labels above 130 %, and the threshold is measured
+### 2. The tab bar drops four labels above 130 %, and the threshold is measured
 
 `labelVisibilityMode` is `labeled` up to a system font scale of 1.3 and `selected`
 above it. Photographed on `Medium_Phone_API_36`, 1080x2400 at 420dpi, one shot per
@@ -99,7 +99,7 @@ Nothing is lost to a screen reader: Material takes each item's `contentDescripti
 from its title rather than from the visible label, checked with `uiautomator dump` at
 2.0, where all five tabs still report their names.
 
-### One line for the word break, and it stops at the headlines
+### 3. One line for the word break, and it stops at the headlines
 
 `Typo` answers it per variant, from a `Record<TypoVariant, 'none' | 'normal'>`:
 `normal` on the body sizes, `none` on the `headline-*` ones and on `button`. Android

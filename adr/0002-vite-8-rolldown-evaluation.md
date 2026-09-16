@@ -97,7 +97,7 @@ The cause therefore lies elsewhere — probably in how Rolldown treats the plugi
 `virtual:entry-with-polyfills` module. Digging further was not justified at this point:
 the benefit is real, but the change must not cost the data layer.
 
-## Decision
+## 1. Decision
 
 ~~**Stay on `@nativescript/vite@2.0.3` / Vite 7.** Minification stays off.~~ Void since
 [ADR 0027](0027-the-handbook-draws-the-apps-components.md).

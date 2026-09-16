@@ -182,7 +182,7 @@ twice. On the 8 path that is gone. The `resolve.alias` `customResolver` deprecat
 is **not** a tell — Uniwind emits it on both paths, because both of its alias
 configurations use one.
 
-## Decision
+## 1. Decision
 
 **The handbook draws the app's components in its own React tree, and the app's own
 bundle stays as the rendering that counts.**

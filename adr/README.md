@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Thirty-four decisions shaped this repo. Read them when you want to know *why* something
+Thirty-five records shaped this repo. Read them when you want to know *why* something
 is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it is.
 
 | | Decision | Status |
@@ -41,7 +41,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0034](0034-one-component-for-the-two-sided-row.md) | One component for the two-sided row, and a tab bar that stops pretending at 130 % | accepted and carried out the same day; retires the every-label claim in 0013, and is the prerequisite 0033 names |
 | [0035](0035-a-check-that-opens-the-page.md) | A check that opens the page, because nobody forgot anything | accepted, built; retires nothing, and argues why 0031's four mechanisms could not have caught a page that mounted nothing |
 
-Nine notes for readers of the older ones:
+Eight notes for readers of the older ones:
 
 - ADR 0026's "What this has not delivered" section is two thirds out of date, and the
   strikes there say so rather than the section being rewritten. Its storage half was
@@ -120,6 +120,54 @@ why the record is kept.
 in 0006 and four claims in the top-level docs. Read its last section for the list; the
 short version is that "correctiv.org sends no CORS header" was true of the RSS feeds
 and never of the REST API.
+
+**How a decision is numbered, and why the number never moves.**
+
+Every record numbers the decisions inside it. A decision opens its heading with a
+figure — `### 6. German and English from the first string` — and is cited as
+`ADR 0026 §6`, from another record, from a code comment, from a test. That replaces
+citing a decision by the prose of its heading, which is what this repository used to
+do and which dies silently the day somebody rewords the heading: rewording a heading
+is not rewriting a record, so the strike rule below does not protect it and no check
+notices.
+
+**The numbers are append-only.** A number is never reused and never moved to a
+different decision, a new decision takes the next free one, and a decision that is
+removed leaves its number behind as a gap rather than closing it. Renumbering is the
+one edit that invalidates every citation already written, everywhere, at once.
+[`apps/handbook/test/decisions.test.ts`](../apps/handbook/test/decisions.test.ts)
+holds [`decisions.lock.json`](decisions.lock.json) against the records and fails when
+a number in use names something else; `npm run adr:lock` adds new numbers to it and
+refuses to rewrite an existing one.
+
+**What takes a number is a decision, not a heading.** *Context*, *Consequences*,
+*What it measured* and *What this retires* are the argument and the bookkeeping
+around the decision. A number on one of those would make the number mean "heading",
+and a number that means "heading" says nothing worth citing. So the numbered sections
+of a record are its `## Decision` together with whatever `###` sections inside it
+state a choice of their own; a `###` that only argues for the decision above it takes
+no number, which is why ADR 0004's two and ADR 0017's first two have none. Where the
+`## Decision` block is one unsectioned paragraph — which is most of them — that block
+is the decision and the number goes on the heading itself, `## 1. Decision`.
+
+Two records keep a number outside `## Decision`, because the number follows the
+decision and not the heading level. ADR 0003 has no `## Decision` at all, being a
+spike; its conclusion is `## 1. Consequence for the stack decision`. ADR 0030 §2 is a
+section whose own title says it is a decision. Nothing else outside `## Decision` is
+numbered.
+
+**On the site the number is the anchor.** `/decisions/0026#6` is §6, and
+`apps/handbook/plugin/markdown.ts` mints that id from the figure rather than from a
+slug of the heading's words, so a reword moves nothing. On GitHub the anchor is still
+the slug of the whole heading text, because GitHub derives it from the text and
+nothing in this repository can change that.
+
+**And two records must never share a record number.** On 2026-09-16 two of them both
+claimed 0034, written in parallel; the filenames differed by their slug, so git merged
+them with no conflict and the duplicate was found by somebody happening to look. The
+same test now fails on it. `npm run adr:new` prints the next free number, reading both
+`adr/` and the numbers claimed by open pull requests — the tree alone is what both
+agents read that day, and the tree alone was what agreed with both of them.
 
 **How an expired claim is marked.** An ADR is never rewritten to look right in
 hindsight — the reasoning is the part worth keeping. A claim a later decision made

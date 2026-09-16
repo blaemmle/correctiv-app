@@ -32,7 +32,7 @@ components that `support.js` resolves at runtime via `<dc-import>`. It is the **
 draft**. Merging here means: the draft stays the design source, and the Pages slot gets
 the real Expo web build.
 
-## Decision
+## 1. Decision
 
 Move to `apps/mobile-rn` (Expo SDK 56, RN 0.85.3, React 19.2.3), **build the Expo
 prototype out rather than starting over**, and delete `apps/mobile` once it reaches

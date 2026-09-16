@@ -36,7 +36,7 @@ built around that measurement.
 
 ## Decision
 
-**The route declares, and the page fills.**
+### 1. The route declares, and the page fills
 
 `apps/handbook/src/shell/views.ts` is a table, one row per view kind. It names the
 right panel's sections in order, which of them start open, whether the panel starts
@@ -64,7 +64,7 @@ A section's badges are a slot of their own, `<id>:tags`, because they stay visib
 while the section is shut — "0 warnings" is worth reading without opening the console
 — and because the trigger that carries them is the shell's chrome.
 
-### The address, on every route
+### 2. The address, on every route
 
 `apps/handbook/src/shell/address.ts` owns the hash everywhere, in one grammar:
 
@@ -106,7 +106,7 @@ Every write is `replaceState`. Toggling a panel is not a place to come back to, 
 back button that walked through six panel states is a back button nobody can use to
 leave the page.
 
-### Two defaults that look inconsistent and are not
+### 3. Two defaults that look inconsistent and are not
 
 **`/workbench` opens shut**, although it is the view with the most tools on it.
 `RELEASE.md` hands out that address to people who want to see the app, and `tools=1`
@@ -116,7 +116,7 @@ arrives at those to use the panel rather than to look past it: the design page's
 area is a Figma frame and everything else about it is in the sections, and the
 component page's props are the second thing anybody came for.
 
-### Below 1024, the context is the page
+### 4. Below 1024, the context is the page
 
 `WIDE` stays `(min-width: 64rem)`, which is also `HOST_BELOW` in `workbench/devices.ts`,
 so the shell's line and the device line are one number.
@@ -132,12 +132,12 @@ special-cased: `fullWhenNarrow` is true for it alone, because that is what it ha
 always done below 1024 — the header, the rail, a sidebar and a status line are most
 of a 390px screen, and the app is what the link was for.
 
-### The frame moves to the component's own page
+### 5. The frame moves to the component's own page
 
 `/components` draws **no frames at all**. Each card draws the component itself, in
-this site's React tree, ~~when the reader presses Draw~~. Voided by the section
-below, "Every card draws, and there is nothing to press": the button was decision 12
-of the redesign, settled while a preview still meant booting an app, and mounting all
+this site's React tree, ~~when the reader presses Draw~~. Voided by §6 below,
+"Every card draws, and there is nothing to press": the button was item 12
+of the redesign brief, settled while a preview still meant booting an app, and mounting all
 47 at once was measured only after it had shipped. It draws on arrival.
 
 The reason is a mechanism and not a taste. **A drawn component takes the space its
@@ -157,7 +157,7 @@ flakiest thing in CI, and a check that reddens without cause gets switched off. 
 they disagree the app's bundle is right (ADR 0027), and the disagreement is a finding
 for a person.
 
-### Every card draws, and there is nothing to press
+### 6. Every card draws, and there is nothing to press
 
 The cards shipped with a Draw button on each of them, and it is gone.
 
@@ -232,7 +232,7 @@ The detail route is untouched by any of this: `/components/<group>/<name>` still
 offers `direct|bundle`, because there the two renderings are the question the page
 exists to answer, and the frame half of it really does boot an app.
 
-### The square is the column, and a crop says it is one
+### 7. The square is the column, and a crop says it is one
 
 The preview area shipped as `h-[11rem]`, left-aligned, top-aligned, `overflow: hidden`.
 Three things were wrong with it and all three are one thing: **176 pixels is a number
@@ -332,7 +332,7 @@ scrolling it end to end is 88 frames with none over 32 ms. Nothing reflows as th
 specimens settle: the page's height and the number of markers on it are the same from
 the first frame either can be read on.
 
-### The registry's roster is the app's own catalogue
+### 8. The registry's roster is the app's own catalogue
 
 ADR 0027 shipped `src/components/direct.tsx` with two entries typed out by hand, each
 importing its component by file so the `ui` barrel's dependencies stayed out of the
@@ -377,7 +377,7 @@ plus the icon fonts as separate assets. That is paid knowingly — every one of 
 forty-five is drawn here, so every one of them is needed anyway — and the alternative
 was a second catalogue.
 
-### The environment is the app's, and it was short by five things
+### 9. The environment is the app's, and it was short by five things
 
 The section above measured what a component needs in order to **mount** here without
 throwing, and got the right answer to that question. What nobody measured was whether
@@ -430,7 +430,7 @@ that stretches its children; a `<div>` is a block box that does neither, and a
 component's outermost element is laid out by its parent. So `self-start` did nothing
 and `align-items` did something else. `DirectPreview`'s stage boxes are `View`s now.
 
-### One environment, exported once
+### 10. One environment, exported once
 
 The answer to one and two together is `apps/mobile/src/lib/env/AppEnvironment.tsx`:
 the app's stylesheet, its five font files, the store, the safe area, the gesture root,
@@ -471,7 +471,7 @@ of its own, if `_layout.tsx` stops using the same component, or if `global.css` 
 its `@source`. It reads the files as text, which is the same choice `shell.test.ts`
 makes and for the same reason.
 
-### The card's link is over the drawing, not on it
+### 11. The card's link is over the drawing, not on it
 
 The "All specimens" pill sat in the bottom-right corner of every card's preview on its
 own opaque ground, and what it did there was cover the component: `ClubCard` lost the
@@ -486,7 +486,7 @@ around one of those is invalid. That also stops a press landing on a specimen's 
 control, which on a card does nothing anybody wants, and it makes the drawn state and
 the `NOT_DRAWN` state the same shape, which the card was already trying to be.
 
-### A visible way past the app's door (issue #112)
+### 12. A visible way past the app's door (issue #112)
 
 `holdTheDoorOpen` in `workbench/frame/seed.ts` already wrote an admitted session
 before a frame booted, because the app's root layout renders `LoginGate` **instead of**
@@ -640,13 +640,13 @@ measured and found to be gating nothing. Decision 12 of the redesign is withdraw
 with it.
 
 **This record itself, two claims about the preview area's size**, both struck in
-place, both by "The square is the column, and a crop says it is one" above, which is
+place, both by §7 above, "The square is the column, and a crop says it is one", which is
 a section of this ADR rather than a record of its own because the decision it belongs
 to is this one: the frames are still gone, the cards still draw on arrival, the box is
 still reserved so that nothing reflows. What moved is only what reserves it.
 
 - "The height is `11rem`, fixed, the same number `/diagrams` gives its previews …", in
-  "Every card draws, and there is nothing to press". It is `aspect-ratio: 1` against a
+  §6, "Every card draws, and there is nothing to press". It is `aspect-ratio: 1` against a
   column the grid holds between 19rem and 24rem. The two grids no longer rhyme, and
   `/diagrams` is untouched: an SVG scaled into a box has no natural height to be wrong
   about, which is the whole reason one number could serve both and now cannot. The

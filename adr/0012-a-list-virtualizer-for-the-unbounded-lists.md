@@ -41,7 +41,7 @@ a `ScrollView` every one of those subscriptions is live from the moment the scre
 opens, including for the episodes nobody has scrolled to. A show with two hundred
 episodes mounts two hundred store subscriptions to display about eight.
 
-## Decision
+## 1. Decision
 
 `FlatList` on `gespeichert.tsx` and `serie/[id].tsx`. Every other list stays a mapped
 `ScrollView`.

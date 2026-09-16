@@ -43,7 +43,7 @@ at a machine instead of at a person.
 
 ## Decision
 
-### A fifth port, with a no-op default
+### 1. A fifth port, with a no-op default
 
 `ErrorReporter` joins `KeyValueStore`, `BlobStore`, `ContentBundle` and `AudioBackend`
 in `packages/app-core/src/ports/index.ts`, and inherits that file's rule: *each port
@@ -60,7 +60,7 @@ This is the part that matters and the part that is nearly free. It means:
   and nothing else.
 - Tests and scripts get the empty default and report nowhere, which is what they want.
 
-### What a report carries: a code, not a sentence
+### 2. What a report carries: a code, not a sentence
 
 The same argument as `AudioError`, for the same reasons:
 
@@ -75,7 +75,7 @@ A report is therefore a code, a domain, and whatever context the caller can add
 without inventing it. Not a rendered message, and not a stack trace fished out of a
 `catch` and stringified.
 
-### Where reporting is allowed to happen
+### 3. Where reporting is allowed to happen
 
 Two places, and it is worth naming them so a third does not appear quietly:
 
