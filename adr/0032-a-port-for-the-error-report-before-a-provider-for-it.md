@@ -1,9 +1,13 @@
 # ADR 0032 — A port for the error report, before a provider for it
 
-Status: proposed, 2026-09-16. Nothing is built. This records the shape so that
-choosing a provider later is a wiring change rather than a rebuild, and so that the
-decision is argued once instead of at the moment somebody is under pressure to ship
-reporting.
+Status: accepted, 2026-09-16, and carried out the same day. It was written as a
+proposal and accepted as written. This records the shape so that choosing a provider
+later is a wiring change rather than a rebuild, and so that the decision is argued once
+instead of at the moment somebody is under pressure to ship reporting.
+
+Everything under "What this deliberately does not decide" is still not decided, and
+that is the half that keeps [#95](https://github.com/faktenforum/correctiv-app/issues/95)
+open.
 
 ## Context
 
