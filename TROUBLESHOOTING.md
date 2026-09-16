@@ -377,6 +377,19 @@ everything about how the page looks.
   same crash keeps appearing after the fix. → Delete
   `android/app/build/generated/assets/react` (and `intermediates/assets`) before
   rebuilding.
+- **A debuggable build on an emulator does not go through `adb reverse`.** React
+  Native asks `AndroidInfoHelpers` for the dev server, and on an emulator that is
+  `10.0.2.2:8081` — the host, directly — so `adb reverse tcp:8081 tcp:8090` redirects
+  nothing. With a second checkout's Metro already holding 8081, the app keeps loading
+  *that* checkout while your own Metro logs nothing, and a tour then photographs
+  somebody else's branch under your branch's name. It looks exactly like a change
+  that had no effect. → Point the app at your own server instead of the port:
+  force-stop it, then
+  `adb shell run-as org.correctiv.app cp /data/local/tmp/prefs.xml shared_prefs/org.correctiv.app_preferences.xml`
+  with a `<string name="debug_http_host">10.0.2.2:8090</string>` in it, and delete
+  that file when you are done or the next person's emulator points at a server that
+  has gone. **Your Metro printing `Android Bundled … apps/mobile/index.js` is the
+  proof**, and it is the only one: the app on screen looks the same either way.
 - **On Fedora the AVD dies with SIGSEGV before boot.** SwiftShader JITs shaders onto
   the heap and SELinux denies `execheap` (`AVC denied { execheap }
   comm="RenderThread"`). `-gpu off` does not help, because that only affects the *guest*
