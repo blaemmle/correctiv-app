@@ -200,11 +200,23 @@ jobs:
       # green. Two agents built themselves ways around the blank page rather than
       # reporting it, because the green tick said the site was fine.
       #
+      # Installed rather than assumed. The script fails rather than skips when it
+      # finds no browser, which is the safe direction and the wrong red: the day a
+      # runner image drops Chrome, this job goes red on every pull request in the
+      # repository with a message about the handbook. Two lines put the browser in
+      # the job that needs it and name where it went.
+      - name: Install Chrome for the render check
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
       # So both paths get opened in a browser, the built one first because it is
       # already on disk. `scripts/renders.mjs` starts the dev server itself, the way
-      # `npm run handbook` does. It needs Chrome, which this image has; if it ever
-      # does not, the script says so and fails rather than skipping.
+      # `npm run handbook` does.
       - name: Assert the handbook actually renders, on both build paths
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: |
           npm run handbook:renders:dist
           npm run handbook:renders

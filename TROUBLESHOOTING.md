@@ -60,13 +60,18 @@ is the part worth noticing. → After anything that touches `vite.app.mjs`,
 both:
 
 ```bash
-npm run handbook:renders        # starts the dev server, asserts the shell mounted
+npm run handbook:renders        # starts the dev server, asserts the page rendered
 npm run build:handbook && npm run handbook:renders:dist
 ```
 
 `apps/handbook/scripts/renders.mjs` is what those run, and it is the only check in the
-repository that opens a browser. It says in its own header what it cannot see, which
-is everything about how the page looks.
+repository that opens a browser. Three things have to hold, and the second is the one
+that is not obvious: the shell mounted, what mounted is not the error boundary standing
+in for a route that threw — it wraps the main area only, so a broken route still leaves
+a header, a rail and a page full of words — and the browser logged no error. The second
+command is in that order on purpose: `renders:dist` reads `dist/` and refuses to judge
+one older than the working tree. It says in its own header what it cannot see, which is
+everything about how the page looks.
 
 ## Expo / React Native
 

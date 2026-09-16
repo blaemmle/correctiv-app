@@ -66,13 +66,19 @@ npm run handbook:renders        # starts the dev server and opens it
 npm run handbook:renders:dist   # apps/handbook/dist, after npm run build:handbook
 ```
 
-Each opens a headless browser and fails if `#root` is still empty, printing whatever
-the browser said. Five seconds cold for the dev server, half a second for the built
-site. They exist because the two paths compile the same source differently and
-disagreed for a day without a single check noticing: `npm run build:handbook` was
-green, `npm run handbook` served nothing, and a `require()` in one file of
-`apps/mobile` was the whole difference ([#160](https://github.com/faktenforum/correctiv-app/issues/160),
+Each opens a headless browser and fails if the page did not render, printing whatever
+the browser said. Three things have to hold: the shell mounted, what mounted is not
+the error boundary standing in for a route that threw, and the browser logged nothing.
+They exist because the two paths compile the same source differently and disagreed for
+a day without a single check noticing: `npm run build:handbook` was green,
+`npm run handbook` served nothing, and a `require()` in one file of `apps/mobile` was
+the whole difference ([#160](https://github.com/faktenforum/correctiv-app/issues/160),
 and `vite.app.mjs` for what it does about it).
+[ADR 0035](../../adr/0035-a-check-that-opens-the-page.md) has the argument and what the
+two modes cost, measured.
+
+`renders:dist` reads `dist/` rather than building it, so it refuses to judge one older
+than the working tree: run `npm run build:handbook` first, or it tells you to.
 
 Not in `npm run check`, which wants no browser and stays a fast inner loop. CI runs
 both in the job that already builds this site, so a blank page cannot reach `main`
@@ -140,7 +146,7 @@ result, the recipe, and the dark-mode trap that comes with it.
 
 ## The tests, and what they are for
 
-Six of them exist because of a failure that had already happened and that no other
+Seven of them exist because of a failure that had already happened and that no other
 check could see.
 
 | File | Catches |
@@ -150,6 +156,7 @@ check could see.
 | `test/routes.test.ts` | a page shadowing a document, which removes it from the site with no error |
 | `test/styles.test.ts` | a colour value written here instead of taken from `packages/design-tokens`, which forks the palette invisibly, and the entry stylesheet importing the theme without the variants that choose between light and dark |
 | `test/toolchain.test.ts` | the repository root hoisting a Vite older than this package's, which makes a plugin configure the wrong bundler and say nothing useful about it |
+| `test/renders.test.ts` | the error boundary and `scripts/renders.mjs` losing the one attribute name they share, which turns the browser check green on a page that is nothing but the boundary |
 | `test/direct.test.ts` | a drawn component that no longer exists, one reached through a barrel that drags Expo in behind it, a plugin order that leaves every drawing unpainted, and the two ways the appearance setting stops reaching a drawing — no `Uniwind.setTheme` call at all, or one fed from the class Uniwind itself writes |
 
 ## Colour
