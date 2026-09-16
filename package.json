@@ -12,7 +12,7 @@
     "url": "https://github.com/faktenforum/correctiv-app/issues"
   },
   "engines": {
-    "node": ">=20.19"
+    "node": ">=24"
   },
   "workspaces": [
     "apps/*",
@@ -55,6 +55,8 @@
     "i18n:extract": "npm run i18n:extract -w @correctiv/mobile",
     "handbook": "npm run dev -w @correctiv/handbook",
     "build:handbook": "npm run build -w @correctiv/handbook",
+    "handbook:renders": "npm run renders -w @correctiv/handbook",
+    "handbook:renders:dist": "npm run renders:dist -w @correctiv/handbook",
     "app": "npm run web -w @correctiv/mobile",
     "prepare": "husky || true"
   },

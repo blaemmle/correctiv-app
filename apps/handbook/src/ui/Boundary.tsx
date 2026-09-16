@@ -13,6 +13,15 @@ import { Button } from './kit/button';
  * It wraps the main area only. The rail, the header and the status line stay, so
  * the way out is still on screen, which is the point: the reader is one click
  * from a view that works rather than one reload from starting over.
+ *
+ * That is also why the failed state carries `data-view-failed`. Wrapping only the
+ * main area means a route that throws still leaves a header, a rail and a status
+ * line in `#root` — a page with plenty of elements and plenty of words, every one
+ * of them this component's apology — and `scripts/renders.mjs` asking only whether
+ * something mounted would call that a rendered handbook. It reads this attribute
+ * instead of the heading below it, because a heading is prose somebody will reword
+ * and the check would go quietly green. `test/renders.test.ts` holds the two ends
+ * together.
  */
 interface Props {
   children: ReactNode;
@@ -56,7 +65,7 @@ export class Boundary extends Component<Props, State> {
     if (!error) return this.props.children;
 
     return (
-      <div className="px-m py-2xl lg:px-ml">
+      <div data-view-failed={this.props.route} className="px-m py-2xl lg:px-ml">
         <h1 className="text-headline-l font-semibold">This view did not render</h1>
         <p className="mt-s max-w-content text-m leading-relaxed text-on-canvas-muted">
           The rest of the handbook still works: pick another section on the left, or press{' '}

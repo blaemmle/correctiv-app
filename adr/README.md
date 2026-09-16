@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Twenty-nine decisions shaped this repo. Read them when you want to know *why* something
+Thirty-four decisions shaped this repo. Read them when you want to know *why* something
 is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it is.
 
 | | Decision | Status |
@@ -38,6 +38,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0031](0031-four-mechanisms-for-this-must-not-be-forgotten.md) | Four mechanisms for "this must not be forgotten", strongest first | accepted; retires its own first version of the same day, and names three existing checks as standing lower on the ladder than they need to |
 | [0032](0032-a-port-for-the-error-report-before-a-provider-for-it.md) | A port for the error report, before a provider for it | **proposed, nothing built**; leaves the provider, the production policy and every retry question to #95 |
 | [0033](0033-one-text-size-for-the-whole-app-the-systems-by-default.md) | One text size for the whole app, the system's by default | accepted, **not built**; retires the article scale's meaning, needs #158 first, and names the one opt-out the accessibility check has to excuse |
+| [0035](0035-a-check-that-opens-the-page.md) | A check that opens the page, because nobody forgot anything | accepted, built; retires nothing, and argues why 0031's four mechanisms could not have caught a page that mounted nothing |
 
 Nine notes for readers of the older ones:
 
