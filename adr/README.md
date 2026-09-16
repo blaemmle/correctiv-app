@@ -37,6 +37,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0030](0030-the-platforms-header-and-ours-on-web.md) | The platform's header on the phone, and ours on web | accepted; carries out 0026 §9 with two named exceptions, retires one claim each in 0004 and 0026 plus half a code comment, **iOS unrun** |
 | [0031](0031-four-mechanisms-for-this-must-not-be-forgotten.md) | Four mechanisms for "this must not be forgotten", strongest first | accepted; retires its own first version of the same day, and names three existing checks as standing lower on the ladder than they need to |
 | [0032](0032-a-port-for-the-error-report-before-a-provider-for-it.md) | A port for the error report, before a provider for it | **proposed, nothing built**; leaves the provider, the production policy and every retry question to #95 |
+| [0033](0033-one-text-size-for-the-whole-app-the-systems-by-default.md) | One text size for the whole app, the system's by default | accepted, **not built**; retires the article scale's meaning, needs #158 first, and names the one opt-out the accessibility check has to excuse |
 
 Nine notes for readers of the older ones:
 
