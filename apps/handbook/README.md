@@ -59,6 +59,25 @@ rm -rf site && cp -r apps/handbook/dist site && cp -r apps/mobile/dist site/app
 node screens/tools/serve-clean.mjs site 8099
 ```
 
+## Checking that it renders at all, on both paths
+
+```bash
+npm run handbook:renders        # starts the dev server and opens it
+npm run handbook:renders:dist   # apps/handbook/dist, after npm run build:handbook
+```
+
+Each opens a headless browser and fails if `#root` is still empty, printing whatever
+the browser said. Five seconds cold for the dev server, half a second for the built
+site. They exist because the two paths compile the same source differently and
+disagreed for a day without a single check noticing: `npm run build:handbook` was
+green, `npm run handbook` served nothing, and a `require()` in one file of
+`apps/mobile` was the whole difference ([#160](https://github.com/faktenforum/correctiv-app/issues/160),
+and `vite.app.mjs` for what it does about it).
+
+Not in `npm run check`, which wants no browser and stays a fast inner loop. CI runs
+both in the job that already builds this site, so a blank page cannot reach `main`
+again.
+
 ## The published app is a development build
 
 `build:web` exports with `--dev`, so the deployed app keeps `__DEV__` true and leaves

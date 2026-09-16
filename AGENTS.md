@@ -195,6 +195,13 @@ touching colour has to be seen in **both** appearance settings *and* with the se
 on "System" against a dark device. That last combination is the app's default and is
 the one that has already shipped broken.
 
+**The handbook has two build paths and only one of them was ever checked.** Its
+production build ran green for a day while `npm run handbook` served a blank page on
+every route, which is the path a person uses to look at their work.
+`npm run handbook:renders` and `npm run handbook:renders:dist` open each in a browser
+and fail if the shell did not mount; run both after touching `vite.app.mjs` or any
+module the handbook compiles out of `apps/mobile`.
+
 **A picture that decided something goes into the pull request or the issue**, not only
 into the working directory. `screens/evidence/` is where it lives and
 [screens/README.md](screens/README.md) has the addressing rule, which is not obvious:

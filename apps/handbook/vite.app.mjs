@@ -109,9 +109,58 @@ export const appResolve = {
  * which reads as a CSS problem and is a plugin-order one.
  *
  * `notADevApp()` is last, and that one is load-bearing too; see below.
+ * `notHermes()` sits beside it and answers the same kind of question: which of
+ * the app's startup assumptions are about a runtime this build does not have.
  */
 export function appPlugins() {
-  return [rnw(), uniwind({ cssEntryFile: APP_CSS_ENTRY }), notADevApp()];
+  return [rnw(), uniwind({ cssEntryFile: APP_CSS_ENTRY }), notHermes(), notADevApp()];
+}
+
+/** `apps/mobile/src/i18n/polyfills.ts`, the one app module this build replaces. */
+const HERMES_POLYFILLS = `${APP_SRC}/i18n/polyfills.ts`;
+
+/**
+ * The app's Hermes polyfills, left out of a build whose runtime is a browser.
+ *
+ * `i18n/polyfills.ts` installs the two `Intl` objects Hermes does not ship, and
+ * it is conditional on purpose: `if (!('PluralRules' in Intl))`, so on iOS, on
+ * web and in every browser since 2018 the branch is not taken and the `require`
+ * calls inside it never run (ADR 0026 §6). The condition is a RUNTIME one, and
+ * the two bundlers disagree about what to do with a `require` that a runtime
+ * will never reach:
+ *
+ * | build | what it does with the three `require` calls |
+ * |---|---|
+ * | Metro | keeps them, bundles the modules, skips them at runtime — the trade the app wants |
+ * | this one, production | hoists each to `import * as ns` and reads `(ns.default \|\| ns)` — three `IMPORT_IS_UNDEFINED` warnings, and it runs |
+ * | this one, dev server | hoists each to a DEFAULT import — and `@formatjs/intl-pluralrules/locale-data/de.js` exports nothing at all |
+ *
+ * That last cell is a link-time `SyntaxError`, which takes down the whole module
+ * graph before a line of it evaluates: `npm run handbook` served an empty `#root`
+ * on every route while `npm run build:handbook` stayed green, for long enough that
+ * two agents built themselves ways around it rather than reporting it (#160).
+ *
+ * So this build does not compile that module. It is not a polyfill it needs, the
+ * app's source keeps the conditional exactly as measured, and the three warnings
+ * the production build printed — documented in that file as "expected", which is
+ * how a warning stops being read — go with it.
+ *
+ * `enforce: 'pre'` so the replacement is in place before `vite-plugin-commonjs`
+ * sees the `require` calls, which is the transform that creates the import in the
+ * first place.
+ */
+function notHermes() {
+  return {
+    name: 'handbook:not-hermes',
+    enforce: 'pre',
+    load(id) {
+      if (id.split('?')[0] !== HERMES_POLYFILLS) return null;
+      // A module, not nothing: `Localisation.tsx` imports it for its side effect
+      // and an empty string is not a valid ES module to every consumer of this
+      // hook.
+      return 'export {};\n';
+    },
+  };
 }
 
 /**
