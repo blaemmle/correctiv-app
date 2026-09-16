@@ -64,7 +64,7 @@
     "fonts": "node scripts/embed-fonts.mjs",
     "offline-articles": "tsx scripts/fetch-offline-articles.mts",
     "offline-podcasts": "tsx scripts/fetch-offline-podcasts.mts",
-    "i18n:extract": "formatjs extract 'src/**/*.{ts,tsx}' '../../packages/app-core/src/**/*.ts' --ignore '**/*.generated.ts' --throws --out-file src/i18n/catalogue/en.json",
+    "i18n:extract": "formatjs extract 'src/**/*.{ts,tsx}' '../../packages/app-core/src/**/*.ts' --ignore '**/*.generated.ts' --additional-function-names coreMessage --throws --out-file src/i18n/catalogue/en.json",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
     "test": "jest",
     "uniwind-types": "uniwind generate-artifacts --css ./src/global.css"

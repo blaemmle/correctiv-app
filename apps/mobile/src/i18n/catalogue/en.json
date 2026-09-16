@@ -176,6 +176,57 @@
   "claim.unknownId": {
     "defaultMessage": "Unknown identifier \"{id}\"."
   },
+  "core.audio.interrupted": {
+    "defaultMessage": "Playback was interrupted. Check your connection and try again."
+  },
+  "core.audio.startFailed": {
+    "defaultMessage": "Playback could not be started. Check your connection and try again."
+  },
+  "core.audio.unsupportedPlatform": {
+    "defaultMessage": "Playback is not available on this platform."
+  },
+  "core.rating.false": {
+    "defaultMessage": "False"
+  },
+  "core.rating.manipulated": {
+    "defaultMessage": "Manipulated"
+  },
+  "core.rating.misleading": {
+    "defaultMessage": "Misleading"
+  },
+  "core.rating.missingContext": {
+    "defaultMessage": "Missing context"
+  },
+  "core.rating.mostlyFalse": {
+    "defaultMessage": "Mostly false"
+  },
+  "core.rating.mostlyTrue": {
+    "defaultMessage": "Mostly true"
+  },
+  "core.rating.partlyFalse": {
+    "defaultMessage": "Partly false"
+  },
+  "core.rating.satire": {
+    "defaultMessage": "Satire"
+  },
+  "core.rating.true": {
+    "defaultMessage": "True"
+  },
+  "core.rating.unproven": {
+    "defaultMessage": "Unproven"
+  },
+  "core.reader.byline": {
+    "defaultMessage": "by {authors}"
+  },
+  "core.reader.factcheckBadge": {
+    "defaultMessage": "Fact check"
+  },
+  "core.reader.readingTime": {
+    "defaultMessage": "{minutes} min read"
+  },
+  "core.reader.support": {
+    "defaultMessage": "Made possible by supporters like you. Thank you for being here."
+  },
   "diary.noId": {
     "defaultMessage": "No identifier was passed."
   },
@@ -499,6 +550,18 @@
   },
   "participate.atlasLead": {
     "defaultMessage": "Which buildings are disappearing? {reports, plural, one {One report} other {# reports}} from {cities, plural, one {one city} other {# cities}} in Germany and Switzerland."
+  },
+  "participate.claimChecked": {
+    "defaultMessage": "Checked: {verdict}"
+  },
+  "participate.claimChecking": {
+    "defaultMessage": "Being checked"
+  },
+  "participate.claimNoVerdict": {
+    "defaultMessage": "closed"
+  },
+  "participate.claimSubmitted": {
+    "defaultMessage": "Submitted"
   },
   "participate.communityNote": {
     "defaultMessage": "In the community area you discuss investigations with other members, and soon in the app as well."

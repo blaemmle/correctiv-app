@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ProgressBar } from '@/components/player/ProgressBar';
 import { SafeAreaView, Typo } from '@/components/ui';
+import { AUDIO_ERROR_LABELS } from '@correctiv/app-core/stores/audio';
 import { formatTimeHm } from '@correctiv/app-core/lib/format';
 import { seekTo, setSpeed, togglePlay } from '@/lib/audio/player';
 import { useAudio } from '@/lib/audio/useAudio';
@@ -47,7 +48,7 @@ export default function PlayerScreen() {
   // its own on the web target. It has no `ScreenHeader` to name it (ADR 0030).
   useDocumentTitle(intl.formatMessage(COPY.screenTitle));
   const colors = useColors();
-  const { track, status, positionSec, durationSec, speed, errorMessage } = useAudio();
+  const { track, status, positionSec, durationSec, speed, error } = useAudio();
   const live = track?.kind === 'radio';
 
   return (
@@ -90,9 +91,9 @@ export default function PlayerScreen() {
             <Typo variant="text-s" color={live ? 'accent' : 'on-canvas-muted'} className="mt-2xs">
               {live ? intl.formatMessage(COPY.liveSubtitle) : (track.subtitle ?? '')}
             </Typo>
-            {status === 'error' && (
+            {status === 'error' && error && (
               <Typo variant="text-s" color="accent" className="mt-s">
-                {errorMessage}
+                {intl.formatMessage(AUDIO_ERROR_LABELS[error])}
               </Typo>
             )}
           </View>

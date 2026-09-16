@@ -149,7 +149,7 @@ describe('starting playback', () => {
     store = createAppStore();
     await store.dispatch(playRadio());
     expect(store.getState().audio.status).toBe('error');
-    expect(store.getState().audio.errorMessage).toMatch(/keine Wiedergabe/);
+    expect(store.getState().audio.error).toBe('unsupported-platform');
   });
 });
 
@@ -179,14 +179,15 @@ describe('failures', () => {
     warn.mockRestore();
   });
 
-  it('surfaces a playback error with a hint, and stops', async () => {
+  it('surfaces a playback error as its own code, and stops', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await store.dispatch(playEpisode(EPISODE));
     backend.tick({ error: 'Source unavailable' });
 
     expect(backend.calls).toContain('pause');
     expect(store.getState().audio.status).toBe('error');
-    expect(store.getState().audio.errorMessage).toMatch(/Internetverbindung/);
+    // Its own code, and the only one of the three that says playback had begun.
+    expect(store.getState().audio.error).toBe('interrupted');
     warn.mockRestore();
   });
 
@@ -206,15 +207,24 @@ describe('failures', () => {
   });
 
   it('gives up on a stream that never loads', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.useFakeTimers();
     try {
       await store.dispatch(playRadio());
       expect(store.getState().audio.status).toBe('loading');
       vi.advanceTimersByTime(12000);
       expect(store.getState().audio.status).toBe('error');
-      expect(store.getState().audio.errorMessage).toMatch(/Keine Verbindung/);
+      // The same code a rejected `load()` sets: to a listener, neither started.
+      // What tells the two apart is the warning, not the state.
+      expect(store.getState().audio.error).toBe('start-failed');
+      expect(warn).toHaveBeenCalledWith(
+        '[audio] stream did not load within',
+        expect.any(Number),
+        'ms',
+      );
     } finally {
       vi.useRealTimers();
+      warn.mockRestore();
     }
   });
 
@@ -247,7 +257,7 @@ describe('failures', () => {
       vi.advanceTimersByTime(12000);
 
       expect(store.getState().audio.status).toBe('loading');
-      expect(store.getState().audio.errorMessage).toBeNull();
+      expect(store.getState().audio.error).toBeNull();
     } finally {
       vi.useRealTimers();
     }

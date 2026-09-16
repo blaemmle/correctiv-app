@@ -1,6 +1,7 @@
 import { escapeHtml } from '../lib/html';
 import { formatDateDe } from '../lib/format';
-import { ratingLabel, ratingTone } from './rating';
+import { coreMessage } from '../i18n/messages';
+import { ratingTone } from './rating';
 import type { Article } from './types';
 
 /**
@@ -22,6 +23,54 @@ import type { Article } from './types';
  * dark by redefining them.
  */
 
+/**
+ * Every word this document prints that is not the article's own, formatted.
+ *
+ * Handed IN rather than fetched here, and that is the whole difference between
+ * this file and a screen. The document goes into a WebView as a string: there is
+ * no React tree, no provider and no `useIntl()` to reach for, so the core names
+ * the words it needs (`READER_COPY` below) and the host arrives with them already
+ * turned into text.
+ *
+ * `verdict` is absent on an article with no rating, which is most of them, and
+ * `byline` on one with no named author. Both are then simply not printed, exactly
+ * as before.
+ */
+export interface ReaderCopy {
+  /** The plaque a fact check wears instead of its section. Uppercased by the CSS. */
+  factcheckBadge: string;
+  /** The verdict, spelled out — `RATING_LABELS` is where the wording comes from. */
+  verdict?: string;
+  /** The authors with their preposition, as one phrase. */
+  byline?: string;
+  /** How long the article takes to read. */
+  readingTime: string;
+  /** The line in the footer, which is the only thing the document says in its own voice. */
+  support: string;
+}
+
+/**
+ * What the host has to format, as message descriptors.
+ *
+ * These live in the core because the document does: a second host rendering the
+ * same reader must not have to invent a support line, and two hosts inventing two
+ * is the drift this file was written to end. `byline` and `readingTime` take a
+ * value, which is why they are messages and not constants — "von X" and "7 Min.
+ * Lesezeit" are one sentence each in German and two different shapes in English.
+ */
+export const READER_COPY = {
+  factcheckBadge: coreMessage({ id: 'core.reader.factcheckBadge', defaultMessage: 'Fact check' }),
+  byline: coreMessage({ id: 'core.reader.byline', defaultMessage: 'by {authors}' }),
+  readingTime: coreMessage({
+    id: 'core.reader.readingTime',
+    defaultMessage: '{minutes} min read',
+  }),
+  support: coreMessage({
+    id: 'core.reader.support',
+    defaultMessage: 'Made possible by supporters like you. Thank you for being here.',
+  }),
+};
+
 export interface ReaderHtmlOptions {
   /** Inline CSS, in order — token variables and `@font-face` first, layout last. */
   css?: string[];
@@ -33,7 +82,11 @@ export interface ReaderHtmlOptions {
 
 const ROOT_FONT_PX = 16;
 
-export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {}): string {
+export function buildReaderHtml(
+  article: Article,
+  copy: ReaderCopy,
+  options: ReaderHtmlOptions = {},
+): string {
   const { css = [], stylesheets = [], textScale = 1 } = options;
 
   const rootStyle = `font-size:${ROOT_FONT_PX * textScale}px`;
@@ -47,12 +100,12 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
     : '';
 
   // A fact check announces itself; everything else shows its section.
-  const badgeText = article.rating ? 'FAKTENCHECK' : (article.kicker ?? '').toUpperCase();
+  const badgeText = article.rating ? copy.factcheckBadge : (article.kicker ?? '').toUpperCase();
   const badge = badgeText ? `<p class="badge">${escapeHtml(badgeText)}</p>` : '';
 
   const rating = article.rating
     ? `<div class="rating rating--${ratingTone(article.rating)}">` +
-      `<span class="rating__label">${escapeHtml(ratingLabel(article.rating))}</span></div>`
+      `<span class="rating__label">${escapeHtml(copy.verdict ?? '')}</span></div>`
     : '';
 
   // The app's own date format wins over the publisher's wording: correctiv.org prints
@@ -60,9 +113,9 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
   // reader is the one screen a date row appears in twice. `publishedText` stays as the
   // fallback for a page with no parsable date — `formatDateDe` returns '' for one.
   const metaLine = [
-    article.authors.length > 0 ? `von ${article.authors.join(', ')}` : '',
+    article.authors.length > 0 ? copy.byline : '',
     formatDateDe(article.publishedAt) || article.publishedText,
-    `${article.readingMinutes} Min. Lesezeit`,
+    copy.readingTime,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -77,7 +130,7 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
    * includes the app, so that branch addressed nobody and the button offered them
    * what they already had. Removed with ADR 0018.
    */
-  const footer = `<p class="support-line">Ermöglicht durch Unterstützer:innen wie Sie. Danke, dass Sie dabei sind.</p>`;
+  const footer = `<p class="support-line">${escapeHtml(copy.support)}</p>`;
 
   return `<!DOCTYPE html>
 <html lang="de" style="${rootStyle}">

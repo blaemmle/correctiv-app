@@ -150,13 +150,13 @@ describe('starting playback', () => {
 });
 
 describe('failures', () => {
-  it('surfaces a playback error with a hint, and stops', async () => {
+  it('surfaces a playback error as its own code, and stops', async () => {
     await playEpisode(EPISODE);
     emit?.(status({ error: 'Source unavailable' }));
 
     expect(mockPlayer.pause).toHaveBeenCalled();
     expect(coreStore.getState().audio.status).toBe('error');
-    expect(coreStore.getState().audio.errorMessage).toMatch(/Internetverbindung/);
+    expect(coreStore.getState().audio.error).toBe('interrupted');
   });
 
   it('keeps the error visible when the next status tick looks merely unloaded', async () => {
@@ -170,7 +170,7 @@ describe('failures', () => {
     emit?.(status({ error: null, isLoaded: false, playing: false }));
 
     expect(coreStore.getState().audio.status).toBe('error');
-    expect(coreStore.getState().audio.errorMessage).toMatch(/Internetverbindung/);
+    expect(coreStore.getState().audio.error).toBe('interrupted');
   });
 
   it('clears the error when a new track starts', async () => {
@@ -180,10 +180,14 @@ describe('failures', () => {
 
     await playEpisode(EPISODE);
 
-    expect(coreStore.getState().audio).toMatchObject({ status: 'loading', errorMessage: null });
+    expect(coreStore.getState().audio).toMatchObject({ status: 'loading', error: null });
   });
 
   it('gives up on a stream that never loads', async () => {
+    // The watchdog says so in the log, which is where the distinction between
+    // "never answered" and "said no" survives; silenced so it is not mistaken for
+    // a failure in the run.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.useFakeTimers();
     await playRadio();
     expect(coreStore.getState().audio.status).toBe('loading');
@@ -193,7 +197,10 @@ describe('failures', () => {
     // expo-audio does report errors, but the lesson from an earlier backend was
     // that network errors sometimes never arrive at all.
     expect(coreStore.getState().audio.status).toBe('error');
-    expect(coreStore.getState().audio.errorMessage).toMatch(/Keine Verbindung/);
+    // The same code a rejected load() sets — see the core's own suite for why
+    // "never answered" and "said no" stopped being two sentences.
+    expect(coreStore.getState().audio.error).toBe('start-failed');
+    warn.mockRestore();
   });
 
   it('does not fire the watchdog once the source is loaded', async () => {
