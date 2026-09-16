@@ -12,6 +12,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/handbook': 'Handbook',
   ...Object.fromEntries(DIAGRAMS.map((d) => [`/diagrams/${d.id}`, d.title])),
   '/components': 'Components, the app’s own',
+  '/decisions': 'Decision records',
   '/design': 'Design, the Figma file',
   '/diagrams': 'Architecture diagrams',
   '/reference': 'Reference, the core',
