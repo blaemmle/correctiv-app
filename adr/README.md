@@ -136,10 +136,29 @@ notices.
 different decision, a new decision takes the next free one, and a decision that is
 removed leaves its number behind as a gap rather than closing it. Renumbering is the
 one edit that invalidates every citation already written, everywhere, at once.
-[`apps/handbook/test/decisions.test.ts`](../apps/handbook/test/decisions.test.ts)
-holds [`decisions.lock.json`](decisions.lock.json) against the records and fails when
-a number in use names something else; `npm run adr:lock` adds new numbers to it and
-refuses to rewrite an existing one.
+[`decisions.lock.json`](decisions.lock.json) is the ledger: for every record, each
+slug its file has carried and, for every decision number, each text it has carried,
+oldest first. `npm run adr:lock` appends to it and never rewrites it, and
+[`apps/handbook/test/decision-numbers.test.ts`](../apps/handbook/test/decision-numbers.test.ts)
+is what holds the records against it.
+
+**One check in there is worth the rest put together**, and it is the one that reads
+`git show origin/main:adr/decisions.lock.json`: the ledger in a working tree has to be
+an *extension* of the published one. No record dropped, no number dropped, every
+history a prefix of its new self. Appending is the only direction it permits, so a
+reword passes and a swap cannot, because a swap has to put an old text where it never
+stood.
+
+The rest of the checks read the working tree, and it is worth being exact about what
+that means. A renumbering that edits the records and the ledger in one pass leaves a
+tree that agrees with itself perfectly, and two cold reviews walked through exactly
+that: swap two numbers and reword both headings by a character, and `adr:lock` records
+two rewords; swap two numbers and swap their two histories, and it has nothing to add.
+Both were green under every within-tree check. Those checks stay because they catch
+the accident, the half-finished edit and the copy-paste for almost nothing, and
+because they run in a checkout that has never fetched. They are not a defence against
+somebody who means it. Nothing in a repository is, and a check that says it is, is
+worse than no check.
 
 **What takes a number is a decision, not a heading.** *Context*, *Consequences*,
 *What it measured* and *What this retires* are the argument and the bookkeeping
@@ -147,7 +166,8 @@ around the decision. A number on one of those would make the number mean "headin
 and a number that means "heading" says nothing worth citing. So the numbered sections
 of a record are its `## Decision` together with whatever `###` sections inside it
 state a choice of their own; a `###` that only argues for the decision above it takes
-no number, which is why ADR 0004's two and ADR 0017's first two have none. Where the
+no number, which is why ADR 0004's two and ADR 0017's two have none — 0017's sit
+between its §1 and its §2, arguing for the first. Where the
 `## Decision` block is one unsectioned paragraph — which is most of them — that block
 is the decision and the number goes on the heading itself, `## 1. Decision`.
 
@@ -166,9 +186,12 @@ nothing in this repository can change that.
 **And two records must never share a record number.** On 2026-09-16 two of them both
 claimed 0034, written in parallel; the filenames differed by their slug, so git merged
 them with no conflict and the duplicate was found by somebody happening to look. The
-same test now fails on it. `npm run adr:new` prints the next free number, reading both
-`adr/` and the numbers claimed by open pull requests — the tree alone is what both
-agents read that day, and the tree alone was what agreed with both of them.
+same test now fails on it. `npm run adr:new` prints the next free number, reading
+`adr/`, the numbers claimed by open pull requests, and `origin/main` after fetching it
+— the tree alone is what both agents read that day, and the tree alone was what agreed
+with both of them. It prints the number whether or not it could read all three,
+because somebody asking for it is about to write a record; the exit code and the line
+beside the number are what say whether it was verified.
 
 **How an expired claim is marked.** An ADR is never rewritten to look right in
 hindsight — the reasoning is the part worth keeping. A claim a later decision made

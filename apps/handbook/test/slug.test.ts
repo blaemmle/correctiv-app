@@ -59,7 +59,7 @@ describe('the fragment identifier', () => {
     // One exception, and it is deliberate: a decision in `adr/` is addressed by
     // its number, so `### 6. German and English …` is `#6` and not a slug of its
     // words. That is the point of the numbers — a slug dies on the reword a number
-    // survives — and `test/decisions.test.ts` holds the other end of it. Every
+    // survives — and `test/decision-numbers.test.ts` holds the other end of it. Every
     // other heading of a record still slugs, which is what the filter below keeps
     // asserting.
     const { module } = collectDocs();

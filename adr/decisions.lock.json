@@ -1,96 +1,96 @@
 {
   "0001": {
-    "slug": "monorepo-and-platform-free-core",
+    "slugs": ["monorepo-and-platform-free-core"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0002": {
-    "slug": "vite-8-rolldown-evaluation",
+    "slugs": ["vite-8-rolldown-evaluation"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0003": {
-    "slug": "audio-capability-spike",
+    "slugs": ["audio-capability-spike"],
     "decisions": {
       "1": ["Consequence for the stack decision"]
     }
   },
   "0004": {
-    "slug": "react-native-pivot",
+    "slugs": ["react-native-pivot"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0005": {
-    "slug": "react-native-over-nativescript",
+    "slugs": ["react-native-over-nativescript"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0006": {
-    "slug": "one-core-two-hosts",
+    "slugs": ["one-core-two-hosts"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0007": {
-    "slug": "removing-the-nativescript-host",
+    "slugs": ["removing-the-nativescript-host"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0008": {
-    "slug": "uniwind-over-nativewind",
+    "slugs": ["uniwind-over-nativewind"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0009": {
-    "slug": "redux-toolkit-for-the-cores-state",
+    "slugs": ["redux-toolkit-for-the-cores-state"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0010": {
-    "slug": "design-tokens-as-a-shared-package",
+    "slugs": ["design-tokens-as-a-shared-package"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0011": {
-    "slug": "naming-the-app-for-release",
+    "slugs": ["naming-the-app-for-release"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0012": {
-    "slug": "a-list-virtualizer-for-the-unbounded-lists",
+    "slugs": ["a-list-virtualizer-for-the-unbounded-lists"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0013": {
-    "slug": "native-tabs-and-a-web-tab-bar-of-its-own",
+    "slugs": ["native-tabs-and-a-web-tab-bar-of-its-own"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0014": {
-    "slug": "the-preview-shell-as-a-package",
+    "slugs": ["the-preview-shell-as-a-package"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0015": {
-    "slug": "reading-correctiv-org-through-its-rest-api",
+    "slugs": ["reading-correctiv-org-through-its-rest-api"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0016": {
-    "slug": "a-door-at-the-root-and-an-entitlement-not-an-amount",
+    "slugs": ["a-door-at-the-root-and-an-entitlement-not-an-amount"],
     "decisions": {
       "1": ["A render branch, not a redirect"],
       "2": ["An entitlement, never an amount"],
@@ -101,63 +101,63 @@
     }
   },
   "0017": {
-    "slug": "native-rendering-as-the-rule-a-webview-for-the-exception",
+    "slugs": ["native-rendering-as-the-rule-a-webview-for-the-exception"],
     "decisions": {
       "1": ["Native rendering stays the rule, and the webview is the exception"],
       "2": ["The exception is detected, not judged"]
     }
   },
   "0018": {
-    "slug": "removing-the-guest",
+    "slugs": ["removing-the-guest"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0019": {
-    "slug": "identity-lives-in-the-session",
+    "slugs": ["identity-lives-in-the-session"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0020": {
-    "slug": "no-contribution-in-the-app",
+    "slugs": ["no-contribution-in-the-app"],
     "decisions": {
       "1": ["The app sets no contribution"],
       "2": ["The label is the part with a rule behind it"]
     }
   },
   "0021": {
-    "slug": "the-board-is-a-plugin-and-the-screens-are-data",
+    "slugs": ["the-board-is-a-plugin-and-the-screens-are-data"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0022": {
-    "slug": "three-tiers-of-colour-and-a-dark-scheme-that-names-roles",
+    "slugs": ["three-tiers-of-colour-and-a-dark-scheme-that-names-roles"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0023": {
-    "slug": "the-host-constructs-the-store",
+    "slugs": ["the-host-constructs-the-store"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0024": {
-    "slug": "the-handbook-owns-the-root",
+    "slugs": ["the-handbook-owns-the-root"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0025": {
-    "slug": "the-published-app-is-a-production-bundle",
+    "slugs": ["the-published-app-is-a-production-bundle"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0026": {
-    "slug": "react-native-review-and-hardening",
+    "slugs": ["react-native-review-and-hardening"],
     "decisions": {
       "1": ["Rozenite, which replaces the Redux debugger rather than joining it"],
       "2": ["Keyboard-aware inputs, as a usability requirement"],
@@ -171,13 +171,13 @@
     }
   },
   "0027": {
-    "slug": "the-handbook-draws-the-apps-components",
+    "slugs": ["the-handbook-draws-the-apps-components"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0028": {
-    "slug": "one-shell-and-a-route-that-declares-its-context",
+    "slugs": ["one-shell-and-a-route-that-declares-its-context"],
     "decisions": {
       "1": ["The route declares, and the page fills"],
       "2": ["The address, on every route"],
@@ -194,20 +194,20 @@
     }
   },
   "0029": {
-    "slug": "the-handbook-keeps-its-own-primitives",
+    "slugs": ["the-handbook-keeps-its-own-primitives"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0030": {
-    "slug": "the-platforms-header-and-ours-on-web",
+    "slugs": ["the-platforms-header-and-ours-on-web"],
     "decisions": {
       "1": ["Decision"],
       "2": ["The two exceptions, named so they are a decision"]
     }
   },
   "0031": {
-    "slug": "four-mechanisms-for-this-must-not-be-forgotten",
+    "slugs": ["four-mechanisms-for-this-must-not-be-forgotten"],
     "decisions": {
       "1": ["Mechanism 1 — make it a type error"],
       "2": ["Mechanism 2 — generate the type from the world"],
@@ -216,7 +216,7 @@
     }
   },
   "0032": {
-    "slug": "a-port-for-the-error-report-before-a-provider-for-it",
+    "slugs": ["a-port-for-the-error-report-before-a-provider-for-it"],
     "decisions": {
       "1": ["A fifth port, with a no-op default"],
       "2": ["What a report carries: a code, not a sentence"],
@@ -224,13 +224,13 @@
     }
   },
   "0033": {
-    "slug": "one-text-size-for-the-whole-app-the-systems-by-default",
+    "slugs": ["one-text-size-for-the-whole-app-the-systems-by-default"],
     "decisions": {
       "1": ["Decision"]
     }
   },
   "0034": {
-    "slug": "one-component-for-the-two-sided-row",
+    "slugs": ["one-component-for-the-two-sided-row"],
     "decisions": {
       "1": ["A two-sided row is a component, and the class is banned"],
       "2": ["The tab bar drops four labels above 130 %, and the threshold is measured"],
@@ -238,9 +238,30 @@
     }
   },
   "0035": {
-    "slug": "a-check-that-opens-the-page",
+    "slugs": ["a-check-that-opens-the-page"],
     "decisions": {
       "1": ["Decision"]
+    }
+  },
+  "0036": {
+    "slugs": ["the-home-screen-becomes-data"],
+    "decisions": {
+      "1": ["The configurator is built for us, and the document is designed for the newsroom"],
+      "2": ["Fixed places that get filled, not blocks that get arranged"],
+      "3": ["A place carries either a pinned item or a rule, and the rule is what runs unattended"],
+      "4": ["A small document the app fetches and stores"],
+      "5": ["Fetched at launch and on every return to the foreground, with a floor between tries"],
+      "6": ["No version number in the document"],
+      "7": ["An unknown place is drawn past, and reported"],
+      "8": ["A pinned item that has vanished falls back to the place's rule"],
+      "9": ["Both ends validate, and the app keeps the last good copy"],
+      "10": ["The first launch with no network gets a default layout shipped in the bundle"],
+      "11": ["Scenarios are named, live in the repository, and the name goes in the address"],
+      "12": ["A scenario is the same file as a real configuration, only named"],
+      "13": ["A scenario declares whether it pulls live content or uses fixed sample data"],
+      "14": ["One definition of the places, and everything else derived from it"],
+      "15": ["The configurator writes a file into the repository, as a pull request"],
+      "16": ["Offline media downloads are a later decision"]
     }
   }
 }
