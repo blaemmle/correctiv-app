@@ -92,9 +92,48 @@ const OUT = resolve(APP, 'src/gallery/components.generated.ts');
  *    instead of callability, so it errs towards noticing: a PascalCase export
  *    that is not a component has to be catalogued or excused, and that is a
  *    conversation rather than a silence.
+ *
+ * **Which spellings of "export" it sees**, because the first version saw two and
+ * the ones it missed were the dangerous half: a component the walk cannot see is
+ * absent from the union, and an absence makes nothing fail. `export function`,
+ * `export const`, `export class`, `export let`, `export var`, any of those after
+ * `export default`, any of them after `async`, `export default Name;` on its own,
+ * and a local declaration published by `export { Name }` or `export { Name as
+ * Other }`. `export default function Foo` is the form a screen turned into a
+ * component would arrive in, and it used to be invisible.
+ *
+ * **And what it still cannot see**, which is the list to add to rather than to
+ * widen a pattern for:
+ *
+ *  - **A default export with no name.** `export default () => …` and `export
+ *    default function () {}` have nothing to address, so there is nothing to put
+ *    in the union. A component here is named after its file and the test asserts
+ *    it; an anonymous default cannot satisfy that and should be given a name.
+ *  - **A default export through a call.** `export default memo(Card)` and
+ *    `forwardRef` wrappers name the component inside an argument. Reading that
+ *    would mean guessing which argument of which call is a component, and the
+ *    guess would be wrong the first time somebody wrapped a hook.
+ *  - **A re-export from another file.** `export { X } from './X'` is deliberately
+ *    not matched: it is what a barrel does, and matching it would list the same
+ *    component once per barrel that mentions it.
+ *  - **Anything after a `//` inside a string literal**, which is the limit the
+ *    comment stripper below carries and explains.
  */
 const PASCAL_CASE = /^[A-Z][A-Za-z0-9]*$/;
-const EXPORTED_VALUE = /^export (?:function|const) (\w+)/gm;
+const DECLARED_KEYWORD = String.raw`(?:function|const|let|var|class)`;
+const EXPORTED_DECLARATION = new RegExp(
+  String.raw`^export (?:default )?(?:async )?${DECLARED_KEYWORD} (\w+)`,
+  'gm',
+);
+/** `export default Name;` — a declaration above, published on its own line. */
+const EXPORTED_DEFAULT_NAME = /^export default (\w+);?[ \t]*$/gm;
+/**
+ * `export { Name }` and `export { Name as Other }`, but never `… from './x'`.
+ *
+ * The published name is the address, so the alias wins where there is one — and
+ * the file then has to be called after it, which the catalogue test asserts.
+ */
+const EXPORTED_LIST = /^export \{([^}]*)\};?[ \t]*$/gm;
 
 /**
  * A source file with its comments taken out, and its line numbering intact.
@@ -138,15 +177,78 @@ export function componentFiles() {
 }
 
 /**
+ * Every name a file publishes, in any of the spellings named above.
+ *
+ * @param {string} source
+ * @returns {string[]}
+ */
+function exportedNames(source) {
+  const bare = withoutComments(source);
+  const declared = [...bare.matchAll(EXPORTED_DECLARATION)].map(([, name]) => name);
+  const defaulted = [...bare.matchAll(EXPORTED_DEFAULT_NAME)].map(([, name]) => name);
+  // `Name` and `Name as Other`: the published half is the address.
+  const listed = [...bare.matchAll(EXPORTED_LIST)].flatMap(([, body]) =>
+    body
+      .split(',')
+      .map(
+        (entry) =>
+          entry
+            .trim()
+            .split(/\s+as\s+/)
+            .at(-1) ?? '',
+      )
+      .filter(Boolean),
+  );
+  return [...declared, ...defaulted, ...listed];
+}
+
+/**
  * The PascalCase values a file exports, comments taken out first.
+ *
+ * Deduplicated, because one component can be published twice in one file — a
+ * `export function Card` re-stated in an `export { Card }` is one component and
+ * two matches, and the union folds duplicates while the per-file assertions in
+ * `__tests__/gallery-catalogue.test.ts` do not.
  *
  * @param {string} source
  * @returns {string[]}
  */
 export function exportedComponents(source) {
-  return [...withoutComments(source).matchAll(EXPORTED_VALUE)]
-    .map(([, name]) => name)
-    .filter((name) => PASCAL_CASE.test(name) && /[a-z]/.test(name));
+  return [
+    ...new Set(
+      exportedNames(source).filter((name) => PASCAL_CASE.test(name) && /[a-z]/.test(name)),
+    ),
+  ];
+}
+
+/**
+ * Every `.tsx` under `src/components` that sits more than one folder deep, which
+ * is the shape this walk refuses to address.
+ *
+ * **The address is two segments, `folder/Name`, and three readers spend it**: the
+ * gallery groups its page by the first segment, `apps/handbook/scripts/api.mjs`
+ * prints a component's import line as `@/components/<folder>/<name>`, and `?c=`
+ * carries the whole string between the two sites. So `reader/parts/Foo.tsx` has
+ * no good answer here. Taking the top folder — which is what this did — addresses
+ * it `reader/Foo`: an import line that does not resolve, and the same member of
+ * the union as a `reader/Foo.tsx` beside it, with nothing anywhere to say the two
+ * folded together. Taking the full path instead would make the address
+ * variable-depth and put `reader/parts` in the gallery as a group of its own,
+ * which is a change to all three readers and a navigation change nobody asked
+ * for.
+ *
+ * **So a third segment fails rather than being guessed at.** `src/components` has
+ * no nested folder today, so this costs nothing now and refuses the silence
+ * later; the day one is genuinely wanted, the conversation is about all three
+ * readers at once, and that is the conversation to have rather than a folder that
+ * quietly addresses wrong.
+ *
+ * @returns {string[]}
+ */
+export function nestedComponentFiles() {
+  return componentFiles().filter(
+    (file) => file.endsWith('.tsx') && file.includes('/', file.indexOf('/') + 1),
+  );
 }
 
 /**
@@ -205,6 +307,17 @@ export function componentIds() {
  * @returns {string}
  */
 export function render() {
+  const nested = nestedComponentFiles();
+  if (nested.length > 0) {
+    throw new Error(
+      `${SCRIPT}: a component address is \`folder/Name\` and cannot hold a third segment, ` +
+        `so these would be addressed wrong or folded together silently:\n` +
+        nested.map((file) => `  src/components/${file}`).join('\n') +
+        `\nMove each one up to \`<folder>/<Name>.tsx\`, or change the address in this ` +
+        `script, in \`src/gallery/catalogue.tsx\` and in \`apps/handbook/scripts/api.mjs\` ` +
+        `together — see \`nestedComponentFiles\` for why those three go together.`,
+    );
+  }
   const ids = componentIds();
   if (ids.length === 0) {
     // A resolution fault or a moved directory would otherwise emit `never`, and

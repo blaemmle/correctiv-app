@@ -5,6 +5,7 @@ import {
   componentFiles,
   declaredComponents,
   exportedComponents,
+  nestedComponentFiles,
   render,
 } from '../scripts/generate-component-ids.mjs';
 import { withoutComments } from './support/source';
@@ -57,9 +58,13 @@ import { withoutComments } from './support/source';
  *    component the walk reads as a helper; `hides no component in a .ts file`
  *    below closes the spelling that a person would actually write, and not this
  *    one.
- *  - **A re-export.** `export { X } from './X'` is matched nowhere, which is
- *    right for the barrel and would be wrong for a component declared under one
- *    name and published under another.
+ *  - **A re-export from another file.** `export { X } from './X'` is matched
+ *    nowhere, which is right for the barrel; `export { X }` without the `from` is
+ *    matched, because there the declaration is in this file and this file is the
+ *    component's address.
+ *  - **A default export with no name of its own.** `export default () => …` and
+ *    `export default memo(Card)` carry nothing to address. `every spelling of an
+ *    export the walk claims to see` below is the half of this that CAN fail.
  *
  * The catalogue is read as TEXT rather than imported, which is the same split
  * `apps/handbook/test/direct.test.ts` makes: importing it pulls in every
@@ -169,6 +174,44 @@ describe('the component walk the generated union is built from', () => {
       .map(({ file, name }) => `${file}: ${name}`);
 
     expect(misnamed.sort()).toEqual([]);
+  });
+
+  it('addresses no component in a nested folder', () => {
+    // The address is `folder/Name` and has room for nothing else, so
+    // `reader/parts/Foo.tsx` would be addressed `reader/Foo` — an import line the
+    // handbook cannot resolve, and the same union member as a `reader/Foo.tsx`
+    // beside it, with nothing to say the two folded together. The generator
+    // throws rather than emitting that; this is the readable half of the same
+    // refusal, and `nestedComponentFiles`' own comment argues the alternative.
+    expect(nestedComponentFiles().sort()).toEqual([]);
+  });
+
+  it('sees every spelling of an export the walk claims to see', () => {
+    // The dangerous direction: a component the walk cannot read is absent from
+    // the union, and an absence fails nothing at all. `export function` and
+    // `export const` were the only two it read, so `export default function Foo`
+    // — the form a screen turned into a component arrives in — was invisible.
+    const seen = (source: string) => exportedComponents(source);
+
+    expect(seen('export function Foo() {}')).toEqual(['Foo']);
+    expect(seen('export const Foo = () => null;')).toEqual(['Foo']);
+    expect(seen('export default function Foo() {}')).toEqual(['Foo']);
+    expect(seen('export async function Foo() {}')).toEqual(['Foo']);
+    expect(seen('export default async function Foo() {}')).toEqual(['Foo']);
+    expect(seen('export class Foo {}')).toEqual(['Foo']);
+    expect(seen('export default class Foo {}')).toEqual(['Foo']);
+    expect(seen('function Foo() {}\nexport { Foo };')).toEqual(['Foo']);
+    expect(seen('function Bar() {}\nexport { Bar as Foo };')).toEqual(['Foo']);
+    expect(seen('function Foo() {}\nexport default Foo;')).toEqual(['Foo']);
+
+    // And the two the docblock above says it cannot see, asserted so that the
+    // list of blind spots is a claim rather than a note: an anonymous default has
+    // no name to address, and a name inside a call would have to be guessed at.
+    expect(seen('export default () => null;')).toEqual([]);
+    expect(seen('const Foo = () => null;\nexport default memo(Foo);')).toEqual([]);
+
+    // The barrel's spelling stays out: `from` makes it another file's component.
+    expect(seen("export { Foo } from './Foo';")).toEqual([]);
   });
 
   it('hides no component in a .ts file', () => {
