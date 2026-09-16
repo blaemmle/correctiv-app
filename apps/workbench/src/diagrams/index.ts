@@ -1,13 +1,20 @@
 import { CoreAndHost, CoreAndHostDrawing } from './CoreAndHost';
 import { DecisionsChain, DecisionsChainDrawing } from './DecisionsChain';
 import { InsideCore, InsideCoreDrawing } from './InsideCore';
+import { chainLayout } from './layout';
 import { Services, ServicesDrawing } from './Services';
 
 import docs from 'virtual:docs';
 import type { ReactNode } from 'react';
 
-/** However many records `adr/` holds today. */
-const RECORD_COUNT = docs.docs.filter((d) => d.route.startsWith('/decisions/')).length;
+/**
+ * The second drawing's own measurements, from the same call the drawing makes.
+ *
+ * Its height is a function of how many records `adr/` holds, so it cannot be
+ * typed here beside the two that are fixed. Read rather than told, which is what
+ * the count beside it already was.
+ */
+const DECISIONS = chainLayout(docs.decisions, docs.strikes);
 
 /**
  * One drawing, described well enough to place it without rendering it.
@@ -53,12 +60,14 @@ export const DIAGRAMS: DiagramMeta[] = [
   {
     id: 'decisions',
     title: 'Which decisions still stand, and which of their claims do not',
-    // The count is read, not typed. It said twenty-three while `adr/` held
-    // twenty-four, which is the failure `AGENTS.md` names under "Facts that
-    // expire": a figure measured once and then left to go quietly wrong.
-    lede: `${RECORD_COUNT} records, never rewritten. When a later decision makes an earlier claim false, the claim is struck through where it stands and the later record names what it retired. Read a row to see whether a record still holds; follow the arcs to see who amended it.`,
-    width: 1100,
-    height: 985,
+    // Every figure here is read, not typed. The count said twenty-three while
+    // `adr/` held twenty-four, which is the failure `AGENTS.md` names under
+    // "Facts that expire"; the drawing under it was worse, because it was typed
+    // in full and drew 0001 to 0023 while the sentence above it counted
+    // thirty-six.
+    lede: `${DECISIONS.summary.records} records, never rewritten. When a later decision makes an earlier claim false, the claim is struck through where it stands and the later record names what it retired. Read a row to see whether a record still holds; follow the arcs to see who amended it.`,
+    width: DECISIONS.width,
+    height: DECISIONS.height,
     Figure: DecisionsChain,
     Drawing: DecisionsChainDrawing,
   },

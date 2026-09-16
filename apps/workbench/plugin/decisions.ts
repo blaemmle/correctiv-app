@@ -50,6 +50,54 @@ export interface DecisionRecord {
  */
 export type Standing = 'stands' | 'partly-struck' | 'withdrawn';
 
+/**
+ * One record striking claims in an earlier one, as an edge rather than as two
+ * lists.
+ *
+ * `voidedBy` and `voids` are the same relation read from its two ends, which is
+ * what a table row wants: the board prints "struck by 0009, 0015" beside one
+ * record. A drawing wants the relation itself, once, with its weight — an arc is
+ * drawn between two rungs and has to know how heavy it is. Deriving that in the
+ * drawing would be a second reading of the retirement graph outside this file,
+ * and the second reading is the one that goes wrong quietly.
+ *
+ * The weight is a real distinction and not decoration: 0024 struck six claims in
+ * 0014 and 0034 struck one in 0013, and an arc that drew those the same would say
+ * the two records were amended alike.
+ */
+export interface Strike {
+  /** The later record, which did the striking. */
+  by: string;
+  /** The earlier record, whose claims stopped being true. */
+  of: string;
+  /** How many of `of`'s struck claims name `by` in their clause. At least one. */
+  claims: number;
+}
+
+/**
+ * Every strike between two records, in drawing order: by the record struck, then
+ * by the record that struck it.
+ *
+ * Exactly the edges `voidedBy` already names — a number is in `voidedBy` because
+ * at least one clause cites it, so no edge here can come out at zero — with the
+ * count that neither list carries. `test/diagrams.test.ts` holds the drawing's
+ * arcs to this, and this to `voidedBy`, so the picture cannot grow an arc the
+ * records do not state.
+ */
+export function strikeEdges(records: DecisionRecord[]): Strike[] {
+  const edges: Strike[] = [];
+  for (const record of records) {
+    for (const by of record.voidedBy) {
+      edges.push({
+        by,
+        of: record.number,
+        claims: record.struck.filter((claim) => claim.by.includes(by)).length,
+      });
+    }
+  }
+  return edges;
+}
+
 /** Where the index lives, and the one document that is not itself a record. */
 const INDEX_FILE = 'adr/README.md';
 
