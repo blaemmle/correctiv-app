@@ -1,6 +1,5 @@
 import {
   Check,
-  CircleDashed,
   Copy,
   Crosshair,
   Eraser,
@@ -21,11 +20,9 @@ import { FIXTURES } from '../frame/seed';
 import { asCss, PALETTE, TOKENS, type Overrides, type Scheme } from '../frame/tokens';
 import type { PreviewState, ThemeSetting } from '../state';
 import { cn } from '../../lib/cn';
-import type { SectionId } from '../../shell/views';
 import { Badge } from '../../ui/kit/badge';
 import { Button } from '../../ui/kit/button';
 import { Segmented } from '../../ui/kit/segmented';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/kit/tooltip';
 
 export interface ToolBindings {
   scheme: Scheme;
@@ -53,14 +50,14 @@ export interface ToolBindings {
 }
 
 /**
- * What each section of the inspector is handed.
+ * What each of the preview's six tools is handed.
  *
  * These used to be one `Props` and a `Panel` wrapper each, and this file owned
  * which of them were open — a comment here said so: "which panels are open is
  * local to this component". It is in the address on every route now
- * (`shell/address.ts`), the chrome is `ui/Section.tsx`, and what is left here is
- * six bodies and the badges that go beside their titles. ADR 0028 records the
- * move.
+ * (`shell/address.ts`), the chrome is `ui/ToolRail.tsx` and `ui/ToolPanel.tsx`,
+ * and what is left here is six bodies and the two numbers that go on the rail.
+ * ADR 0028 records the first move and ADR 0038 the second.
  */
 interface Props {
   state: PreviewState;
@@ -72,9 +69,9 @@ interface Props {
 }
 
 /**
- * The dock's ground is `surface`, so every readout inside it steps back to
- * `canvas`. Two roles rather than two shades, which is what keeps the whole dock
- * legible when the scheme flips.
+ * A readout inside the panel: the panel's own `canvas` behind a `stroke` border,
+ * rather than a second shade. Two roles and no shades at all is what keeps the
+ * whole panel legible when the scheme flips.
  */
 const CARD = 'rounded-md border border-stroke bg-canvas';
 const NOTE = 'text-s leading-relaxed text-on-canvas-muted';
@@ -100,127 +97,17 @@ function segment(on: boolean): string {
 }
 
 /**
- * Three counts, and a way into the section that explains each.
- *
- * The number is written out beside the word it counts, so the summary reads the
- * same to somebody who cannot tell the yellow from the red. It goes in the
- * panel's head, which stays put while the sections scroll under it.
- *
- * "Reveal" now writes to the address rather than to a `useState` in this file, so
- * opening the console from a count shows up in the link.
- */
-export function Counts({
-  status,
-  tools,
-  onReveal,
-}: {
-  status: Status;
-  tools: ToolBindings;
-  onReveal: (section: SectionId) => void;
-}) {
-  const findings = tools.measure.report?.findings.length ?? null;
-  return (
-    <div className="flex flex-wrap items-center gap-2xs px-s py-xs">
-      <Summary onClick={() => onReveal('console')} hint="Open the Console section">
-        <Count n={status.warnings} tone="warn" label="warnings" />
-      </Summary>
-      <Summary onClick={() => onReveal('console')} hint="Open the Console section">
-        <Count n={status.errors} tone="err" label="errors" />
-      </Summary>
-      <Summary onClick={() => onReveal('measure')} hint="Open the Measure section">
-        <Count n={findings} tone="warn" label="findings" />
-      </Summary>
-    </div>
-  );
-}
-
-/**
- * Which build is in the frame, stated rather than offered.
- *
- * The design offers a select here, to switch between "published, static export"
- * and "development server" for the sake of the demonstration. That is not a
- * choice anyone makes on this page: it is read out of the frame, and it decides
- * whether half the controls below can do anything.
- */
-export function BuildLine({ status }: { status: Status }) {
-  return (
-    <div className="border-t border-stroke px-s py-xs">
-      <div className="flex flex-wrap items-center gap-xs">
-        <span className="text-s text-on-canvas-muted">Build</span>
-        <Badge variant={status.handle ? 'default' : 'outline'}>
-          {status.handle ? 'Development server' : 'Published, static export'}
-        </Badge>
-      </div>
-      <p className={cn(NOTE, 'mt-3xs')}>
-        {status.handle
-          ? 'Store handle present, every panel live.'
-          : 'Store handle absent, the appearance setting and the inspector are inert. Fixtures and token overrides still work.'}
-      </p>
-      {/*
-        Said here because this is where somebody notices it. Expo Router applies
-        its base path when the export is built and not in the dev server, so an
-        address under the base is not a route the app can match. The field works
-        anyway, by driving the app's own router over this handle
-        (`frame/handle.ts`, `driveRoute`), and the button beside it has no such
-        way in. `TROUBLESHOOTING.md` has the measurement.
-      */}
-      {status.handle && (
-        <p className={cn(NOTE, 'mt-3xs')}>
-          The route field drives the app&apos;s own router here, because a dev server does not apply
-          the base path this frame puts the app behind. Opening a route in its own tab still renders
-          the app&apos;s 404. The published build has neither limit.
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** A count in the dock's head, and the panel it opens named in a tooltip. */
-function Summary({
-  onClick,
-  hint,
-  children,
-}: {
-  onClick: () => void;
-  hint: string;
-  children: ReactNode;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {/* The size here belongs to the badge inside, not to the button's own
-            icon slot, which is a size larger. */}
-        <Button variant="outline" size="sm" onClick={onClick} className="[&_svg]:size-[0.75rem]">
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{hint}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-/**
  * A count, always with its number and the word it counts written out, never a
  * colour on its own.
  *
  * Three things separate a warning from an error at once: the shape of the icon,
  * the word beside the number, and the fill. The fill alone would fail for a
  * reader who cannot see it and for anyone reading a greyscale screenshot, which
- * is how most of this tool's output travels. The word travels inside the badge
- * rather than beside it because two clean counts are otherwise the same chip
- * twice, which is what they looked like in the dock's head. It is left off only
- * where the row beside the badge already names what is being counted.
+ * is how most of this tool's output travels. The word is left off where the row
+ * beside the badge already names what is being counted.
  */
-function Count({ n, tone, label }: { n: number | null; tone: 'warn' | 'err'; label?: string }) {
+function Count({ n, tone, label }: { n: number; tone: 'warn' | 'err'; label?: string }) {
   const suffix = label ? ` ${label}` : '';
-  if (n === null) {
-    return (
-      <Badge variant="outline">
-        <CircleDashed aria-hidden="true" className="size-[0.75rem]" />
-        {label ? `${label}, not run` : 'not run'}
-      </Badge>
-    );
-  }
   if (n === 0) {
     return (
       <Badge variant="outline" className="tabular-nums">
@@ -248,9 +135,33 @@ function Count({ n, tone, label }: { n: number | null; tone: 'warn' | 'err'; lab
   );
 }
 
-/** The one thing on this page a person needs a development build to change. */
-function InertHere() {
-  return <Badge variant="outline">inert here</Badge>;
+/**
+ * A number on a tool's icon in the rail, and nothing at all when there is none.
+ *
+ * The rail is always on screen, so what sits on it is always on screen, and the
+ * badges this replaces were mostly announcements that nothing had happened:
+ * `untouched`, `inert here`, `combination unknown`, `findings, not run`. Two
+ * survive, warnings-or-errors and findings, and both of those draw nothing at
+ * zero — a clean run is the ordinary case and a permanent chip saying so is a
+ * permanent chip. The exact split is in the tool, which is one press away.
+ *
+ * `title` rather than a tooltip: the rail button already owns one, and a second
+ * trigger inside the first is two popups on one hover.
+ */
+function Mark({ n, tone, label }: { n: number; tone: 'warn' | 'err'; label: string }) {
+  if (n === 0) return null;
+  return (
+    <span
+      title={`${n} ${label}`}
+      className={cn(
+        'min-w-[1rem] rounded-full px-4xs text-center font-mono text-[0.625rem] font-semibold leading-[1rem] tabular-nums',
+        tone === 'err' ? 'bg-red-500 text-white' : 'bg-yellow-400 text-neutral-700',
+      )}
+    >
+      {n > 99 ? '99+' : n}
+      <span className="sr-only"> {label}</span>
+    </span>
+  );
 }
 
 /**
@@ -258,8 +169,12 @@ function InertHere() {
  *
  * Rendered only where the dev handle is absent, which is the same condition that
  * disables the control, so the reason and the disabled state cannot drift apart.
- * The deleted stylesheet hid this with a selector on the page root; a condition
- * in the markup is that rule with nowhere left for the two halves to disagree.
+ * This is also where the whole of that fact lives now. The panel used to open
+ * with a build line and a paragraph under it — "Store handle absent, the
+ * appearance setting and the inspector are inert" — which is true, and was
+ * printed above six tools of which it concerns two. The status line says which
+ * build is in the frame; the two tools it disables say so themselves, here.
+ * ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
  */
 function NeedsDev({ children }: { children: ReactNode }) {
   return (
@@ -298,19 +213,10 @@ const SWATCH = { light: '#ffffff', dark: '#1a1a1a' }; // palette-exempt
  * per iframe, so 3 and 4 need the browser's own emulation, and this panel says
  * which one is on screen rather than pretending to have got you there. The four
  * are a readout for that reason; the setting, which is the half this page can
- * write, is the segmented control above them.
+ * write, is the segmented control above them. Each row carries where it is
+ * reached — `here` or `DevTools` — as a chip rather than as the sentence it used
+ * to carry, which said the same thing four times.
  */
-export function AppearanceTags({ status }: Props) {
-  return (
-    <>
-      <Badge variant="outline" className="font-mono tabular-nums">
-        {status.combination === null ? 'combination unknown' : `combination ${status.combination}`}
-      </Badge>
-      {!status.handle && <InertHere />}
-    </>
-  );
-}
-
 export function Appearance({ status, onChange }: Props) {
   return (
     <>
@@ -336,7 +242,7 @@ export function Appearance({ status, onChange }: Props) {
 
       <Segmented
         name="app-theme"
-        legend="App setting, written to the app's own store"
+        legend="App setting"
         showLegend
         disabled={!status.handle}
         value={status.appTheme ?? ''}
@@ -346,20 +252,11 @@ export function Appearance({ status, onChange }: Props) {
 
       {!status.handle && (
         <NeedsDev>
-          The published site is a static export, and <code className={CODE}>expo export</code> sets{' '}
-          <code className={CODE}>__DEV__</code> false, so the app leaves no dev handle and the
-          setting cannot be written from here. Run the workbench against{' '}
-          <code className={CODE}>npm run web</code>. Everything read out above and below still
-          holds.
+          <code className={CODE}>expo export</code> sets <code className={CODE}>__DEV__</code>{' '}
+          false, so the published build leaves no dev handle and this setting cannot be written from
+          here. Run the workbench against <code className={CODE}>npm run web</code>.
         </NeedsDev>
       )}
-
-      <p className={NOTE}>
-        The device half is the browser&apos;s to set, not this page&apos;s: emulate{' '}
-        <code className={CODE}>prefers-color-scheme</code> in DevTools, under Rendering. An iframe
-        cannot be given a scheme of its own, so combinations 3 and 4 are reached there and only
-        reported here.
-      </p>
 
       <ol className="flex flex-col gap-3xs">
         {COMBINATIONS.map((c) => {
@@ -370,29 +267,26 @@ export function Appearance({ status, onChange }: Props) {
               aria-current={active}
               className={cn(
                 CARD,
-                'flex min-w-0 items-start gap-xs px-xs py-2xs',
+                'flex min-w-0 flex-wrap items-center gap-2xs px-xs py-2xs',
                 active && 'border-accent',
               )}
             >
               <span className="shrink-0 font-mono text-m tabular-nums text-on-canvas-muted">
                 {c.n}
               </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2xs">
-                  <span className="text-m text-on-canvas">{c.label}</span>
-                  {c.isDefault && <Badge variant="alt">default</Badge>}
-                  {active && <Badge variant="accent">on screen</Badge>}
-                </div>
-                <p className={cn(NOTE, 'mt-4xs')}>
-                  {c.scheme === undefined
-                    ? 'Forceable from here, with a development build.'
-                    : `Not forceable from this page. Emulate a ${c.scheme} device in the browser.`}
-                </p>
-              </div>
+              <span className="min-w-0 flex-1 text-m text-on-canvas">{c.label}</span>
+              {c.isDefault && <Badge variant="alt">default</Badge>}
+              {active && <Badge variant="accent">on screen</Badge>}
+              <Badge variant="outline">{c.scheme === undefined ? 'here' : 'DevTools'}</Badge>
             </li>
           );
         })}
       </ol>
+
+      <p className={NOTE}>
+        An iframe cannot be given a scheme of its own, so the two marked DevTools are reached by
+        emulating <code className={CODE}>prefers-color-scheme</code> under Rendering.
+      </p>
     </>
   );
 }
@@ -407,21 +301,11 @@ export function Appearance({ status, onChange }: Props) {
  * app's own, before the frame is pointed at a route. That works in the static
  * export, so nothing here warns about the build.
  */
-export function StateTags({ state }: Props) {
-  return (
-    <Badge variant="outline" className="max-w-[10rem] font-mono">
-      <span className="truncate">{state.seed ?? 'untouched'}</span>
-    </Badge>
-  );
-}
-
 export function State({ state, onChange }: Props) {
   return (
     <>
       <fieldset className="min-w-0">
-        <legend className={cn(NOTE, 'mb-2xs')}>
-          Fixture, seeded before the app boots. Choosing one reloads the frame.
-        </legend>
+        <legend className={cn(NOTE, 'mb-2xs')}>Fixture · choosing one reloads the frame</legend>
         <div className="flex flex-col gap-3xs">
           {/*
             First, and the default, because the plain demo link carries no
@@ -447,9 +331,6 @@ export function State({ state, onChange }: Props) {
           ))}
         </div>
       </fieldset>
-      <p className={NOTE}>
-        The fixture is in the link, so whoever opens it starts where you started.
-      </p>
     </>
   );
 }
@@ -504,12 +385,18 @@ const LEVELS: Level[] = ['warn', 'error'];
  * `frame/console.ts` collects, and a button for `log` would switch a category
  * that can never arrive.
  */
-export function ConsoleTags({ status }: Props) {
-  return (
-    <>
-      <Count n={status.warnings} tone="warn" label="warnings" />
-      <Count n={status.errors} tone="err" label="errors" />
-    </>
+/**
+ * One number on the icon, and it is the worse of the two.
+ *
+ * An error outranks a warning, so a run with both shows the errors: the rail has
+ * room for one mark, and the one worth interrupting somebody for is the one that
+ * goes on it. The split is the first thing the tool prints.
+ */
+export function ConsoleMark({ status }: Props) {
+  return status.errors > 0 ? (
+    <Mark n={status.errors} tone="err" label="errors" />
+  ) : (
+    <Mark n={status.warnings} tone="warn" label="warnings" />
   );
 }
 
@@ -622,14 +509,6 @@ export function Console({ status, logs, onClearLogs }: Props) {
  * stylesheet appended to the frame's own document, which same-origin allows in
  * any build.
  */
-export function TokensTags({ tools }: Props) {
-  return (
-    <Badge variant="outline" className="font-mono">
-      {tools.scheme} scheme
-    </Badge>
-  );
-}
-
 export function Tokens({ tools }: Props) {
   const { scheme, tokens } = tools;
   const changed = TOKENS.filter((t) => tokens.overrides[t]?.[scheme]);
@@ -644,9 +523,8 @@ export function Tokens({ tools }: Props) {
   return (
     <>
       <p className={NOTE}>
-        Overrides apply to the <b className="font-semibold text-on-canvas">{scheme}</b> scheme, the
-        one the app is painting with. Nothing is written to the repository; Copy CSS is how a
-        proposal leaves this page.
+        Overriding the <b className="font-semibold text-on-canvas">{scheme}</b> scheme, which is the
+        one the app is painting with.
       </p>
 
       <div className="flex flex-col gap-3xs">
@@ -712,31 +590,26 @@ export function Tokens({ tools }: Props) {
         />
         Text too
       </label>
-      <p className={NOTE}>
-        Surfaces and borders follow the variable. Text and icons are resolved in JavaScript and land
-        in inline styles, so <b className="font-semibold text-on-canvas">Text too</b> chases them by
-        value: a best effort, not a guarantee.
-      </p>
+      {/* The caveat, and it is one clause because it is one fact: text and icons
+          are resolved in JavaScript and land in inline styles, so nothing can
+          follow the variable for them and this chases the old value instead. */}
+      <p className={NOTE}>Text is chased by value, so it is a best effort rather than a rule.</p>
     </>
   );
 }
 
-const CHECKS: { kind: Finding['kind']; title: string; detail: string }[] = [
-  {
-    kind: 'overflow',
-    title: 'Horizontal overflow',
-    detail: 'Anything wider than the frame it is drawn in.',
-  },
-  {
-    kind: 'tap-target',
-    title: 'Tap targets under 44 px',
-    detail: 'Declared controls shorter or narrower than 44 CSS px.',
-  },
-  {
-    kind: 'off-palette',
-    title: 'Colours off the palette',
-    detail: 'Fills and text no token of the painted scheme names.',
-  },
+/**
+ * The three checks, as a name and a count each.
+ *
+ * Each of these carried a second line saying what it meant — "Anything wider than
+ * the frame it is drawn in", and two more like it — which is three sentences
+ * above a list of the findings themselves, each of which names what it found. The
+ * titles say enough; the findings say the rest.
+ */
+const CHECKS: { kind: Finding['kind']; title: string }[] = [
+  { kind: 'overflow', title: 'Horizontal overflow' },
+  { kind: 'tap-target', title: 'Tap targets under 44 px' },
+  { kind: 'off-palette', title: 'Colours off the palette' },
 ];
 
 const KIND_LABEL: Record<Finding['kind'], string> = {
@@ -746,8 +619,8 @@ const KIND_LABEL: Record<Finding['kind'], string> = {
 };
 
 /** The mechanical half of looking: overflow, tap targets, colours off the palette. */
-export function MeasureTags({ tools }: Props) {
-  return <Count n={tools.measure.report?.findings.length ?? null} tone="warn" label="findings" />;
+export function MeasureMark({ tools }: Props) {
+  return <Mark n={tools.measure.report?.findings.length ?? 0} tone="warn" label="findings" />;
 }
 
 export function Measure({ tools }: Props) {
@@ -772,29 +645,30 @@ export function Measure({ tools }: Props) {
           aria-pressed={measure.outline}
           onClick={() => measure.setOutline(!measure.outline)}
         >
-          Outline boxes in the frame
+          Outline boxes
         </Button>
-        <span className={NOTE}>
-          {report
-            ? `Ran across ${report.scanned} elements.`
-            : "Runs against the frame's own DOM, and works in any build."}
-        </span>
+        {report && <span className={NOTE}>Ran across {report.scanned} elements.</span>}
       </div>
 
+      {/* Counted only after a run. A column of "not run" beside three check names
+          is a column saying nothing, three times, above the button that would
+          change it. */}
       <ul className="flex flex-col gap-3xs">
-        {CHECKS.map((check) => (
-          <li key={check.kind} className={cn(CARD, 'flex items-start gap-xs px-xs py-2xs')}>
-            <div className="min-w-0 flex-1">
-              <div className="text-m font-semibold text-on-canvas">{check.title}</div>
-              <div className={NOTE}>{check.detail}</div>
-            </div>
-            <Count n={count(check.kind)} tone="warn" />
-          </li>
-        ))}
+        {CHECKS.map((check) => {
+          const n = count(check.kind);
+          return (
+            <li
+              key={check.kind}
+              className={cn(CARD, 'flex items-center gap-xs px-xs py-2xs text-m text-on-canvas')}
+            >
+              <span className="min-w-0 flex-1">{check.title}</span>
+              {n !== null && <Count n={n} tone="warn" />}
+            </li>
+          );
+        })}
       </ul>
 
       <div className="flex flex-col gap-3xs">
-        {report === null && <p className={NOTE}>No run yet. Press Run checks.</p>}
         {report !== null && report.findings.length === 0 && (
           <p className={NOTE}>Nothing found across {report.scanned} elements.</p>
         )}
@@ -838,15 +712,11 @@ export function Measure({ tools }: Props) {
  * entries of the same chain. The selected one becomes `Source:` in the block
  * below, the rest become `Context:`.
  */
-export function InspectTags({ status }: Props) {
-  return status.handle ? null : <InertHere />;
-}
-
 export function Inspect({ status, tools }: Props) {
   const { inspect } = tools;
   const section = useRef<HTMLDivElement>(null);
 
-  // The dock scrolls, and this panel is the one that grows: on a laptop the
+  // The panel scrolls, and this tool is the one that grows: on a laptop the
   // result of a pick lands below the fold, which would hide the only part of the
   // interaction that matters.
   useEffect(() => {
@@ -967,10 +837,10 @@ export function Inspect({ status, tools }: Props) {
                 Open in editor
               </Button>
             </div>
-            <p className={NOTE}>
-              Paste it, then say what should be different. The view address is in there, so whoever
-              picks this up can put the same thing back on screen before and after.
-            </p>
+            {/* What the block is for, in the one clause that is not obvious from
+                reading it: the view's own address is in there, so whoever picks
+                this up can put the same thing back on screen. */}
+            <p className={NOTE}>The block carries this view&apos;s address.</p>
           </>
         )}
       </fieldset>

@@ -12,8 +12,8 @@
  * Pure data on purpose, no React and no icon. `test/shell.test.ts` imports this
  * file to check every route in the site against it, and a test that had to pull
  * the page tree in to ask about a string is a test that stops being run. The
- * icons live beside the chrome that draws them, in `ui/Section.tsx`, keyed by the
- * same type, so a section with a title and no icon is a type error.
+ * icons live beside the chrome that draws them, in `ui/ToolRail.tsx`, keyed by
+ * the same type, so a section with a title and no icon is a type error.
  */
 
 /** Every place a page can put something the shell draws. */
@@ -54,29 +54,30 @@ export type ViewKind =
 
 export interface ViewDeclaration {
   kind: ViewKind;
-  /** Right panel sections, in order. Empty: no panel, no toggle, no ⌘J. */
+  /**
+   * What the right panel can show, in the order the rail lists them.
+   *
+   * **One at a time.** These used to be a stack of collapsible sections sharing
+   * one column, which on `/preview` meant six of them inside thirty-one per cent
+   * of the window: each got a sliver, and each needed a caption saying what the
+   * sliver was. The rail on the right edge opens one of them at the panel's full
+   * height, and pressing the open one shuts the panel — so there is one switch
+   * where there used to be a header button, a close button and six chevrons.
+   * ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
+   *
+   * Empty: no panel, no rail, no ⌘J.
+   */
   sections: readonly SectionId[];
-  /** Which of them start open. A subset of `sections`. */
-  openByDefault: readonly SectionId[];
-  /** Whether the panel starts open: true where there is a tool to reach for. */
-  panelOpenByDefault: boolean;
-  /** The header names the panel this; `null` exactly when `sections` is empty. */
+  /** The rail and the panel are named this; `null` exactly when `sections` is empty. */
   panelTitle: string | null;
   /** Docked width. A heading list wants a fifth, a console wants a third. */
   panelWidth: '19%' | '24%' | '31%';
-  /** A strip above the sections that does not scroll with them. */
-  panelHead: boolean;
   /** Whether the header's context bar is filled by this view. */
   contextBar: boolean;
   /** Whether the status line is this view's rather than the file or the title. */
   statusBar: boolean;
   /** Whether `full=1` means anything here: a view whose main area is a drawing. */
   canGoFull: boolean;
-  /**
-   * Below the wide breakpoint: `'drawer'` is the sheet over the page, `'page'`
-   * renders the sections inline underneath it and shrinks the frame to a button.
-   */
-  narrow: 'drawer' | 'page';
   /**
    * And whether it arrives there already full, rather than offering the button.
    *
@@ -93,25 +94,28 @@ function plain(kind: ViewKind): ViewDeclaration {
   return {
     kind,
     sections: [],
-    openByDefault: [],
-    panelOpenByDefault: false,
     panelTitle: null,
     panelWidth: '19%',
-    panelHead: false,
     contextBar: false,
     statusBar: false,
     canGoFull: false,
-    narrow: 'drawer',
     fullWhenNarrow: false,
   };
 }
 
-/** A long read: the contents, shut, because there is no tool to reach for. */
+/**
+ * A long read, whose one rail entry is its contents.
+ *
+ * **A table of contents is not a tool**, and the rail does not dress it up as
+ * one: it is a single icon, it is called `On this page`, and it is there because
+ * the panel needs a switch and the edge the panel opens from is where that switch
+ * belongs. What the reading views get out of the rail is not a tool box, it is
+ * that the contents are in the same place on every view of this site.
+ */
 function reading(kind: ViewKind, contextBar = false): ViewDeclaration {
   return {
     ...plain(kind),
     sections: ['contents'],
-    openByDefault: ['contents'],
     panelTitle: 'On this page',
     contextBar,
   };
@@ -123,7 +127,7 @@ export const VIEWS: Record<ViewKind, ViewDeclaration> = {
   diagrams: plain('diagrams'),
   'not-found': plain('not-found'),
   // A drawing and its caption. Its headings carry no ids, so a contents list
-  // here would be an empty box behind a toggle, which is decision 4's case.
+  // here would be an empty box behind a rail icon, which is decision 4's case.
   diagram: plain('diagram'),
 
   document: reading('document'),
@@ -138,58 +142,36 @@ export const VIEWS: Record<ViewKind, ViewDeclaration> = {
   design: {
     kind: 'design',
     sections: ['design-links', 'design-clients', 'design-code'],
-    openByDefault: ['design-links', 'design-clients', 'design-code'],
-    panelOpenByDefault: true,
     panelTitle: 'Design tools',
     // Four download cards and three pointer cards need more than a heading list
     // and less than a console, and a third would leave the Figma frame half the
     // window at 1280.
     panelWidth: '24%',
-    panelHead: false,
     contextBar: true,
     statusBar: false,
     canGoFull: true,
-    narrow: 'page',
     fullWhenNarrow: false,
   },
 
   component: {
     kind: 'component',
     sections: ['rendering', 'device', 'props', 'source'],
-    // `source` shut: the prose is long for the components that have it, and a
-    // reader who came to look at the thing should see the thing first.
-    openByDefault: ['rendering', 'device', 'props'],
-    panelOpenByDefault: true,
     panelTitle: 'Component',
     panelWidth: '31%',
-    panelHead: false,
     contextBar: true,
     statusBar: true,
     canGoFull: true,
-    narrow: 'page',
     fullWhenNarrow: false,
   },
 
   preview: {
     kind: 'preview',
     sections: ['appearance', 'state', 'console', 'tokens', 'measure', 'inspect'],
-    openByDefault: ['appearance', 'console', 'measure'],
-    /*
-     * Shut, although this is the view with the most tools on it.
-     *
-     * `RELEASE.md` hands out this address to people who want to see the app, and
-     * `tools=1` exists precisely so that somebody debugging can opt in and send
-     * the opened state as a link. Design and component open instead, because a
-     * reader arrives at those to use the panel rather than to look past it.
-     */
-    panelOpenByDefault: false,
     panelTitle: 'Tools',
     panelWidth: '31%',
-    panelHead: true,
     contextBar: true,
     statusBar: true,
     canGoFull: true,
-    narrow: 'page',
     fullWhenNarrow: true,
   },
 };
@@ -198,7 +180,7 @@ export const VIEWS: Record<ViewKind, ViewDeclaration> = {
  * What a section is called, wherever it is drawn.
  *
  * Here rather than passed by the page, because the id is in the URL under
- * `open=`: a page that could rename its own section would be renaming something
+ * `tool=`: a page that could rename its own section would be renaming something
  * a link already refers to.
  */
 export const SECTION_TITLES: Record<SectionId, string> = {
@@ -254,10 +236,10 @@ export const PAGE_ROUTES: readonly string[] = Object.keys(EXACT);
  *
  * **A component the app has not got is not the component view.** The declaration
  * is what the shell believes before the page renders, so an address like
- * `/components/ui/NotAThing` used to open a panel with `Rendering`, `Device`,
- * `Props` and `Source` in it and nothing inside any of them, plus a blank status
- * line — four empty boxes behind four titles, which is what a declaration costs
- * when nothing can fill it. `test/shell.test.ts` reads the page files as text and
+ * `/components/ui/NotAThing` used to open a rail with `Rendering`, `Device`,
+ * `Props` and `Source` on it and nothing behind any of them, plus a blank status
+ * line — four icons that answer nothing, which is what a declaration costs when
+ * nothing can fill it. `test/shell.test.ts` reads the page files as text and
  * cannot see that, because the slots are in the file and the render returned
  * before them. Asking here is where the question can be answered once.
  */

@@ -60,9 +60,15 @@ is an ordinary `useState` in the page, and React context crosses a portal unchan
 And the shell still knows whether a panel exists before the page's first render,
 because that comes from the table.
 
-A section's badges are a slot of their own, `<id>:tags`, because they stay visible
+~~A section's badges are a slot of their own, `<id>:tags`, because they stay visible
 while the section is shut — "0 warnings" is worth reading without opening the console
-— and because the trigger that carries them is the shell's chrome.
+— and because the trigger that carries them is the shell's chrome.~~ The slot is
+`<id>:mark` and carries one number or nothing;
+[ADR 0038](0038-one-tool-at-a-time-in-a-rail.md) §5 measured what it had filled with —
+`untouched`, `inert here`, `combination unknown`, `findings, not run` — and a clean
+count is one of them. The argument for a slot of its own is untouched and is why two
+survive: the chrome outside a tool is the shell's, and a number worth acting on is
+worth seeing before the tool is open.
 
 ### 2. The address, on every route
 
@@ -77,6 +83,13 @@ while the section is shut — "0 warnings" is worth reading without opening the 
            full=1      chrome gone, only where the view can go full
            + everything the open view keeps, passed through untouched
 ```
+
+~~The two parameter lines above~~ are `tool=<id>` since
+[ADR 0038](0038-one-tool-at-a-time-in-a-rail.md) §3: the panel holds one tool rather
+than a set, so a boolean for the panel and a list of open sections are one name. Both
+old spellings are still READ, and that record says what an old link does with them;
+neither is written any more. `full=1` and the pass-through are unchanged, and the
+grammar around them is this one.
 
 **The two halves cannot collide**, which is what lets one grammar serve both: an app
 route starts with `/` and a heading id never does, because `plugin/markdown.ts`'s
@@ -111,21 +124,30 @@ leave the page.
 **`/workbench` opens shut**, although it is the view with the most tools on it.
 `RELEASE.md` hands out that address to people who want to see the app, and `tools=1`
 exists precisely so somebody debugging can opt in and send the opened state as a
-link. **`/design` and `/components/<group>/<name>` open open**, because a reader
+link. ~~**`/design` and `/components/<group>/<name>` open open**, because a reader
 arrives at those to use the panel rather than to look past it: the design page's main
 area is a Figma frame and everything else about it is in the sections, and the
-component page's props are the second thing anybody came for.
+component page's props are the second thing anybody came for.~~ Nothing opens by
+default on any view now, and this decision has no second half left —
+[ADR 0038](0038-one-tool-at-a-time-in-a-rail.md) §2 is what voided it, and the reason
+is that a panel showing one of N cannot open by default without also choosing which,
+which no view can answer for its reader. What pays for it there is the rail: every
+tool is named and on screen whether or not the panel is.
 
 ### 4. Below 1024, the context is the page
 
 `WIDE` stays `(min-width: 64rem)`, which is also `HOST_BELOW` in `workbench/devices.ts`,
 so the shell's line and the device line are one number.
 
-A `narrow: 'drawer'` view keeps today's sheet. A `narrow: 'page'` view — design,
+~~A `narrow: 'drawer'` view keeps today's sheet. A `narrow: 'page'` view — design,
 component, workbench — has no panel and no drawer at that width: the sections are
 rendered inline after the page, at the column's full width, and the header's toggle
-is hidden because there is nothing to toggle. Where the main area is a frame, it
-shrinks to a button that sets `full=1`.
+is hidden because there is nothing to toggle.~~ The two narrow layouts are one since
+[ADR 0038](0038-one-tool-at-a-time-in-a-rail.md) §4, so the `narrow` field is gone
+with them: the rail lies along the bottom and the panel stands on it over about half
+the window. The observation that decides this section is untouched and is what §4
+starts from — there is no width to divide at 390px — and what it adds is that there is
+height. Where the main area is a frame, it shrinks to a button that sets `full=1`.
 
 The workbench is the exception inside the exception, and it is declared rather than
 special-cased: `fullWhenNarrow` is true for it alone, because that is what it has

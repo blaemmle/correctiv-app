@@ -12,10 +12,7 @@ const read = (hash: string): PreviewState => fromAddress(parseAddress(hash, VIEW
 
 function write(state: PreviewState): string {
   const { head, rest } = toAddress(state);
-  return writeAddress(
-    { head, rest, tools: VIEW.panelOpenByDefault, open: new Set(VIEW.openByDefault), full: false },
-    VIEW,
-  );
+  return writeAddress({ head, rest, tool: null, full: false }, VIEW);
 }
 
 describe('the frame’s half of the hash', () => {
@@ -40,19 +37,19 @@ describe('the frame’s half of the hash', () => {
   });
 
   /**
-   * `tools` and `full` left this state, and a link that carries them still works.
+   * The panel and `full` left this state, and a link that carries them still works.
    *
    * They were always the two fields that were not about the frame: whether the
-   * right sidebar is open and whether the chrome is out of the way are the
-   * shell's, on every route, and `shell/address.ts` owns them now. What has to
-   * keep holding is that the frame's parser does not see them and does not lose
-   * the parameters beside them.
+   * right panel is open and whether the chrome is out of the way are the shell's,
+   * on every route, and `shell/address.ts` owns them now. What has to keep holding
+   * is that the frame's parser does not see them and does not lose the parameters
+   * beside them — `tools`, the panel's own older spelling, included.
    */
   it('leaves the shell’s own parameters to the shell', () => {
     const hash = '#/artikel?d=ipad-mini&tools=1&full=1';
     const address = parseAddress(hash, VIEW);
 
-    expect(address.tools).toBe(true);
+    expect(address.tool).toBe('appearance');
     expect(address.full).toBe(true);
     expect(read(hash)).toEqual({
       ...INITIAL,

@@ -53,7 +53,7 @@ npm run app         # the app it frames, at localhost:8081
 ```
 
 Both, if you want the preview. Without the second command the frame is empty and the
-dock says the store handle is absent.
+status line says the store handle is absent.
 
 The dev server proxies three paths to the app's server, so the browser sees one
 origin: `/app` for the app itself, and `/apps` and `/assets` because the app's own
@@ -102,10 +102,11 @@ again.
 `build:web` exports with `--dev`, so the deployed app keeps `__DEV__` true and leaves
 its handle on its own global. That is what makes the preview work on the published
 site rather than only against a local dev server: with a production export the
-appearance panel and the inspector are inert, and the dock says so on every panel.
+Appearance and Inspect tools are inert, each of them says so beside the control it
+disables, and the status line names the build.
 
 It costs about a third more JavaScript and the app carries React's development
-warnings. The console panel shows those rather than hiding them, which on a debugging
+warnings. The Console tool shows those rather than hiding them, which on a debugging
 surface is the right way round.
 
 ## Same-origin, and why it is load-bearing

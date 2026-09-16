@@ -17,12 +17,13 @@ import { Sources } from './pages/Sources';
 import { Preview } from './pages/Preview';
 import { ActivityBar } from './ui/ActivityBar';
 import { Boundary } from './ui/Boundary';
-import { ContextPanel, NarrowSections } from './ui/ContextPanel';
 import { Header } from './ui/Header';
 import { Search } from './ui/Search';
 import { Settings } from './ui/Settings';
 import { ShowChrome } from './ui/ShowChrome';
 import { StatusBar } from './ui/StatusBar';
+import { ToolPanel } from './ui/ToolPanel';
+import { ToolRail } from './ui/ToolRail';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -31,11 +32,10 @@ import {
   usePanelState,
   type PanelHandle,
 } from './ui/kit/resizable';
-import { Sheet, SheetContent, SheetTitle } from './ui/kit/sheet';
 import { TooltipProvider } from './ui/kit/tooltip';
 import { SlotProvider, SlotTarget, slotsOf } from './shell/slots';
-import { toggled, useAddress, type ShellProps } from './shell/address';
-import { resolveView } from './shell/views';
+import { useAddress, type ShellProps } from './shell/address';
+import { resolveView, type SectionId } from './shell/views';
 import { cn } from './lib/cn';
 import { useMedia, WIDE } from './lib/useMedia';
 import { PAGE_TITLES } from './nav';
@@ -61,18 +61,18 @@ const hasComponent = (group: string, name: string) => COMPONENT_IDS.has(`${group
  * Everything is a view of the same shell: a record, the sources board, the
  * drawings, the core's reference, one of the app's components drawn, and the app
  * itself in its frame. The rail on the far left reaches any of them from any of
- * them, and the right sidebar holds whatever the open view has to say about
- * itself.
+ * them; the rail on the far right reaches any tool of the open view from any
+ * other, and the panel between them shows the one that was asked for.
  *
- * **The route declares and the page fills.** `shell/views.ts` says which sections
- * a view offers, whether it has a context bar, whether it owns the status line
- * and whether `full=1` means anything on it; the page puts its content into
- * those places through `shell/slots.tsx`. This file therefore branches on width
- * and on nothing else — the seven `isApp` branches it used to carry are what made
- * the preview a second site, and `ADR 0028` records why they are gone.
+ * **The route declares and the page fills.** `shell/views.ts` says which tools a
+ * view offers, whether it has a context bar, whether it owns the status line and
+ * whether `full=1` means anything on it; the page puts its content into those
+ * places through `shell/slots.tsx`. This file therefore branches on width and on
+ * nothing else — the seven `isApp` branches it used to carry are what made the
+ * preview a second site, and `ADR 0028` records why they are gone.
  *
- * The panel's own state — open, and which sections are open — is in the hash on
- * every route (`shell/address.ts`), which is what the preview alone used to do.
+ * The panel's own state — which one tool is open — is in the hash on every route
+ * (`shell/address.ts`), which is what the preview alone used to do.
  */
 export function App() {
   const [route] = useRoute();
@@ -86,20 +86,37 @@ export function App() {
   useLinkInterception();
 
   /*
-   * Two layouts, not one layout with different numbers. Wide, the sidebar is a
-   * panel in a resizable group and the page has what is left. Narrow, there is no
-   * room to divide: a `drawer` view puts its sections in a sheet over the page,
-   * and a `page` view puts them after it.
+   * Two layouts, not one layout with different numbers. Wide, the rail is a
+   * column on the right edge and the panel a pane in a resizable group beside it.
+   * Narrow, there is no width to divide: the rail lies along the bottom of the
+   * window and the panel rises from it over roughly the lower half, with the page
+   * above still on screen and still reachable — which the preview needs, because
+   * the element picker and the outline both want a frame that can be tapped while
+   * the tool that armed them is open.
    */
   const wide = useMedia(WIDE);
   const full = view.canGoFull && address.full;
-  const narrowAsPage = !wide && view.narrow === 'page';
   const hasPanel = view.sections.length > 0;
-  const panelOpen = hasPanel && address.tools && !narrowAsPage;
+  const tool = address.tool;
+  const panelOpen = tool !== null;
 
   const shell: ShellProps = { address, onAddress: setAddress, wide, full };
-  const toggleSection = (id: Parameters<typeof toggled>[1]) =>
-    setAddress({ open: toggled(address.open, id) });
+  const setTool = (next: SectionId | null) => setAddress({ tool: next });
+
+  /*
+   * Which tool ⌘J comes back to.
+   *
+   * The shortcut opens the last one this session, and the view's first where
+   * there has been none — a keystroke that opened nothing, or asked which of six,
+   * would not be a shortcut. Held in a ref rather than in the address, because it
+   * is a memory of what was asked for and not a statement about what is on
+   * screen: writing it to the hash would put a tool in every link that had merely
+   * been looked at once and shut again.
+   */
+  const lastTool = useRef<SectionId | null>(null);
+  useEffect(() => {
+    if (address.tool !== null) lastTool.current = address.tool;
+  }, [address.tool]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -109,9 +126,14 @@ export function App() {
         event.preventDefault();
         setSearchOpen((open) => !open);
       }
-      if (meta && key === 'j' && hasPanel && !narrowAsPage) {
+      if (meta && key === 'j' && hasPanel) {
         event.preventDefault();
-        setAddress({ tools: !address.tools });
+        const remembered = lastTool.current;
+        const back =
+          remembered !== null && view.sections.includes(remembered)
+            ? remembered
+            : (view.sections[0] ?? null);
+        setAddress({ tool: address.tool === null ? back : null });
       }
       // The way out of a view whose only control is one floating button. The
       // palette owns Escape while it is open, and it is a dialog, so it gets it.
@@ -122,7 +144,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [address.tools, full, hasPanel, narrowAsPage, searchOpen, setAddress]);
+  }, [address.tool, full, hasPanel, searchOpen, setAddress, view.sections]);
 
   useEffect(() => {
     document.title = route === '/' ? 'CORRECTIV app workbench' : `${titleOf()} — Workbench`;
@@ -137,11 +159,11 @@ export function App() {
    * The heading the hash names, scrolled to by this site rather than by the
    * browser.
    *
-   * `#the-four-ports?tools=1` is not an anchor: the fragment is no longer an
+   * `#the-four-ports?tool=contents` is not an anchor: the fragment is no longer an
    * element id, so the browser does nothing with it. `router.tsx` already scrolls
    * for a click on an in-site link, because the target does not exist until the
    * route has rendered; this is the other half, for a load and for a step through
-   * history. Keyed on route and head together, so toggling a panel — which
+   * history. Keyed on route and head together, so opening a tool — which
    * rewrites the hash — does not throw the reader back up the page.
    */
   const scrolledTo = useRef<string | null>(null);
@@ -155,9 +177,11 @@ export function App() {
   }, [address.head, route]);
 
   /*
-   * Docked, the sidebar collapses to nothing rather than being unmounted, so its
-   * width has a value to animate from. `useDragging` turns the transition off
-   * while a handle is held, or every frame of the drag chases a 200ms animation.
+   * Docked, the panel collapses to nothing rather than being unmounted, so its
+   * width has a value to animate from — and so that a tool keeps the state inside
+   * it while it is away, which is the same reason `ToolPanel` hides rather than
+   * unmounts. `useDragging` turns the transition off while a handle is held, or
+   * every frame of the drag chases a 200ms animation.
    *
    * Both the panel and its handle stay mounted for as long as this layout does,
    * whatever the open view puts in them. They used to come and go with the route,
@@ -227,17 +251,13 @@ export function App() {
             <Header
               onSearch={() => setSearchOpen(true)}
               onSettings={() => setSettingsOpen(true)}
-              toolsOpen={address.tools}
-              onToggleTools={
-                hasPanel && !narrowAsPage ? () => setAddress({ tools: !address.tools }) : undefined
-              }
-              toolsLabel={view.panelTitle ?? undefined}
               onFull={view.canGoFull ? () => setAddress({ full: true }) : undefined}
             >
-              {/* The context bar. Narrow and in a drawer it moves inside the
-                  drawer, which is where the preview's controls have always
-                  gone at 390px; narrow as a page it stays here and wraps. */}
-              {view.contextBar && (wide || narrowAsPage) && <SlotTarget id="context-bar" />}
+              {/* The context bar, in the header at every width. Device,
+                  orientation, zoom and route belong above the frame and not on
+                  the rail, so this is the one thing the two-level arrangement
+                  keeps: the bar wraps at 390px rather than moving. */}
+              {view.contextBar && <SlotTarget id="context-bar" />}
             </Header>
           )}
 
@@ -258,16 +278,7 @@ export function App() {
                   none of them carries a `main` or a height of its own.
                 */}
                 <main id="content" className="h-full min-h-0 overflow-auto">
-                  <Boundary route={route}>
-                    {page}
-                    {narrowAsPage && !full && (
-                      <NarrowSections
-                        view={view}
-                        open={address.open}
-                        onToggleSection={toggleSection}
-                      />
-                    )}
-                  </Boundary>
+                  <Boundary route={route}>{page}</Boundary>
                 </main>
               </ResizablePanel>
 
@@ -286,18 +297,19 @@ export function App() {
                        back, which is a toggle that does nothing. */
                     onResize={(size) => {
                       if (!dragging) return;
-                      if (size.asPercentage > 0) dragged.current = `${size.asPercentage}%`;
-                      setAddress({ tools: size.asPercentage > 0 });
+                      if (size.asPercentage > 0) {
+                        dragged.current = `${size.asPercentage}%`;
+                      } else if (tool !== null) {
+                        // Dragged shut, which is the one way to close the panel
+                        // that is not the rail. The rail's mark follows, because
+                        // both read the same parameter.
+                        setTool(null);
+                      }
                     }}
                   >
                     <div className="h-full w-full overflow-hidden [contain:paint]">
                       <div className="h-full w-full min-w-[15rem]" inert={!panelOpen}>
-                        <ContextPanel
-                          view={view}
-                          open={address.open}
-                          onToggleSection={toggleSection}
-                          onClose={() => setAddress({ tools: false })}
-                        />
+                        <ToolPanel view={view} tool={tool} />
                       </div>
                     </div>
                   </ResizablePanel>
@@ -305,39 +317,43 @@ export function App() {
               )}
             </ResizablePanelGroup>
 
-            {/*
-              Narrow, a `drawer` view's sections are a drawer over the page rather
-              than a column beside it. There is no width to divide at 390px: a
-              fourteen per cent panel is fifty-five pixels, and the page it left
-              behind is not a page.
-
-              A `Sheet`, which is a Radix dialog, rather than a positioned div: it
-              traps focus, closes on Escape and on a tap outside, hides the page
-              behind it from a screen reader, and slides in from the edge it is
-              docked to.
-            */}
-            {!wide && !full && !narrowAsPage && hasPanel && (
-              <Sheet open={address.tools} onOpenChange={(open) => setAddress({ tools: open })}>
-                <SheetContent side="right" className="w-[min(26rem,92vw)]">
-                  {view.contextBar && (
-                    <SlotTarget
-                      id="context-bar"
-                      className="shrink-0 border-b border-stroke p-xs empty:hidden"
-                    />
-                  )}
-                  <div className="min-h-0 flex-1">
-                    <ContextPanel
-                      view={view}
-                      open={address.open}
-                      onToggleSection={toggleSection}
-                      onClose={() => setAddress({ tools: false })}
-                      titleAs={SheetTitle}
-                    />
-                  </div>
-                </SheetContent>
-              </Sheet>
+            {wide && !full && (
+              <ToolRail view={view} tool={tool} onTool={setTool} orientation="column" />
             )}
           </div>
+
+          {/*
+            Narrow, the rail lies along the bottom and the panel stands on it.
+            There is no width to divide at 390px — a fourteen per cent panel is
+            fifty-five pixels, and the page it left behind is not a page — and
+            there is height, so the two halves of the window are stacked instead
+            of side by side.
+
+            In the flow rather than in a dialog over the page, which is what this
+            was until ADR 0038. A drawer traps focus and dims what is behind it,
+            and what is behind it here is the thing the tools are about: Measure's
+            outline and Inspect's picker are both instructions to look at the
+            frame. So the page keeps half the window, keeps its scroll and stays
+            tappable, and the rail never moves under the reader's thumb.
+          */}
+          {!wide && !full && hasPanel && (
+            <>
+              {/* Hidden rather than unmounted while it is shut, for the two
+                  reasons the docked panel collapses instead of unmounting: the
+                  tools keep what is inside them, and the rail's `aria-controls`
+                  keeps something to point at. The class is `hidden` and nothing
+                  else on that branch, because a `display` beside it would win. */}
+              <div
+                className={cn(
+                  'shrink-0 border-t border-stroke',
+                  panelOpen ? 'h-[50dvh]' : 'hidden',
+                )}
+              >
+                <ToolPanel view={view} tool={tool} />
+              </div>
+              <ToolRail view={view} tool={tool} onTool={setTool} orientation="row" />
+            </>
+          )}
 
           {!full && (
             <StatusBar>

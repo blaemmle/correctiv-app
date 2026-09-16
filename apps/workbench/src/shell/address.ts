@@ -7,9 +7,9 @@ import type { SectionId, ViewDeclaration } from './views';
  *
  * `#<head>?<params>`. The head is an app route on `/preview` (`/artikel`), a
  * heading id on a document (`the-four-ports`), and empty elsewhere. The
- * parameters are the shell's own — `tools`, `open`, `full` — plus everything the
- * open view keeps in `rest`, which on the preview is the five original frame
- * parameters and on the component route is the device and the rendering.
+ * parameters are the shell's own — `tool`, `full` — plus everything the open view
+ * keeps in `rest`, which on the preview is the five original frame parameters and
+ * on the component route is the device and the rendering.
  *
  * **The two halves cannot collide**, which is what lets one grammar serve both: an
  * app route starts with `/` and a heading id never does, because `lib/slug.ts`
@@ -22,18 +22,18 @@ import type { SectionId, ViewDeclaration } from './views';
  * keeps a plain `#the-four-ports`, and the link most people paste is what it was
  * before this file existed. It is also what makes a stale parameter harmless —
  * the hash goes with the route, and what it says is re-read against the new
- * view's defaults rather than carried over.
+ * view's defaults rather than carried over. Nothing opens by default anywhere, so
+ * for the panel that rule reduces to: a shut panel writes nothing.
  *
- * The one thing it costs: `#the-four-ports?tools=1` is not an anchor the browser
- * scrolls to, because the fragment is no longer an element id. The site already
- * scrolls itself for in-site links (`router.tsx`), and `App.tsx` does the other
- * half on load.
+ * The one thing it costs: `#the-four-ports?tool=contents` is not an anchor the
+ * browser scrolls to, because the fragment is no longer an element id. The site
+ * already scrolls itself for in-site links (`router.tsx`), and `App.tsx` does the
+ * other half on load.
  */
 export interface ShellAddress {
   head: string;
-  /** Whether the right panel is open. */
-  tools: boolean;
-  open: ReadonlySet<SectionId>;
+  /** The one tool the right panel is showing, or `null` for a shut panel. */
+  tool: SectionId | null;
   full: boolean;
   /** Everything this file does not understand, passed through untouched. */
   rest: URLSearchParams;
@@ -49,8 +49,16 @@ export interface ShellProps {
   full: boolean;
 }
 
-/** The three names this file owns. Anything else in the hash belongs to the view. */
-const OURS = ['tools', 'open', 'full'];
+/**
+ * The names this file owns. Anything else in the hash belongs to the view.
+ *
+ * Four, and only two of them are ever written. `tools` and `open` are the pair
+ * the panel used to be — a boolean for the panel and a comma-separated list of
+ * open sections — and they are read here so that a link somebody sent last month
+ * still opens something. They must stay on this list whether or not they are
+ * written, or a view would find them in `rest` and hand them back out.
+ */
+const OURS = ['tool', 'tools', 'open', 'full'];
 
 export function parseAddress(hash: string, view: ViewDeclaration): ShellAddress {
   const raw = hash.replace(/^#/, '');
@@ -61,24 +69,41 @@ export function parseAddress(hash: string, view: ViewDeclaration): ShellAddress 
   const rest = new URLSearchParams(params);
   for (const name of OURS) rest.delete(name);
 
-  const asked = params.get('open');
-  const declared = new Set(view.sections);
-
   return {
     // Not decoded. What is written back has to be byte-for-byte what the browser
     // reports, or `replaceHash` sees a difference every time and rewrites for
     // ever; `App.tsx` decodes at the one place it looks an element up by it.
     head,
-    tools: view.sections.length > 0 && flag(params.get('tools'), view.panelOpenByDefault),
-    // A section the view does not declare is dropped rather than refused: a link
-    // written against another view should still open this one.
-    open:
-      asked === null
-        ? new Set(view.openByDefault)
-        : new Set(asked.split(',').filter((id): id is SectionId => declared.has(id as SectionId))),
+    tool: toolIn(params, view),
     full: view.canGoFull && flag(params.get('full'), false),
     rest,
   };
+}
+
+/**
+ * Which tool the address names, reading the old spelling where there is no new one.
+ *
+ * `tool=console` is what this writes. `tools=1&open=console,measure` is what it
+ * wrote until ADR 0038, and the two cannot simply coexist: `open` named a SET and
+ * the panel now holds one of them. So an old link is read for what the reader saw
+ * rather than for what it said. **The panel was shut unless `tools` said
+ * otherwise**, whatever `open` listed, so `#?open=console,measure` on a view whose
+ * panel opened shut showed nothing then and shows nothing now. Where the panel was
+ * open, the first section in `open` that this view actually declares is the one
+ * that comes up, and a `tools=1` with no `open` beside it gets the view's first.
+ *
+ * A section the view does not declare is dropped rather than refused, in both
+ * spellings: a link written against another view should still open this one.
+ */
+function toolIn(params: URLSearchParams, view: ViewDeclaration): SectionId | null {
+  const declared = new Set<string>(view.sections);
+
+  const named = params.get('tool');
+  if (named !== null) return declared.has(named) ? (named as SectionId) : null;
+
+  if (!flag(params.get('tools'), false)) return null;
+  const asked = (params.get('open') ?? '').split(',').filter((id) => declared.has(id));
+  return (asked[0] as SectionId | undefined) ?? view.sections[0] ?? null;
 }
 
 /** `1` and a bare presence are on, `0` is off, absent is the view's default. */
@@ -90,22 +115,14 @@ function flag(value: string | null, fallback: boolean): boolean {
 export function writeAddress(address: ShellAddress, view: ViewDeclaration): string {
   const params = new URLSearchParams(address.rest);
 
-  if (view.sections.length > 0 && address.tools !== view.panelOpenByDefault) {
-    params.set('tools', address.tools ? '1' : '0');
+  if (address.tool !== null && view.sections.includes(address.tool)) {
+    params.set('tool', address.tool);
   }
-  // In the view's own order, so the same set of sections always writes the same
-  // string and a link does not change because a panel was toggled twice.
-  const open = view.sections.filter((id) => address.open.has(id));
-  if (!sameSet(open, view.openByDefault)) params.set('open', open.join(','));
   if (view.canGoFull && address.full) params.set('full', '1');
 
   const query = params.toString();
   if (address.head === '' && query === '') return '';
   return `#${address.head}${query === '' ? '' : `?${query}`}`;
-}
-
-function sameSet(a: readonly SectionId[], b: readonly SectionId[]): boolean {
-  return a.length === b.length && a.every((id) => b.includes(id));
 }
 
 const listeners = new Set<() => void>();
@@ -128,10 +145,10 @@ function subscribe(listener: () => void): () => void {
 /**
  * Writes the hash without a history entry, and tells React it moved.
  *
- * `replaceState` on purpose: toggling a panel is not a place to come back to,
- * and a back button that walked through six panel states would be a back button
- * nobody could use to leave the page. It also fires no `hashchange`, which is why
- * the listeners are called by hand here.
+ * `replaceState` on purpose: opening a tool is not a place to come back to, and a
+ * back button that walked through six panel states would be a back button nobody
+ * could use to leave the page. It also fires no `hashchange`, which is why the
+ * listeners are called by hand here.
  */
 function replaceHash(hash: string): void {
   const { pathname, search } = window.location;
@@ -143,8 +160,7 @@ function replaceHash(hash: string): void {
 
 interface Held {
   kind: string;
-  tools: boolean;
-  open: ReadonlySet<SectionId>;
+  tool: SectionId | null;
 }
 
 /**
@@ -172,7 +188,7 @@ export function useAddress(
     const parsed = parseAddress(raw, view);
     const kept = held.current;
     if (kept === null || kept.kind !== view.kind || raw.includes('?')) return parsed;
-    return { ...parsed, tools: kept.tools, open: kept.open };
+    return { ...parsed, tool: kept.tool };
   }, [raw, view]);
 
   const current = useRef(address);
@@ -209,29 +225,22 @@ export function useAddress(
    *
    * **Two callers reach this within one tick and the second used to undo the
    * first.** `/preview` writes the frame's half whenever the frame moves, and a
-   * reader collapsing a section writes the panel's half; a ref that only caught
-   * up on the next render handed both of them the same stale address, so the
-   * later write carried the earlier one's old value. Measured on 2026-09-11:
-   * collapsing Console while the app was navigating left `open=` out of the URL
-   * and the section visibly open. Writing the ref here makes a patch land on what
-   * the last patch left, whether or not React has rendered in between.
+   * reader opening a tool writes the panel's half; a ref that only caught up on
+   * the next render handed both of them the same stale address, so the later
+   * write carried the earlier one's old value. Measured on 2026-09-11: collapsing
+   * Console while the app was navigating left the parameter out of the URL and
+   * the section visibly open. Writing the ref here makes a patch land on what the
+   * last patch left, whether or not React has rendered in between.
    */
   const set = useCallback(
     (patch: Partial<ShellAddress>) => {
       const next = { ...current.current, ...patch };
       current.current = next;
-      held.current = { kind: view.kind, tools: next.tools, open: next.open };
+      held.current = { kind: view.kind, tool: next.tool };
       replaceHash(writeAddress(next, view));
     },
     [view],
   );
 
   return [address, set];
-}
-
-/** The same set with one section added or taken away, for a toggle. */
-export function toggled(open: ReadonlySet<SectionId>, id: SectionId): ReadonlySet<SectionId> {
-  const next = new Set(open);
-  if (!next.delete(id)) next.add(id);
-  return next;
 }
