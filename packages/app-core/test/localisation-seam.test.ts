@@ -1,9 +1,10 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join, relative, sep } from 'node:path';
+import { tmpdir } from 'node:os';
+import { basename, join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { withoutComments } from './support/source';
+import { withEscapesDecoded, withoutComments } from './support/source';
 
 /**
  * German in the core, and why this file exists at all.
@@ -35,26 +36,55 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const GERMAN_CHARACTERS = /[äöüßÄÖÜ„“]/;
 
 /**
- * `src/data/`, which is content rather than UI.
+ * `src/data/`, which is MOSTLY content rather than UI.
  *
  * ADR 0026 §6 gives the rule and it is worth typing out rather than pointing at:
- * *would this string still exist if the content came from a CMS?* The project
- * descriptions, the Spotlight subjects, the sample claims and the Abriss-Atlas
- * reports would all arrive from one, so they are the articles' case and not the
- * seam's. Excluded by path, because the answer is the same for every file in
- * there and listing two hundred strings below would bury the four that matter.
+ * *would this string still exist if the content came from a CMS?* It asks that of
+ * a STRING, and this exclusion answers for a DIRECTORY, which is a wider claim
+ * than the rule makes. It is excluded by path all the same, because the answer is
+ * the same for two hundred of them — the project descriptions, the Spotlight
+ * subjects, the sample claims, the callout questions and the Abriss-Atlas reports
+ * would all arrive from a CMS, so they are the articles' case and not the seam's,
+ * and listing them below would bury the four that matter.
  *
- * One member of that directory is NOT content and was decided rather than
- * assumed: `data/abriss-atlas.ts` types a report's status as
- * `'gemeldet' | 'bestätigt'`. A union of states is vocabulary in data's clothing
- * — a CMS would still have to say which of the two a report is — but it is
- * vocabulary in the IDENTIFIER, not in a string a screen prints, and
- * `apps/mobile/src/app/atlas.tsx` already spells both out in its own
+ * What the path cannot say is where that stops, so the members it covers WITHOUT
+ * answering for are named in `UI_VOCABULARY_IN_DATA` below rather than left to
+ * read as content by association.
+ *
+ * One member is neither, and was decided rather than assumed: `data/abriss-atlas.ts`
+ * types a report's status as `'gemeldet' | 'bestätigt'`. A union of states is
+ * vocabulary in data's clothing — a CMS would still have to say which of the two a
+ * report is — but it is vocabulary in the IDENTIFIER, not in a string a screen
+ * prints, and `apps/mobile/src/app/atlas.tsx` already spells both out in its own
  * `STATUS_LABELS`. Renaming the two values to English is a change to sample data
  * with no user-visible half, so it is worth doing and is not worth doing here,
  * where it would arrive mixed into a lift of somebody else's strings.
  */
 const CONTENT = /^data\//;
+
+/**
+ * The two files under `data/` whose strings FAIL the CMS question, and which the
+ * path exclusion above is therefore covering rather than answering for.
+ *
+ * Named because the alternative is a comment claiming the whole directory is
+ * content, which is the claim that was here and is not true:
+ *
+ *  - `data/interests.ts` — the `label` of each topic chip ("AfD & Rechtsextremismus",
+ *    "Jugend & Salon5"), rendered by `apps/mobile/src/app/onboarding.tsx` onto a
+ *    `Chip`. The list is the app's own onboarding vocabulary; articles arriving
+ *    from a CMS would not bring it.
+ *  - `data/feeds.config.ts` — `badge`, which `components/feed/ArticleHero.tsx` and
+ *    `articles/offline-bundle.ts` print as an article's kicker, and `label`, which
+ *    is a display name by construction (`test/feeds.config.test.ts` asserts every
+ *    feed has a non-empty one) although no screen reads it today. "Recherchen",
+ *    "Faktencheck" and "Klima" are German words; the rest are marks.
+ *
+ * Not lifted here, and that is the decision rather than an oversight: both are
+ * indexed by key across screens and one of them is baked into a generated offline
+ * bundle, so the lift is its own change with its own screenshots. What this entry
+ * buys is that the next reader of the exclusion above is not told they are content.
+ */
+const UI_VOCABULARY_IN_DATA = ['data/interests.ts', 'data/feeds.config.ts'];
 
 /**
  * The German that is still written in the core, and why each one is. Each entry
@@ -92,12 +122,20 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
   'services/wp.service.ts': ["'Geschätzte Lesezeit'"],
 };
 
-/** Every source file under a directory, at any depth. */
+/**
+ * Every source file under a directory, at any depth.
+ *
+ * `cts` and `cjs` are in the list although the core has none: an extension the
+ * walk does not know is a file the walk does not read, and a check that silently
+ * skips a file is worse than no check. The list is every extension the TypeScript
+ * and CommonJS spellings produce, so adding a `.cjs` shim here cannot also add a
+ * blind spot.
+ */
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) return sourceFiles(full);
-    return /\.(tsx|jsx|ts|mts|mjs|js)$/.test(entry) ? [full] : [];
+    return /\.(tsx|jsx|ts|mts|cts|mjs|cjs|js)$/.test(entry) ? [full] : [];
   });
 }
 
@@ -109,9 +147,24 @@ function sourceFiles(dir: string): string[] {
  * Comments go first, because a comment is not a string a user reads. The cost is
  * the app's too and is named there: a German COMMENT is invisible to this, and
  * has been a regression rather than a leftover since 2026-08-12.
+ *
+ * **What this still cannot do, measured rather than guessed.** Three things get
+ * past it and each is named where it can be acted on rather than left to be
+ * rediscovered:
+ *
+ *  - A German word spelled with none of `äöüß„“`. The ADR says so — "Suchen"
+ *    slips through — and the one the core still renders is `Min.` in
+ *    `src/lib/format.ts`, named in that function's own comment.
+ *  - A German string after a ` //` inside a string literal, which `withoutComments`
+ *    takes for a comment and truncates. Named in `test/support/source.ts`, where
+ *    the function is, because all three checks that read source share it.
+ *  - German inside `src/data/`, excluded by path — see `CONTENT` and
+ *    `UI_VOCABULARY_IN_DATA` above for what that does and does not claim.
+ *
+ * Escapes are NOT on that list any more: `withEscapesDecoded` closes them.
  */
 function germanLines(source: string, excused: string[]): string[] {
-  let remaining = withoutComments(source);
+  let remaining = withEscapesDecoded(withoutComments(source));
   for (const fragment of excused) remaining = remaining.replace(fragment, '');
   return remaining
     .split('\n')
@@ -161,5 +214,41 @@ describe('German lives in the catalogue', () => {
 
     expect(excluded.every((path) => path.startsWith('data/'))).toBe(true);
     expect(excluded.length).toBeGreaterThan(0);
+
+    // And the two the exclusion covers without answering for are still in it. A
+    // file renamed or lifted out of `data/` leaves its entry behind, where it
+    // reads as a standing exception to a rule it is no longer an exception to.
+    expect(excluded).toEqual(expect.arrayContaining(UI_VOCABULARY_IN_DATA));
+  });
+
+  /**
+   * The net, made to fail, in the two ways this file claims to have closed.
+   *
+   * Both were open when it was written: a `.cjs` file was not walked at all, and
+   * `'Pr\u00fcfen'` read as ASCII. Asserted rather than described, because a
+   * closure nobody can break is the same as no closure — and each of these is one
+   * character away from being reopened by a tidy-up.
+   */
+  it('sees German through a \\u escape', () => {
+    expect(germanLines("const hint = 'Pr\\u00fcfen Sie Ihre Verbindung.';", [])).toEqual([
+      "const hint = 'Prüfen Sie Ihre Verbindung.';",
+    ]);
+    expect(germanLines("const hint = 'Pr\\u{fc}fen';", [])).toEqual(["const hint = 'Prüfen';"]);
+    expect(germanLines("const hint = 'Pr\\xfcfen';", [])).toEqual(["const hint = 'Prüfen';"]);
+  });
+
+  it('walks every source extension, including the two the core has none of', () => {
+    // Against the real walk rather than against a copy of its pattern: a regex
+    // repeated in the assertion passes whatever the function does.
+    const dir = mkdtempSync(join(tmpdir(), 'seam-'));
+    const extensions = ['ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs'];
+    for (const extension of extensions) writeFileSync(join(dir, `x.${extension}`), '');
+    writeFileSync(join(dir, 'x.json'), '{}');
+
+    expect(
+      sourceFiles(dir)
+        .map((full) => basename(full))
+        .sort(),
+    ).toEqual(extensions.map((extension) => `x.${extension}`).sort());
   });
 });

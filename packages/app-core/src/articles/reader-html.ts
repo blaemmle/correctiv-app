@@ -37,9 +37,21 @@ import type { Article } from './types';
  * as before.
  */
 export interface ReaderCopy {
-  /** The plaque a fact check wears instead of its section. Uppercased by the CSS. */
+  /** The plaque a fact check wears instead of its section. */
   factcheckBadge: string;
-  /** The verdict, spelled out — `RATING_LABELS` is where the wording comes from. */
+  /**
+   * The verdict, spelled out — `RATING_LABELS` is where the wording comes from.
+   *
+   * Optional because most articles have no rating, and a host that has one has to
+   * supply it. It cannot be made required without making every unrated article
+   * format a verdict it does not have, and it cannot be tied to `article.rating`
+   * in the type, so the guarantee is made where it is enforceable: an empty one
+   * prints NO plaque rather than an empty one. The closed-union argument
+   * `AUDIO_ERROR_LABELS` makes does not reach here — that one fails to compile
+   * because the Record must be total, and this is one field on a bag of words.
+   * A red box with no word in it asserts a verdict and names none, which is worse
+   * than an article that shows no verdict at all.
+   */
   verdict?: string;
   /** The authors with their preposition, as one phrase. */
   byline?: string;
@@ -99,14 +111,29 @@ export function buildReaderHtml(
     ? `<figure class="hero"><img src="${escapeHtml(article.heroImageUrl)}" alt=""></figure>`
     : '';
 
-  // A fact check announces itself; everything else shows its section.
-  const badgeText = article.rating ? copy.factcheckBadge : (article.kicker ?? '').toUpperCase();
+  /**
+   * A fact check announces itself; everything else shows its section.
+   *
+   * Uppercased HERE, and that is the correctness of the string rather than of the
+   * stylesheet. `.badge{text-transform:uppercase}` in `READER_LAYOUT_CSS` says the
+   * same thing and is not the guarantee: `css` is optional and the split this file
+   * documents is that the CSS belongs to the HOST, so a host with a stylesheet of
+   * its own — or one that appends ours anywhere but last — renders "Faktencheck"
+   * in title case with nothing failing anywhere. The kicker was already uppercased
+   * in JavaScript on the same line, so the one branch that read differently was
+   * the one only a rendered document could show. The CSS rule stays, because it is
+   * what makes a host's OWN badge text agree with this one.
+   */
+  const badgeText = (article.rating ? copy.factcheckBadge : (article.kicker ?? '')).toUpperCase();
   const badge = badgeText ? `<p class="badge">${escapeHtml(badgeText)}</p>` : '';
 
-  const rating = article.rating
-    ? `<div class="rating rating--${ratingTone(article.rating)}">` +
-      `<span class="rating__label">${escapeHtml(copy.verdict ?? '')}</span></div>`
-    : '';
+  // Both halves, or neither: a plaque with no word in it is a coloured box
+  // asserting a verdict it does not name. See `ReaderCopy.verdict`.
+  const rating =
+    article.rating && copy.verdict
+      ? `<div class="rating rating--${ratingTone(article.rating)}">` +
+        `<span class="rating__label">${escapeHtml(copy.verdict)}</span></div>`
+      : '';
 
   // The app's own date format wins over the publisher's wording: correctiv.org prints
   // "04. August 2026" where every list in the app reads "4. August 2026", and the

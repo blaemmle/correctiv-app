@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Badge, Typo } from '@/components/ui';
 import { playRadio, stop } from '@/lib/audio/player';
-import { SALON5_RADIO_COPY } from '@/lib/audio/tracks';
+import { salon5RadioCopy, SALON5_RADIO_COPY } from '@/lib/audio/tracks';
 import { useRadioState } from '@/lib/audio/useAudio';
 import { useCoreActions, useRadioStation } from '@/lib/store/core';
 import { colors, sizes } from '@/lib/theme';
@@ -13,7 +13,8 @@ import { colors, sizes } from '@/lib/theme';
  * The banner's own words, in ENGLISH; the German ships in
  * `src/i18n/catalogue/de/mediathek.ts` (ADR 0026 §6). The station's name and its
  * strapline are NOT here: they are `SALON5_RADIO_COPY` in `lib/audio/tracks.ts`,
- * because the lock screen prints the same two words.
+ * because the lock screen prints the same words and the thunk that starts the
+ * stream is handed them from there.
  *
  * `live` is the badge, declared here and in `components/home/MediathekReihe.tsx`
  * under one id; `npm run i18n:extract --throws` fails if one default is edited
@@ -90,7 +91,7 @@ export function LiveBanner({ subtitle }: { subtitle?: string }) {
       stop();
       return;
     }
-    playRadio();
+    playRadio(salon5RadioCopy(intl));
     actions.radio.fetchStatus({ force: true });
   };
 

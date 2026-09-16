@@ -37,8 +37,9 @@ export const core: Record<string, string> = {
   'core.rating.mostlyTrue': 'Größtenteils richtig',
   'core.rating.true': 'Richtig',
 
-  // The reader document. `factcheckBadge` is uppercased by `.badge` in
-  // `READER_LAYOUT_CSS`, so it is written here the way it is spelled.
+  // The reader document. `factcheckBadge` is written the way the word is spelled
+  // and shouted by `buildReaderHtml`, which uppercases it before it goes into the
+  // markup rather than leaving that to a stylesheet the host may not append.
   'core.reader.factcheckBadge': 'Faktencheck',
   'core.reader.byline': 'von {authors}',
   'core.reader.readingTime': '{minutes} Min. Lesezeit',

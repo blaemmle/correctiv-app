@@ -19,10 +19,12 @@ const SPEEDS = [1, 1.2, 1.5];
  * `src/i18n/catalogue/de/player.ts` (ADR 0026 §6).
  *
  * `pause` and `play` are declared here AND in `components/player/MiniPlayer.tsx`
- * under the same ids: the two surfaces are one player, so the button is spoken
- * with one word. Declared twice rather than imported so each file reads on its
- * own, and it cannot drift — `npm run i18n:extract` runs with `--throws` and
- * fails on one id carrying two different defaults.
+ * under the same ids, and `liveSubtitle` AND in `lib/audio/tracks.ts`, which is
+ * where the stream's track takes it from: the surfaces are one player, so the
+ * button and the live line are spoken with one word. Declared twice rather than
+ * imported so each file reads on its own, and it cannot drift — `npm run
+ * i18n:extract` runs with `--throws` and fails on one id carrying two different
+ * defaults.
  */
 const COPY = defineMessages({
   screenTitle: { id: 'player.documentTitle', defaultMessage: 'Player' },

@@ -366,13 +366,30 @@ const start =
     }
   };
 
-export const playRadio = (): AppThunk<Promise<void>> =>
-  start({
-    kind: 'radio',
-    title: 'Salon5 Radio',
-    subtitle: '● LIVE · 24/7 aus Bottrop',
-    url: RADIO_STREAM_URL,
-  });
+/**
+ * How the live stream names itself, formatted by the host.
+ *
+ * Handed IN for the reason `ReaderCopy` gives in `articles/reader-html.ts`: the
+ * station's name and its strapline are words a listener reads, on the mini bar and
+ * on the lock screen, and this thunk held the finished German for both. Which
+ * stream it is stays here — `RADIO_STREAM_URL` is a fact about CORRECTIV's Icecast
+ * server and not a word — so a host passes the copy and nothing else.
+ *
+ * No descriptor beside it, unlike `AUDIO_ERROR_LABELS`, and that is deliberate:
+ * the app already declares these two in `apps/mobile/src/lib/audio/tracks.ts`
+ * under `player.*`, where the live banner prints the same words without starting
+ * anything. A second pair of ids in the core would be one string with two
+ * catalogue entries, which is the drift the lift exists to end.
+ */
+export interface RadioCopy {
+  /** The station, as the players and the lock screen name it. */
+  title: string;
+  /** The line under it. Absent leaves the lock screen its 'CORRECTIV' fallback. */
+  subtitle?: string;
+}
+
+export const playRadio = (copy: RadioCopy): AppThunk<Promise<void>> =>
+  start({ ...copy, kind: 'radio', url: RADIO_STREAM_URL });
 
 export const playEpisode = (track: Omit<AudioTrack, 'kind'>): AppThunk<Promise<void>> =>
   start({ ...track, kind: 'episode' });

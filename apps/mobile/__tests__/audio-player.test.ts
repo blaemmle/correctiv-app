@@ -75,6 +75,13 @@ function status(partial: Partial<AudioStatus>): AudioStatus {
   } as AudioStatus;
 }
 
+/**
+ * The station's words, which `LiveBanner` formats out of `SALON5_RADIO_COPY` and
+ * the core no longer holds. English here because nothing in this file goes through
+ * a provider: what it proves is that what a caller passes reaches the lock screen.
+ */
+const RADIO = { title: 'Salon5 Radio', subtitle: '● LIVE · 24/7 from Bottrop' };
+
 const EPISODE = {
   title: 'Bonusfolge',
   subtitle: 'Backstage · Club',
@@ -104,7 +111,7 @@ afterEach(() => {
 
 describe('starting playback', () => {
   it('loads the Icecast stream and marks it live', async () => {
-    await playRadio();
+    await playRadio(RADIO);
 
     expect(mockPlayer.replace).toHaveBeenCalledWith({
       uri: 'https://icecast.correctiv.net/salon5low',
@@ -115,18 +122,18 @@ describe('starting playback', () => {
   });
 
   it('claims the lock screen with the track metadata', async () => {
-    await playRadio();
+    await playRadio(RADIO);
 
     // Without this the OS shows no controls at all — and it only works because
     // ensureAudioMode sets interruptionMode 'doNotMix'.
     expect(mockPlayer.setActiveForLockScreen).toHaveBeenCalledWith(
       true,
-      expect.objectContaining({ title: 'Salon5 Radio' }),
+      expect.objectContaining({ title: RADIO.title, artist: RADIO.subtitle }),
     );
   });
 
   it('follows the player status through to playing', async () => {
-    await playRadio();
+    await playRadio(RADIO);
     emit?.(status({ playing: true, currentTime: 3, isLive: true, duration: 0 }));
 
     expect(coreStore.getState().audio).toMatchObject({ status: 'playing', positionSec: 3 });
@@ -160,7 +167,7 @@ describe('failures', () => {
   });
 
   it('keeps the error visible when the next status tick looks merely unloaded', async () => {
-    await playRadio();
+    await playRadio(RADIO);
     emit?.(status({ error: 'Source error' }));
     expect(coreStore.getState().audio.status).toBe('error');
 
@@ -174,7 +181,7 @@ describe('failures', () => {
   });
 
   it('clears the error when a new track starts', async () => {
-    await playRadio();
+    await playRadio(RADIO);
     emit?.(status({ error: 'Source error' }));
     expect(coreStore.getState().audio.status).toBe('error');
 
@@ -186,10 +193,12 @@ describe('failures', () => {
   it('gives up on a stream that never loads', async () => {
     // The watchdog says so in the log, which is where the distinction between
     // "never answered" and "said no" survives; silenced so it is not mistaken for
-    // a failure in the run.
+    // a failure in the run, and ASSERTED below rather than only silenced — a spy
+    // that swallows the one surviving half of the distinction and checks nothing
+    // is how the distinction stops surviving.
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.useFakeTimers();
-    await playRadio();
+    await playRadio(RADIO);
     expect(coreStore.getState().audio.status).toBe('loading');
 
     jest.advanceTimersByTime(12000);
@@ -198,14 +207,20 @@ describe('failures', () => {
     // that network errors sometimes never arrive at all.
     expect(coreStore.getState().audio.status).toBe('error');
     // The same code a rejected load() sets — see the core's own suite for why
-    // "never answered" and "said no" stopped being two sentences.
+    // "never answered" and "said no" stopped being two sentences. What tells the
+    // two apart is this warning, so it is the assertion rather than the noise.
     expect(coreStore.getState().audio.error).toBe('start-failed');
+    expect(warn).toHaveBeenCalledWith(
+      '[audio] stream did not load within',
+      expect.any(Number),
+      'ms',
+    );
     warn.mockRestore();
   });
 
   it('does not fire the watchdog once the source is loaded', async () => {
     jest.useFakeTimers();
-    await playRadio();
+    await playRadio(RADIO);
     emit?.(status({ playing: true, isLoaded: true, isLive: true }));
 
     jest.advanceTimersByTime(12000);
@@ -216,7 +231,7 @@ describe('failures', () => {
 
 describe('stopping and coordinating', () => {
   it('releases the source, the lock screen and the state', async () => {
-    await playRadio();
+    await playRadio(RADIO);
     stop();
 
     // A paused live stream keeps buffering — releasing the source is the point.
@@ -238,7 +253,7 @@ describe('stopping and coordinating', () => {
     const stopVideo = jest.fn();
     registerExclusiveMedium('video', stopVideo);
 
-    await playRadio();
+    await playRadio(RADIO);
 
     expect(stopVideo).toHaveBeenCalledTimes(1);
   });
@@ -247,7 +262,7 @@ describe('stopping and coordinating', () => {
     const stopAudio = jest.fn();
     registerExclusiveMedium('audio', stopAudio);
 
-    await playRadio();
+    await playRadio(RADIO);
 
     expect(stopAudio).not.toHaveBeenCalled();
   });

@@ -273,12 +273,39 @@ describe('reader html', () => {
     expect(html).not.toContain('·  ·');
   });
 
+  /**
+   * The badge is SHOUTED by this function, and that is asserted here because
+   * nothing else can assert it.
+   *
+   * `.badge{text-transform:uppercase}` in `READER_LAYOUT_CSS` renders the same
+   * thing and proves nothing: `npm run check` never renders the document, the CSS
+   * is optional, and the split this file's subject documents hands it to the host.
+   * The word was `FAKTENCHECK` in the source until the lift, and if the case is
+   * only a stylesheet's, the day a host styles the reader itself is the day the
+   * badge quietly stops shouting.
+   */
   it('shows the section as a badge, and the fact-check word when there is a verdict', () => {
     expect(buildReaderHtml(article, copy)).toContain('<p class="badge">POLITIK</p>');
     const checked = buildReaderHtml({ ...article, rating: 'falsch' }, copy);
-    expect(checked).toContain('<p class="badge">Fact check</p>');
+    expect(checked).toContain('<p class="badge">FACT CHECK</p>');
     expect(checked).toContain('rating rating--refuted');
     expect(checked).toContain('<span class="rating__label">False</span>');
+  });
+
+  /**
+   * A plaque needs both halves, and a host can supply one.
+   *
+   * `ReaderCopy.verdict` is optional because most articles have no rating, so the
+   * type cannot stop a host that sets a rating and forgets the wording. What came
+   * out was a red box with nothing in it — a verdict asserted and not named — and
+   * it is the tone that makes it wrong: `rating--refuted` is the brand red.
+   */
+  it('prints no plaque at all when the host supplied no verdict for a rated article', () => {
+    const html = buildReaderHtml({ ...article, rating: 'falsch' }, { ...copy, verdict: undefined });
+    expect(html).not.toContain('rating__label');
+    expect(html).not.toContain('rating--refuted');
+    // The badge still says what kind of article it is; only the wording is missing.
+    expect(html).toContain('<p class="badge">FACT CHECK</p>');
   });
 
   /**

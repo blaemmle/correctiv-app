@@ -142,7 +142,7 @@ a tap on a card
       3. fetchWpArticle(url)             the REST API: one request, everything
       4. fetchText() → extract(html)     the page, for what the API cannot answer
       5. getStale()                      expired beats absent
-  → buildReaderHtml(article, { css })   articles/reader-html.ts
+  → buildReaderHtml(article, copy)      articles/reader-html.ts
   → ReaderView                          WebView on native, iframe on web
 ```
 
@@ -152,11 +152,15 @@ and answers everything rung 4 used to scrape for, the fact-check verdict include
 rung that works on a URL the API does not know — every page in the app that is not a
 post.
 
-`buildReaderHtml` owns the document: structure, class names, German copy, the verdict
-plaque. The host supplies only the CSS, which here means the token variables and the
-fonts base64-embedded in a `<style>`, because the WebView is a browser context of its
-own and cannot use the fonts React Native loaded. Dark mode costs one appended
-variable block, since `READER_LAYOUT_CSS` takes every colour from `--var-color-*`.
+`buildReaderHtml` owns the document: structure, class names, which words it prints and
+the verdict plaque. It does not own the WORDS. A document built as a string for a
+WebView can reach no provider, so `ReaderCopy` is a required second parameter and
+`READER_COPY` names the descriptors the host has to format
+([ADR 0026](adr/0026-react-native-review-and-hardening.md) §6). The host supplies
+those and the CSS, which here means the token variables and the fonts base64-embedded
+in a `<style>`, because the WebView is a browser context of its own and cannot use the
+fonts React Native loaded. Dark mode costs one appended variable block, since
+`READER_LAYOUT_CSS` takes every colour from `--var-color-*`.
 See `apps/mobile/src/lib/articles/reader.ts`.
 
 ## Where things are
