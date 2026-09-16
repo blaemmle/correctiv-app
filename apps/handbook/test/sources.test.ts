@@ -38,6 +38,22 @@ const DATA_DIR = 'packages/app-core/src/data';
  */
 const STALE_AFTER_DAYS = 180;
 
+/**
+ * The rows that come from nowhere in `feeds.config.ts` — one endpoint each, named
+ * in the script rather than configured. Everything else is derived from the core's
+ * own configuration, which is what makes a feed added there a missing row here.
+ *
+ * `category:*` and `search:results` are deliberately absent: a category is probed
+ * per feed and search is one row with no configuration behind it, so neither is a
+ * fact this file can check the run against.
+ */
+const FIXED_ROWS = [
+  'newsletter:issues',
+  'castopod:instance',
+  'peertube:videos',
+  'peertube:channels',
+];
+
 function daysSince(iso: string): number {
   return Math.round((Date.now() - Date.parse(`${iso}T00:00:00Z`)) / 86_400_000);
 }
@@ -108,19 +124,66 @@ describe('the measuring day, which used to be one fact in two places', () => {
    * place is how the pair comes back, and it comes back silently, because a
    * hand-typed date beside generated figures looks exactly like a correct one.
    */
+  /**
+   * Any exported constant in the manifest whose value is a written-out day.
+   *
+   * By SHAPE and not by name, which is the fix: the pattern here read
+   * `MEASURED_ON`, and `export const MEASURED_AT = '2026-09-16'` would have put
+   * the pair back without a word. A different identifier is exactly what somebody
+   * re-typing the day would reach for, because the old name is taken.
+   *
+   * WHAT IT CANNOT SEE: a day assembled from parts, one written in words, and one
+   * inside an object or array literal rather than standing as its own export. The
+   * manifest holds no string date at all today, so any of those is a deliberate
+   * act and not the slip this is for.
+   */
+  const TYPED_DAY = /export\s+const\s+(\w+)[^=\n]*=\s*['"`](\d{4}-\d{2}-\d{2})/;
+
+  /**
+   * The document claiming a measuring day of its own, by its LEAD-IN.
+   *
+   * What stood here wanted the words "measured … on" and a **bolded** ISO date,
+   * under a comment that called it "any other claim to have measured on a
+   * particular day". It was not: `Stand: 2026-09-16`, `as of **2026-09-16**`,
+   * `Last measured: 2026-09-16` and the original wording with the bold taken off
+   * all walked straight past it. ADR 0031 asks a source-reading check to state its
+   * limit at the assertion rather than overstate its reach, and the honest way to
+   * settle that was to widen the pattern until the sentence was true of it.
+   *
+   * WHAT IT STILL CANNOT SEE, and the second half is deliberate: a day written in
+   * words ("16 September 2026"), and a bare date with no lead-in at all.
+   * `SOURCES.md` is FULL of bare dates and is supposed to be — "`lokal` has
+   * published nothing since 2025-05-28" is a fact about a source carrying its own
+   * date, which the document's opening paragraph says is how a load-bearing number
+   * is written here. Only a date introduced as the day THIS RUN was taken is the
+   * pair coming back, and in prose the lead-in is the only thing that tells the
+   * two apart.
+   */
+  const RETAKEN = [
+    /\b(?:measured|re-?measured|taken|re-?taken|probed|checked|gemessen)\b[^.\n]{0,60}?\bon\b[\s*`_]*(\d{4}-\d{2}-\d{2})/i,
+    /\b(?:last measured|measured|stand|as of|figures from|numbers from)\b[\s:*`_]*(\d{4}-\d{2}-\d{2})/i,
+  ];
+
   it('is typed in neither the manifest nor the document', () => {
     // Collected as sentences rather than asserted one at a time: `expect` takes
     // one argument under this repository's lint rules, so the explanation has to
     // be IN the value, which is also what makes the failure readable.
     const back: string[] = [];
-    if (/MEASURED_ON\s*(?::[^=]*)?=\s*['"`]/.test(MANIFEST)) {
-      back.push('the manifest types MEASURED_ON as a literal again, instead of reading the run');
+
+    const typed = TYPED_DAY.exec(MANIFEST);
+    if (typed !== null) {
+      back.push(
+        `the manifest types ${typed[1]} as the literal ${typed[2]}, instead of reading the run`,
+      );
     }
-    // The old sentence, and any other claim in the document to have measured on
-    // a particular day. The document quotes the run; it does not date it.
-    const claim = /measured[^.]{0,80}on\s+\*\*(\d{4}-\d{2}-\d{2})\*\*/i.exec(DOCUMENT);
-    if (claim !== null)
-      back.push(`SOURCES.md states a measuring day of its own again: ${claim[1]}`);
+
+    for (const pattern of RETAKEN) {
+      const claim = pattern.exec(DOCUMENT);
+      if (claim !== null) {
+        back.push(`SOURCES.md states a measuring day of its own again: ${claim[1]}`);
+      }
+    }
+
     expect(back).toEqual([]);
   });
 
@@ -162,15 +225,56 @@ describe('the run against the configuration it is supposed to cover', () => {
       ...Object.keys(CORE_FEEDS).map((key) => `feed:${key}`),
       ...Object.values(RADIO_MOUNTS).map((mount) => `mount:${mount.name}`),
       ...Object.keys(YOUTUBE_FEEDS).map((key) => `youtube:${key}`),
-      'newsletter:issues',
-      'castopod:instance',
-      'peertube:videos',
-      'peertube:channels',
+      ...FIXED_ROWS,
     ];
-    // Guarded, because an empty expectation is satisfied by an empty run and the
-    // whole point of this file is that a check must not be able to say nothing.
-    expect(expected.length).toBeGreaterThanOrEqual(13);
+    /*
+     * Guarded, because an empty expectation is satisfied by an empty run and the
+     * whole point of this file is that a check must not be able to say nothing.
+     *
+     * It read `toBeGreaterThanOrEqual(13)` against a list of seventeen, so a
+     * configuration that had lost four feeds satisfied it and the missing rows
+     * were never looked for. The guard is the same assertion from the other end
+     * instead: every row of these kinds in the run has a counterpart in the
+     * configuration, and every entry in the configuration has a row. A number
+     * would have been a second copy of a fact the configuration already holds;
+     * the floor that stops BOTH sides being empty is the workflow's, asserted
+     * below.
+     */
+    const covered = MEASURED.probes
+      .map((probe) => probe.id)
+      .filter((id) => /^(?:feed|mount|youtube):/.test(id) || FIXED_ROWS.includes(id));
+
     expect(expected.filter((id) => !PROBES.has(id))).toEqual([]);
+    expect(covered.filter((id) => !expected.includes(id))).toEqual([]);
+    expect(expected.length).toBe(covered.length);
+  });
+
+  /**
+   * The weekly workflow's row floor, which is a number typed into YAML where
+   * nothing else in this repository can see it.
+   *
+   * `.github/workflows/sources.yml` refuses to commit a run with fewer rows than
+   * that floor, and it is the only thing standing between a truncated measurement
+   * and the board. It read 13, under a comment calling 13 the smallest run the
+   * core's configuration can produce, against a configuration that yields exactly
+   * 24 — so any run between 13 and 23 rows passed the guard that exists to catch
+   * exactly that. YAML has no typecheck and no lint, so this is the only place the
+   * two halves can be held together, and it is the same fix AGENTS.md prescribes
+   * for the measuring day: one fact in two places, with a test that fails when
+   * they part.
+   */
+  it('gives the weekly workflow a row floor that is the run it guards', () => {
+    const workflow = readFileSync(join(ROOT, '.github/workflows/sources.yml'), 'utf8');
+    const floor = /"\$ROWS"\s+-lt\s+(\d+)/.exec(workflow);
+
+    // Thrown rather than expected, because the message is the useful part: the
+    // guard was rewritten and this pattern is what has to follow it.
+    if (floor === null) {
+      throw new Error(
+        'sources.yml no longer floors the row count in the shape this reads. Keep the guard, or move it and say here where it went.',
+      );
+    }
+    expect(Number(floor[1])).toBe(MEASURED.probes.length);
   });
 
   it('gives a failed probe a reason, and a successful one none', () => {

@@ -175,6 +175,22 @@ const UNATTRIBUTED = RECORDS.reduce(
     record.struck.filter((claim) => claim.by.every((number) => number <= record.number)).length,
   0,
 );
+/**
+ * Strikes with no clause after them at all, which is a smaller set than the one
+ * above and a different fault.
+ *
+ * An unattributed strike has a reason and no arrow. These have no reason on the
+ * page either, because of where the reason was written: in the paragraph after the
+ * strike, or in a clause that a second strike standing beside it took for itself.
+ * Counted and named rather than left out, because a claim printed with nothing
+ * under it reads as a parser that failed. `plugin/decisions.ts` holds the list of
+ * records this is still true of, so the number can only fall.
+ */
+const CLAUSELESS = RECORDS.reduce(
+  (total, record) => total + record.struck.filter((claim) => claim.clause === '').length,
+  0,
+);
+
 /** The records a reader would be wrong to take at face value, in number order. */
 const CAREFUL = RECORDS.filter(
   (record) => record.standing === 'withdrawn' || record.caveats.length > 0,
@@ -350,9 +366,17 @@ export function Decisions() {
               <p>
                 <span className={FIGURE}>{UNATTRIBUTED}</span> of those strikes name no later record
                 in their clause. They were struck by a re-measurement, or by a later section of the
-                same record, so they have no arrow to draw — each one&apos;s clause says which, and
-                every clause is printed in the row&apos;s detail below.
+                same record, so they have no arrow to draw, and every clause is printed in the
+                row&apos;s detail below.
               </p>
+              {CLAUSELESS > 0 && (
+                <p>
+                  <span className={FIGURE}>{CLAUSELESS}</span> of them carry no clause at all. The
+                  reason was written in the paragraph after the strike, or was taken by a second
+                  strike standing beside it, and neither is something reading the record recovers.
+                  Those rows say so where they stand, and the record itself has the answer.
+                </p>
+              )}
             </div>
           </header>
 

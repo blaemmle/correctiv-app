@@ -138,7 +138,7 @@ export function buildDecisions(
   }
   for (const record of records) record.voids.sort();
 
-  guard(records);
+  guard(records, sources);
   return records;
 }
 
@@ -237,31 +237,155 @@ function indexNotes(markdown: string): Map<string, string> {
 }
 
 /**
+ * Records carrying a strike whose clause this file cannot reach, and why each one.
+ *
+ * A ratchet, so it is a debt and not a state (ADR 0031): asserted in BOTH
+ * directions, so another record written this way fails the build, and so does
+ * fixing one of these without shortening the list.
+ *
+ * Two shapes put a reason out of reach. Both read perfectly in the record, and
+ * both are invisible to the collector, which takes a clause to be the run of
+ * inline tokens between one strike and the next IN THE SAME BLOCK:
+ *
+ *   THE REASON IS THE NEXT BLOCK. ADR 0022's miscount is struck as a whole
+ *   paragraph and the blockquote under it says "Struck on 2026-09-04: it was a
+ *   miscount on the day". ADR 0019 strikes one bullet and writes "Both void with
+ *   …" at the end of the bullet after it. Nothing joins a block to the one that
+ *   follows it, and nothing should: a clause that ran on into the next paragraph
+ *   would attach half the document to every strike at the end of one.
+ *
+ *   TWO STRIKES SHARE ONE CLAUSE. ADR 0006 strikes `AsyncStorage + a hydrated
+ *   mirror` and then `AsyncStorage`, one after the other in a table cell, and
+ *   "MMKV, in a store of its own, since 0026" belongs to the second. ADR 0018 and
+ *   ADR 0027 do the same and finish with "Both are gone with …" and "Both voided
+ *   by ADR 0028". The first strike of each pair is left with nothing after it.
+ *
+ * The board says so where these rows are drawn, rather than printing a struck
+ * claim with silence under it, which reads as a parser that failed.
+ *
+ * ADR 0002 was a sixth, in both shapes at once, and was fixed rather than listed:
+ * its status line's strike was followed only by `**Date:**` and `**Affects:**`
+ * while the clause that voided it sat in a blockquote below, so the board read the
+ * one record a later record overturned as voided by nobody. The fix is the shape
+ * this list is asking for — the clause stands with the strike, in its block.
+ */
+const CLAUSE_IS_ELSEWHERE = ['0006', '0018', '0019', '0022', '0027'];
+
+/**
+ * Records whose index row reports a status their own status line does not use.
+ *
+ * The other ratchet, and the other half of a finding that lived in a pull request
+ * description and in nothing else. `adr/README.md` opens ADR 0003's row with
+ * `accepted` where the record says `gate passed`, and ADR 0004's with `accepted`
+ * where the record says `decided, being implemented`. Neither is a parser fault
+ * and neither is harmless: the index is what a reader scans, and `decided, being
+ * implemented` is a different thing to act on from `accepted`.
+ *
+ * Withdrawn records are not compared at all. ADR 0002's row opens `moot since
+ * 0007`, which is a sentence about the retirement rather than about the status,
+ * and that is the right thing for it to say.
+ */
+const INDEX_DISAGREES = ['0003', '0004'];
+
+/** The word an index row opens with, which is where it states a status. */
+function indexStatus(note: string): string {
+  return note.split(/[;,.]/)[0].trim();
+}
+
+/**
  * What must be true of the result, asserted where it is built rather than only in
  * a test.
  *
  * Every one of these is a way for this file to go quietly empty: a table that
  * stops being a table, a strike syntax that changes, a citation regex that matches
- * nothing. The page would still render, with thirty-three rows, no dates and every
+ * nothing. The page would still render, with thirty-four rows, no dates and every
  * record standing — which is the most confident wrong answer this site could give
  * about the one thing it is for. An exception here is the strongest mechanism
  * available to a build-time module (ADR 0031): the site does not build.
+ *
+ * THE FLOORS ARE PROPORTIONAL, and they were not. Each of the three collectors was
+ * guarded by "at least one record has one", against a set where eighteen of
+ * thirty-four carry a strike — so a collector degraded to finding a single strike,
+ * or a single voider, satisfied the guard, and the board printed a confident wrong
+ * answer about how much of this repository's reasoning has expired. That is the
+ * exact failure this comment warns about, passed by its own guard. A fraction of
+ * the set is not a number anybody has to maintain, and it fails while the page is
+ * still merely wrong rather than a lie.
  */
-function guard(records: DecisionRecord[]): void {
+function guard(records: DecisionRecord[], sources: ReadonlyMap<string, string>): void {
   const faults: string[] = [];
-  if (records.length < 20) faults.push(`only ${records.length} records were read`);
-  if (records.every((record) => record.struck.length === 0)) {
-    faults.push('no record carries a struck claim, so the strike collector found nothing');
+
+  /*
+   * Every record file that was read has to have become a record. This replaces
+   * `records.length < 20` against thirty-four, which left fourteen records' worth
+   * of slack in the one number that says whether the board is complete: the count
+   * is exact now, and the floor underneath it is only there so that two empties
+   * cannot agree with each other.
+   */
+  const files = [...sources.keys()].filter((file) => /^adr\/0\d{3}-.*\.md$/.test(file));
+  if (records.length !== files.length) {
+    faults.push(`${files.length} record files were read and ${records.length} became records`);
   }
-  if (records.every((record) => record.voidedBy.length === 0)) {
-    faults.push('no record names the record that voided a claim in it');
+  // Thirty-four today. A record is never deleted, so this only ever rises and
+  // never needs raising.
+  if (files.length < 34) faults.push(`only ${files.length} record files were read`);
+
+  const struck = records.filter((record) => record.struck.length > 0).length;
+  const voided = records.filter((record) => record.voidedBy.length > 0).length;
+  const withCaveat = records.filter((record) => record.caveats.length > 0).length;
+
+  // Eighteen of thirty-four carry a strike, eleven name a voider, five carry a
+  // caveat. A quarter, an eighth and a tenth of the set puts the three thresholds
+  // at eight, four and three, so each may fall by roughly half before it fires and
+  // none of them can be satisfied by one record, which is what they were.
+  if (struck < records.length / 4) {
+    faults.push(`only ${struck} of ${records.length} records carry a struck claim`);
   }
-  if (records.every((record) => record.caveats.length === 0)) {
-    faults.push('no index row names something unbuilt or unchecked');
+  if (voided < records.length / 8) {
+    faults.push(`only ${voided} of ${records.length} records name a record that voided a claim`);
+  }
+  if (withCaveat < records.length / 10) {
+    faults.push(`only ${withCaveat} of ${records.length} index rows name something unbuilt`);
   }
   if (records.some((record) => record.note === '')) {
     faults.push('an index row has an empty note column');
   }
+
+  const clauseless = records
+    .filter((record) => record.struck.some((claim) => claim.clause === ''))
+    .map((record) => record.number);
+  const unexpected = clauseless.filter((number) => !CLAUSE_IS_ELSEWHERE.includes(number));
+  const fixed = CLAUSE_IS_ELSEWHERE.filter((number) => !clauseless.includes(number));
+  if (unexpected.length > 0) {
+    faults.push(
+      `ADR ${unexpected.join(', ')} strikes a claim with no clause after it. Put the clause in the same paragraph as the strike, or add the number to CLAUSE_IS_ELSEWHERE with its reason`,
+    );
+  }
+  if (fixed.length > 0) {
+    faults.push(`ADR ${fixed.join(', ')} no longer needs CLAUSE_IS_ELSEWHERE; take it out`);
+  }
+
+  const disagreeing = records
+    .filter((record) => record.standing !== 'withdrawn')
+    .filter((record) => {
+      const stated = indexStatus(record.note).toLowerCase();
+      const own = record.status.toLowerCase();
+      return !stated.includes(own) && !own.includes(stated);
+    })
+    .map((record) => record.number);
+  const newlyDisagreeing = disagreeing.filter((number) => !INDEX_DISAGREES.includes(number));
+  const agreed = INDEX_DISAGREES.filter((number) => !disagreeing.includes(number));
+  if (newlyDisagreeing.length > 0) {
+    faults.push(
+      `ADR ${newlyDisagreeing.join(', ')} states a status its row in ${INDEX_FILE} does not. Fix one of the two, or add the number to INDEX_DISAGREES with its reason`,
+    );
+  }
+  if (agreed.length > 0) {
+    faults.push(
+      `ADR ${agreed.join(', ')} agrees with its index row now; take it out of INDEX_DISAGREES`,
+    );
+  }
+
   if (faults.length > 0) {
     throw new Error(`The decisions board read the records wrongly: ${faults.join('; ')}.`);
   }

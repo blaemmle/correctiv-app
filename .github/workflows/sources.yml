@@ -33,6 +33,13 @@
 #   non-zero only when it measured nothing at all, and that distinction is the
 #   whole design; `continue-on-error` throws it away.
 #
+# "Never gate" is about the SOURCES. It never meant that what this job commits
+# escapes the repository's own gate, and for a while it did: a pull request opened
+# with GITHUB_TOKEN starts no workflow, so ci.yml never saw this diff and nothing
+# between the script and `main` ran `oxfmt --check` or the tests that read the
+# generated file. So the gate runs here, on the file this run would commit, and
+# what it finds goes into the pull request rather than into `main` — see the step.
+#
 # The one thing here that CAN fail the run is publishing the result — the push and
 # the pull request. That is this repository's own plumbing rather than somebody
 # else's, and a scheduled job that silently stops recording its findings is how the
@@ -61,9 +68,11 @@ jobs:
     name: Measure the live sources
     runs-on: ubuntu-latest
     # Twenty-two requests, ten seconds of timeout each, two attempts, two seconds
-    # apart: a shade over seven minutes if every single source hangs. Fifteen
-    # leaves room for the install and cuts off a runner that is stuck on DNS.
-    timeout-minutes: 15
+    # apart: a shade over seven minutes if every single source hangs. Plus the
+    # install and `npm run check`, which ci.yml puts at about a minute together.
+    # Twenty leaves the slack where it belongs and still cuts off a runner that is
+    # stuck on DNS.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -75,45 +84,87 @@ jobs:
 
       # oxfmt comes from here: the script runs the repository's own formatter over
       # its output, so the generated file cannot fail `oxfmt --check` in the gate
-      # it is committed into.
+      # it is committed into. `npm run check` below needs the same install.
       - name: Install dependencies
         run: npm ci
 
       # Writes the table to this run's summary itself, so a scheduled run that
       # nobody watched still says what it found rather than only that it ran.
-      # Exits non-zero only if it measured nothing, which is a bug here.
+      # Exits non-zero only if it measured nothing, or if the formatter rejected
+      # what it emitted — both are bugs here and neither is a source being down.
       - name: Measure
         run: node apps/handbook/scripts/measure-sources.mjs
 
       # Read off the file rather than assumed from the step above having passed.
       #
-      # `grep -c` returns 1 when it matches nothing, so `$(grep -c …)` inside a
-      # `set -e` script ends the step at that line and every branch below it,
-      # including this whole guard, never runs. That is the same shape as a `grep`
-      # over a missing directory exiting 2 with an `if` around it, which has
-      # already cost this repository a check that printed success and deployed.
-      # Hence `|| true` on the substitution and a `test -f` before any of it.
+      # `set -e` is on, and it is not the guard — it is worth saying why, because
+      # it looks like one. `set -e` does not apply to a command in an `if`
+      # condition, and every check below is one. What stood here was `set -uo
+      # pipefail` and three `[ ... ]` comparisons against values that could be
+      # empty: the step printed "integer expression expected" three times, carried
+      # on past all three, and exited 0 having checked nothing. Turning `-e` on
+      # changes that not at all. So the counts are asserted to BE counts, once,
+      # before anything compares them.
+      #
+      # `|| true` stays on each substitution because `grep -c` exits 1 when it
+      # matches nothing, which is the answer zero and not a failure. What `|| true`
+      # also swallows is exit 2 — "could not read it" — which is why the `case`
+      # below exists: that is the same shape as a `grep` over a missing directory
+      # exiting 2 with an `if` around it, which has already cost this repository a
+      # check that printed success and deployed.
       - name: Read what the run actually produced
         id: found
         run: |
-          set -uo pipefail
+          set -euo pipefail
           FILE=apps/handbook/content/sources.measured.ts
           test -f "$FILE" || { echo "::error::$FILE was not written"; exit 1; }
 
-          ROWS=$(grep -c "^      id: '" "$FILE" || true)
-          DOWN=$(grep -c '^      ok: false,' "$FILE" || true)
-          UP=$((ROWS - DOWN))
+          # All three patterns tolerate indentation, and each is checked against
+          # the others below. They were indentation-exact, and the two halves then
+          # failed differently, which is the asymmetry this removes: drift on the
+          # `id` pattern made ROWS zero and fired the floor loudly, while the same
+          # drift on `ok: false` made DOWN zero, reported every source as up, and
+          # left the "nothing answered" guard — the only thing standing between a
+          # total outage and a commit — unable to fire at all.
+          ROWS=$(grep -cE "^[[:space:]]*id: '" "$FILE" || true)
+          DOWN=$(grep -cE '^[[:space:]]*ok: false,' "$FILE" || true)
+          UP=$(grep -cE '^[[:space:]]*ok: true,' "$FILE" || true)
+
+          # Before any of them is compared with anything. An empty ROWS is not a
+          # small run, it is no answer, and telling the two apart is the whole of
+          # this step's job.
+          for COUNT in "$ROWS" "$DOWN" "$UP"; do
+            case "$COUNT" in
+              '' | *[!0-9]*)
+                echo "::error::$FILE could not be counted; grep answered '$COUNT'"
+                exit 1
+                ;;
+            esac
+          done
+
+          # UP is counted, not subtracted, so that a pattern which has stopped
+          # matching cannot pass itself off as good news. Every row carries exactly
+          # one `id` and exactly one `ok`.
+          if [ "$((UP + DOWN))" -ne "$ROWS" ]; then
+            echo "::error::$ROWS rows carry an id but $UP up + $DOWN down carry an ok; this file is no longer the shape these patterns read"
+            exit 1
+          fi
+
           echo "rows=$ROWS" >> "$GITHUB_OUTPUT"
           echo "down=$DOWN" >> "$GITHUB_OUTPUT"
           echo "up=$UP" >> "$GITHUB_OUTPUT"
           echo "$UP of $ROWS sources answered."
 
-          # A floor, not a comparison with zero. Thirteen is the smallest run the
-          # core's configuration can produce, and the script asserts the same
-          # thing from the other side; a file with three rows in it would satisfy
-          # "some rows exist" and be a broken run.
-          if [ "$ROWS" -lt 13 ]; then
-            echo "::error::only $ROWS rows were written; the script measured almost nothing"
+          # A floor, not a comparison with zero, and it is the number the core's
+          # configuration actually yields: seven feeds, six of their categories,
+          # three Icecast mounts, three YouTube feeds and the five fixed rows.
+          # Twenty-four. It read thirteen once, with a comment calling thirteen the
+          # smallest run the configuration can produce, and a run that had lost
+          # eleven rows sailed through. `apps/handbook/test/sources.test.ts` holds
+          # this literal against the committed run, so adding a feed fails a test
+          # rather than quietly lowering what counts as a complete measurement.
+          if [ "$ROWS" -lt 24 ]; then
+            echo "::error::only $ROWS rows were written; the configuration asks for 24"
             exit 1
           fi
 
@@ -133,11 +184,22 @@ jobs:
           fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
 
+      # This can now be false, and that is the change. `measuredAt` was stamped
+      # from `new Date()` on every run, so the file differed from the committed one
+      # every Monday whether or not a single figure had moved, this step always
+      # said `changed=true`, and a pull request was force-pushed every week for a
+      # timestamp — the outcome the schedule's own comment says daily runs were
+      # rejected to avoid, and the thing that made rounding timings to 50 ms
+      # pointless. The script now compares its FINDINGS with the committed ones and
+      # leaves the file alone when none of them moved; `measuredAt`, `ms`,
+      # `listeners` and the Icecast track title are outside that comparison,
+      # because measured nine seconds apart a run differs from the one before it in
+      # all four. The script's own comment carries the argument.
       - name: Has anything moved
         id: diff
         if: steps.found.outputs.publish == 'true'
         run: |
-          set -uo pipefail
+          set -euo pipefail
           if git diff --quiet -- apps/handbook/content/sources.measured.ts; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Nothing moved since the last committed run." >> "$GITHUB_STEP_SUMMARY"
@@ -146,17 +208,58 @@ jobs:
             git --no-pager diff --stat -- apps/handbook/content/sources.measured.ts
           fi
 
+      # The repository's own gate, over the file this run would commit, because
+      # nothing else will run it: a pull request opened with GITHUB_TOKEN starts no
+      # workflow, so ci.yml never sees this diff.
+      #
+      # It reports rather than blocks, and the reason is the same distinction the
+      # header draws. Two things can fail here and they mean opposite things:
+      #
+      #   The generated file does not parse or does not format. That is the script
+      #   being broken, and it is already fatal one step up — `measure-sources.mjs`
+      #   exits non-zero when oxfmt rejects what it emitted — so it does not reach
+      #   here.
+      #
+      #   `test/sources.test.ts` fails because a measurement contradicts a health
+      #   judgement in the manifest. That is a FINDING and the best thing this
+      #   workflow can produce: `lokal` publishing again answers open question 3,
+      #   and the test exists to say so. Throwing the run away would lose it;
+      #   committing it silently turned `main` red and it was found afterwards.
+      #
+      # So a failure is published WITH the measurement — quoted in the pull
+      # request's own body and in this run's summary — and the run ends red, so it
+      # is not only a paragraph in a body nobody opened.
+      - name: Run the repository's gate on what this would commit
+        id: gate
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          set -uo pipefail
+          if npm run check > gate.log 2>&1; then
+            echo "passed=true" >> "$GITHUB_OUTPUT"
+            echo "\`npm run check\` passed on the measured file." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "passed=false" >> "$GITHUB_OUTPUT"
+          # The tail, not the whole log: the install and the typecheck say nothing
+          # useful and a body has a size limit.
+          tail -c 3000 gate.log > gate.tail
+          {
+            echo ""
+            echo "### \`npm run check\` failed on this measurement"
+            echo ""
+            echo '```'
+            cat gate.tail
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::npm run check failed on the measured file; publishing it with the failure attached"
+          cat gate.log
+
       # German, because a pull request is an argument with the team about work
       # that has not landed and the people having it speak German. What lands in
       # the repository stays English — AGENTS.md draws that line at the merge.
       #
       # One long-lived branch, force-pushed: a weekly run should update the open
       # pull request rather than stack a new one beside it every Monday.
-      #
-      # WORTH KNOWING: a pull request opened with GITHUB_TOKEN does not start
-      # ci.yml. The diff is one generated file and the tests that read it run
-      # locally on the reviewer's machine, so the trade is acceptable; closing and
-      # reopening the pull request by hand starts the gate if it is wanted.
       - name: Open or update the pull request
         if: steps.diff.outputs.changed == 'true'
         env:
@@ -164,6 +267,7 @@ jobs:
           UP: ${{ steps.found.outputs.up }}
           DOWN: ${{ steps.found.outputs.down }}
           ROWS: ${{ steps.found.outputs.rows }}
+          GATE: ${{ steps.gate.outputs.passed }}
         run: |
           set -euo pipefail
           BRANCH=chore/sources-measured
@@ -179,7 +283,28 @@ jobs:
           # main's tip on every run, so there is nothing on it to lose.
           git push --force origin "$BRANCH"
 
+          TITLE="Quellen neu gemessen: $UP von $ROWS erreichbar"
+          WARNING=""
+          if [ "$GATE" != 'true' ]; then
+            TITLE="NICHT MERGEN: $TITLE"
+            WARNING=$(cat <<'EOF'
+          > **`npm run check` ist auf dieser Messung rot.** Der Auszug steht in der
+          > Zusammenfassung des Laufs. Zwei Lesarten, und nur eine ist ein Fehler:
+          > Widerspricht die Messung einer Gesundheitsbewertung in
+          > `apps/handbook/content/sources.manifest.ts`, dann ist das der Befund und
+          > die Bewertung gehört nachgezogen, bevor das hier gemergt wird.
+          > Andernfalls ist das Skript kaputt.
+          EOF
+          )
+          fi
+
+          # `$WARNING` on a line of its own: a command substitution drops trailing
+          # newlines, so pasting it in front of the first sentence would run the
+          # blockquote into it. Empty, it leaves one blank line and Markdown does
+          # not care.
           BODY=$(cat <<EOF
+          $WARNING
+
           Automatisch gemessen von \`apps/handbook/scripts/measure-sources.mjs\`.
           $UP von $ROWS Quellen haben geantwortet, $DOWN nicht.
 
@@ -190,19 +315,22 @@ jobs:
           steht als Zeile mit Begründung in der Datei und auf dem Board, und sie
           macht nichts rot.
 
-          Vor dem Merge lohnt ein Blick darauf, ob eine Zahl ein Argument in
-          \`SOURCES.md\` umstößt, etwa wenn \`lokal\` wieder veröffentlicht. Dann
-          schlägt \`apps/handbook/test/sources.test.ts\` fehl, und die offene Frage 3
-          hat sich selbst beantwortet.
+          \`npm run check\` läuft in diesem Lauf über genau diese Datei, weil ein
+          mit GITHUB_TOKEN geöffneter Pull Request keinen Workflow startet. Das
+          Ergebnis steht oben.
           EOF
           )
 
           if gh pr list --head "$BRANCH" --state open --json number --jq 'length' | grep -q '^0$'; then
-            gh pr create --base main --head "$BRANCH" \
-              --title "Quellen neu gemessen: $UP von $ROWS erreichbar" \
-              --body "$BODY"
+            gh pr create --base main --head "$BRANCH" --title "$TITLE" --body "$BODY"
           else
-            gh pr edit "$BRANCH" \
-              --title "Quellen neu gemessen: $UP von $ROWS erreichbar" \
-              --body "$BODY"
+            gh pr edit "$BRANCH" --title "$TITLE" --body "$BODY"
           fi
+
+      # Last, so the finding is published first. A red scheduled run is the part
+      # somebody sees without opening anything.
+      - name: Fail the run if the gate did not pass
+        if: steps.gate.outputs.passed == 'false'
+        run: |
+          echo "::error::npm run check failed on the measurement this run published; see the pull request."
+          exit 1

@@ -1,6 +1,6 @@
 # ADR 0002 — Vite 8 / Rolldown: measured, not adopted yet
 
-**Status:** ~~rejected for now, revisit~~ · **Date:** 2026-08-01 · **Affects:** bundler, build time, two open upstream blockers
+**Status:** ~~rejected for now, revisit~~ · void since [ADR 0027](0027-the-handbook-draws-the-apps-components.md) · **Date:** 2026-08-01 · **Affects:** bundler, build time, two open upstream blockers
 
 > **Moot since [ADR 0007](0007-removing-the-nativescript-host.md) (2026-08-12):** the
 > app this measured no longer exists in the repo, and the surviving app bundles with
@@ -99,12 +99,12 @@ the benefit is real, but the change must not cost the data layer.
 
 ## Decision
 
-~~**Stay on `@nativescript/vite@2.0.3` / Vite 7.** Minification stays off.~~
+~~**Stay on `@nativescript/vite@2.0.3` / Vite 7.** Minification stays off.~~ Void since
+[ADR 0027](0027-the-handbook-draws-the-apps-components.md).
 
-> Voided by [ADR 0027](0027-the-handbook-draws-the-apps-components.md): `apps/handbook`
-> has built with Vite 8 and Rolldown since 2026-09, and every package that resolves
-> `vite` from the repository root now gets 8 as well. The measurement below is what
-> this record is kept for.
+> `apps/handbook` has built with Vite 8 and Rolldown since 2026-09, and every package
+> that resolves `vite` from the repository root now gets 8 as well. The measurement
+> below is what this record is kept for.
 
 ## Revisit when
 

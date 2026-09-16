@@ -66,9 +66,11 @@
  * or a body that does not parse as the format the source is supposed to send.
  * All three are recorded as `ok: false` with the reason in the row's own words,
  * and none of them is an error the caller sees: this script exits 0 when a
- * source is down. It exits non-zero only when the script itself is broken — see
- * the guard at the bottom, which is there because a check that can report
- * "nothing to report" and pass is not a check.
+ * source is down. It exits non-zero in exactly two places, and both are this
+ * script being broken rather than anything about a source: the row-count guard at
+ * the bottom, which is there because a check that can report "nothing to report"
+ * and pass is not a check, and `format`, because a file oxfmt cannot parse is a
+ * file nothing should commit.
  *
  * The targets are read out of `packages/app-core/src/data/feeds.config.ts`, the
  * app's own configuration, and never copied. A feed added there is measured here
@@ -691,9 +693,19 @@ function emit(run) {
  * eighteen Castopod handles over eighteen lines. So the formatter itself has the
  * last word, and the emitter only has to be close.
  *
+ * A NON-ZERO EXIT IS FATAL, and that is most of what this function is for. oxfmt
+ * exits non-zero when it cannot parse what it was handed, so a non-zero exit here
+ * says the emitter produced something that is not TypeScript. It used to be
+ * logged, the caller ignored the result, and the run carried on and wrote the file
+ * anyway — so the workflow would have committed it, pushed it and opened a pull
+ * request, and the first sign of trouble would have been every LATER pull request
+ * going red on `oxfmt --check`. That is precisely the failure the emitter's
+ * quoting rules were written to prevent, reached by the other road.
+ *
  * A missing binary is reported and not fatal: it means somebody is running this
  * from a tree with no install, and an unformatted measurement beats no
- * measurement.
+ * measurement. The workflow runs `npm ci` first, so that case cannot arise there,
+ * and the `npm run check` it now runs over the result would catch it if it did.
  */
 function format(file) {
   const bin = join(ROOT, 'node_modules/.bin/oxfmt');
@@ -703,8 +715,51 @@ function format(file) {
   }
   const run = spawnSync(bin, [file], { encoding: 'utf8' });
   if (run.status !== 0) {
-    console.log(`\noxfmt exited ${run.status}: ${(run.stderr ?? '').trim()}`);
+    console.error(
+      `\noxfmt exited ${run.status} over ${relative(ROOT, file)}: ${(run.stderr ?? '').trim()}\n` +
+        'What was emitted is not TypeScript, so none of it is worth committing.',
+    );
+    process.exit(1);
   }
+}
+
+/**
+ * What a run FOUND, with everything momentary blanked out, so two runs can be
+ * compared on whether anything moved.
+ *
+ * This exists because of a guard in `.github/workflows/sources.yml` that could
+ * never be false. `measuredAt` is stamped from the clock on every run, so the
+ * emitted file differed from the committed one every Monday whether or not a
+ * single figure had moved; `git diff --quiet` always reported a change, the
+ * workflow's `changed=false` branch was dead code, and a pull request was
+ * force-pushed every week to move a timestamp. That is the outcome the schedule's
+ * own comment gives as the reason daily runs were rejected, and it threw away what
+ * rounding timings to 50 ms was for.
+ *
+ * FOUR FIELDS ARE BLANKED and the reason is the same for all four: none of them is
+ * a finding about a source, and three of them change faster than the schedule.
+ * Measured back to back, nine seconds apart, a run differs from the one before it
+ * in `nowPlaying` (Icecast is a radio station; the track changes every three
+ * minutes), in `listeners` (four people, then five), and in `ms` on four rows at
+ * once — 200 against 250, 400 against 50 — because rounding to 50 ms still has a
+ * boundary and the jitter sits on it. Leaving any of them in the comparison is the
+ * same as leaving the clock in: the guard says "something moved" every week and
+ * means "the run ran".
+ *
+ * They are still WRITTEN, and the run's own summary table carries the exact
+ * figures. What they do not do is decide whether there is a pull request. The cost
+ * is that a source which only got slower produces no diff until something else
+ * moves, and that is the right way round: a weekly pull request whose entire diff
+ * is a track title and four timings is one nobody opens, and it is the one that
+ * would be carrying the newsletter archive's real +11 the week it arrives.
+ */
+const MOMENTARY = ['measuredAt', 'ms', 'listeners', 'nowPlaying'];
+
+function findings(file) {
+  return MOMENTARY.reduce(
+    (text, field) => text.replace(new RegExp(`^(\\s*${field}: ).*$`, 'gm'), '$1…'),
+    file,
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -807,8 +862,30 @@ if (dryRun) {
   writeFileSync(OUT, emit(run));
   format(OUT);
   const after = readFileSync(OUT, 'utf8');
+
+  /*
+   * Nothing was found that the committed run did not already say, so that run is
+   * left exactly as it is, down to the byte.
+   *
+   * The cost is stated rather than hidden: the board then says the figures were
+   * taken in September when a run in December confirmed them, which understates
+   * how fresh they are. That is the safe direction of the two — it never claims a
+   * figure is newer than it is — and the run's own page still carries the whole
+   * table for the week it ran. The alternative is a weekly pull request whose
+   * entire diff is a timestamp, four timings and whatever the radio was playing,
+   * and a weekly diff nobody reads is the same as no diff at all.
+   */
+  const nothingMoved = before !== '' && findings(before) === findings(after);
+  if (nothingMoved) writeFileSync(OUT, before);
+
   console.log(
-    `\n${before === after ? 'Unchanged' : before === '' ? 'Written' : 'Updated'}: ${relative(ROOT, OUT)}`,
+    `\n${
+      before === ''
+        ? 'Written'
+        : nothingMoved
+          ? `Unchanged; left as measured ${/measuredAt: '([^']*)'/.exec(before)?.[1] ?? 'before'}`
+          : 'Updated'
+    }: ${relative(ROOT, OUT)}`,
   );
 }
 
