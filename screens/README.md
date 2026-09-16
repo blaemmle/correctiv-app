@@ -120,6 +120,37 @@ for p in out/android/*.png; do
 done
 ```
 
+## The third tour, which is not a set
+
+```bash
+OUT=out/a11y bash screens/tools/tour-a11y.sh    # #102: the largest font, both schemes
+```
+
+`tour-a11y.sh` walks the same screens with the accessibility settings turned up:
+the system font at 200 %, the device in light and in dark, and a walk at 100 % in
+front of them so that a large app can be told from a broken one. 33 shots, and the
+step name carries its condition last — `10-home-top-s100-light`,
+`10-home-top-s200-light`, `10-home-top-s200-dark` — so the three sort next to each
+other and the comparison anybody makes is one screen across three settings.
+
+Its output does not join `android/`. That set is a layout record of the app as it
+ships, one picture per screen, and 33 more of the same screens under other settings
+would be a directory nobody diffs. What comes out of this tour goes to `evidence/`
+if it decided something and nowhere if it did not.
+
+It also prints, beside each shot it takes one for, every clickable node under 48 dp
+(`small-targets.py`). That number cannot be computed from the source — a target's
+height is its label's line box plus padding, times the reader's font scale — and
+`apps/mobile/__tests__/accessibility.test.ts` says so where it declines to check it.
+Read the script's header before treating a line as a defect: `hitSlop` is invisible
+to it, and twelve sites use one.
+
+Two things it changes on the device, `settings system font_scale` and
+`cmd uimode night`, are saved before the first walk and restored from a `trap` on
+exit rather than from a line at the end — an emulator left at 200 % in dark mode is
+a bug handed to whoever opens it next, and the walk failing is exactly when that
+happens.
+
 Look at the web export in the same pass. It is the only place where
 back-without-history and a directly opened route can be tested at all.
 
