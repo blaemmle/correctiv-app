@@ -23,5 +23,7 @@ export { SectionCard } from './SectionCard';
 export type { SectionCardProps } from './SectionCard';
 export { SectionHeader } from './SectionHeader';
 export type { SectionHeaderProps } from './SectionHeader';
+export { SplitRow } from './SplitRow';
+export type { SplitRowProps } from './SplitRow';
 export { Thumbnail } from './Thumbnail';
 export type { ThumbnailProps } from './Thumbnail';

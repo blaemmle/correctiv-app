@@ -50,6 +50,7 @@
     "build:web": "npm run build:web -w @correctiv/mobile",
     "tokens": "npm run tokens -w @correctiv/design-tokens",
     "fonts": "npm run fonts -w @correctiv/mobile",
+    "component-ids": "npm run component-ids -w @correctiv/mobile",
     "offline-articles": "npm run offline-articles -w @correctiv/mobile",
     "offline-podcasts": "npm run offline-podcasts -w @correctiv/mobile",
     "i18n:extract": "npm run i18n:extract -w @correctiv/mobile",

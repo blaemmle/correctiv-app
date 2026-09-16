@@ -62,6 +62,7 @@
     "web:root": "expo start --web",
     "build:web": "expo export --platform web && cp dist/index.html dist/404.html",
     "fonts": "node scripts/embed-fonts.mjs",
+    "component-ids": "node scripts/generate-component-ids.mjs",
     "offline-articles": "tsx scripts/fetch-offline-articles.mts",
     "offline-podcasts": "tsx scripts/fetch-offline-podcasts.mts",
     "i18n:extract": "formatjs extract 'src/**/*.{ts,tsx}' '../../packages/app-core/src/**/*.ts' --ignore '**/*.generated.ts' --additional-function-names coreMessage --throws --out-file src/i18n/catalogue/en.json",

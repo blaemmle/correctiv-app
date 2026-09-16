@@ -99,7 +99,7 @@ jobs:
             echo "native=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          SKIP='^(apps/handbook/|tools/|screens/|adr/|docs/|\.vscode/|\.github/workflows/pages\.yml$|[^/]+\.md$|[^/]+\.png$|\.editorconfig$)'
+          SKIP='^(apps/handbook/|tools/|screens/|adr/|docs/|\.vscode/|\.github/workflows/(pages|sources)\.yml$|[^/]+\.md$|[^/]+\.png$|\.editorconfig$)'
           if grep -Ev "$SKIP" changed.txt > reaching.txt; then
             echo "native=true" >> "$GITHUB_OUTPUT"
             echo "Android build runs; these files reach it:"

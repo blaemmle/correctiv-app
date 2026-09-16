@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildDecisions, type DecisionRecord } from './decisions.ts';
 import { renderDoc, routeMap, type RenderedDoc } from './markdown.ts';
 import { adrNumber, adrRoute, DOCUMENTS } from './registry.ts';
 
@@ -39,6 +40,11 @@ export function adrFiles(): string[] {
 
 export interface DocsModule {
   docs: RenderedDoc[];
+  /**
+   * The records, with what the board needs that a rendered document does not
+   * carry: a standing, a date, and both ends of the retirement graph.
+   */
+  decisions: DecisionRecord[];
   commit: string;
   repo: string;
 }
@@ -65,12 +71,18 @@ export function collectDocs(base = '/'): { module: DocsModule; files: string[] }
     }),
   ];
 
-  const docs = sources.map((source) =>
-    renderDoc(source, readFileSync(join(ROOT, source.file), 'utf8'), routes, blobBase, base),
-  );
+  // The Markdown is kept beside the rendered document, because the board reads two
+  // things the renderer throws away: the status line's own spelling, and which part
+  // of an index row was put in bold.
+  const markdown = new Map<string, string>();
+  const docs = sources.map((source) => {
+    const raw = readFileSync(join(ROOT, source.file), 'utf8');
+    markdown.set(source.file, raw);
+    return renderDoc(source, raw, routes, blobBase, base);
+  });
 
   return {
-    module: { docs, commit: sha, repo: REPO },
+    module: { docs, decisions: buildDecisions(docs, markdown), commit: sha, repo: REPO },
     files: sources.map((s) => join(ROOT, s.file)),
   };
 }

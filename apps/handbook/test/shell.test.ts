@@ -39,6 +39,7 @@ const SERVES: Record<string, ViewKind[]> = {
   'Document.tsx': ['document'],
   'Reference.tsx': ['reference'],
   'Sources.tsx': ['sources'],
+  'Decisions.tsx': ['decisions'],
   'Design.tsx': ['design'],
   'Components.tsx': ['components'],
   'ComponentDetail.tsx': ['component'],

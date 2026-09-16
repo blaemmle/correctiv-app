@@ -45,6 +45,7 @@ export type ViewKind =
   | 'diagram'
   | 'reference'
   | 'sources'
+  | 'decisions'
   | 'design'
   | 'components'
   | 'component'
@@ -127,6 +128,7 @@ export const VIEWS: Record<ViewKind, ViewDeclaration> = {
 
   document: reading('document'),
   sources: reading('sources'),
+  decisions: reading('decisions'),
   // The filter moves out of the page body and into the header's context bar, so
   // a lookup surface keeps its filter on screen without a second sticky thing
   // inside a scroller that is already sticky.
@@ -229,6 +231,7 @@ const EXACT: Record<string, ViewKind> = {
   '/diagrams': 'diagrams',
   '/reference': 'reference',
   '/sources': 'sources',
+  '/decisions': 'decisions',
   '/design': 'design',
   '/components': 'components',
   '/workbench': 'workbench',

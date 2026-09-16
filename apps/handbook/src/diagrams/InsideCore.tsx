@@ -41,8 +41,8 @@ import {
 export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
   return (
     <svg
-      viewBox="0 0 1040 710"
-      className={cn(DRAWING, 'block h-[710px] w-[1040px] max-w-none')}
+      viewBox="0 0 1040 746"
+      className={cn(DRAWING, 'block h-[746px] w-[1040px] max-w-none')}
       aria-labelledby="d3-title"
       aria-describedby={alt ? 'd3-alt' : undefined}
     >
@@ -65,23 +65,23 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         </marker>
       </defs>
 
-      <line x1="22" y1="84" x2="22" y2="556" className={WIRE} markerEnd="url(#d3-arrow)" />
+      <line x1="22" y1="84" x2="22" y2="592" className={WIRE} markerEnd="url(#d3-arrow)" />
       <text
-        transform="rotate(-90 10 320)"
+        transform="rotate(-90 10 338)"
         x="10"
-        y="320"
+        y="338"
         textAnchor="middle"
         className={cn(T11, MUTED)}
       >
         imports point down the stack
       </text>
 
-      <rect x="40" y="28" width="680" height="548" rx="8" className={BOX_CORE} />
+      <rect x="40" y="28" width="680" height="584" rx="8" className={BOX_CORE} />
       <text x="60" y="56" className={cn(MONO, BOLD, T16)}>
         packages/app-core
       </text>
       <text x="700" y="56" textAnchor="end" className={cn(MUTED, T12)}>
-        54 TypeScript files
+        55 TypeScript files
       </text>
 
       <rect x="56" y="80" width="648" height="84" rx="6" className={CHIP} />
@@ -206,12 +206,28 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         dependency-free string and date helpers
       </text>
 
-      <rect x="56" y="492" width="648" height="68" rx="6" className={CHIP} />
+      {/*
+        The bottom layer is two directories, so it is drawn the way the two rows
+        above it are: a wide chip and a narrow one. `types` used to be a pair of
+        right-aligned labels floating inside the ports chip, which put "the shared
+        contracts" straight through `configurePlatform()` at every width.
+
+        Two rows of chips inside `ports`, and the break between them is the point.
+        The four on the first row are what the core needs in order to WORK.
+        `ErrorReporter` is on its own because it is what the core needs in order
+        to be HEARD: the app runs without it, which is exactly why its default
+        can report nowhere. `configurePlatform()` keeps it company because it is
+        the one thing in this file that is not an interface.
+      */}
+      <rect x="56" y="492" width="440" height="104" rx="6" className={CHIP} />
       <text x="72" y="512" className={cn(MONO, BOLD, T13)}>
         ports
       </text>
       <text x="128" y="512" className={cn(MONO, T11, MUTED)}>
         ports/index.ts, 1 file
+      </text>
+      <text x="480" y="512" textAnchor="end" className={cn(T11, MUTED)}>
+        four to work, one to be heard
       </text>
       <g className={cn(MONO, T12)}>
         <rect x="72" y="528" width="106" height="24" rx="5" className={CHIP_PORT} />
@@ -230,20 +246,29 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         <text x="429" y="540" textAnchor="middle">
           AudioBackend
         </text>
-        <rect x="484" y="528" width="148" height="24" rx="5" className={BOX} />
-        <text x="558" y="540" textAnchor="middle">
+        <rect x="72" y="560" width="106" height="24" rx="5" className={CHIP_PORT} />
+        <text x="125" y="572" textAnchor="middle">
+          ErrorReporter
+        </text>
+        <rect x="184" y="560" width="148" height="24" rx="5" className={BOX} />
+        <text x="258" y="572" textAnchor="middle">
           configurePlatform()
         </text>
       </g>
-      <text x="700" y="512" textAnchor="end" className={cn(MONO, BOLD, T13)}>
+
+      <rect x="512" y="492" width="192" height="104" rx="6" className={CHIP} />
+      <text x="528" y="512" className={cn(MONO, BOLD, T13)}>
         types
       </text>
-      <text x="700" y="540" textAnchor="end" className={cn(T11, MUTED)}>
+      <text x="580" y="512" className={cn(T12, MUTED)}>
+        1 file
+      </text>
+      <text x="528" y="542" className={T12}>
         the shared contracts
       </text>
 
-      <line x1="40" y1="600" x2="720" y2="600" className={BOUNDARY} />
-      <text x="40" y="622" className={cn(T12, BOLD)}>
+      <line x1="40" y1="636" x2="720" y2="636" className={BOUNDARY} />
+      <text x="40" y="658" className={cn(T12, BOLD)}>
         hard boundary, nothing crosses it
       </text>
       {/*
@@ -252,29 +277,29 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         `react-native-mmkv` and `expo-audio` are all caught. Saying "anything
         below" made the drawing promise more than the test.
       */}
-      <text x="40" y="640" className={cn(T12, MUTED)}>
+      <text x="40" y="676" className={cn(T12, MUTED)}>
         <tspan className={MONO}>packages/app-core/test/boundary.test.ts</tspan> fails the build on
         an import matching its list: react-native, expo, node built-ins
       </text>
       <g className={cn(MONO, T12, MUTED)}>
-        <rect x="40" y="660" width="100" height="30" rx="6" className={GHOST} />
-        <text x="90" y="675" textAnchor="middle">
+        <rect x="40" y="696" width="100" height="30" rx="6" className={GHOST} />
+        <text x="90" y="711" textAnchor="middle">
           react-native
         </text>
-        <rect x="150" y="660" width="50" height="30" rx="6" className={GHOST} />
-        <text x="175" y="675" textAnchor="middle">
+        <rect x="150" y="696" width="50" height="30" rx="6" className={GHOST} />
+        <text x="175" y="711" textAnchor="middle">
           expo
         </text>
-        <rect x="210" y="660" width="90" height="30" rx="6" className={GHOST} />
-        <text x="255" y="675" textAnchor="middle">
+        <rect x="210" y="696" width="90" height="30" rx="6" className={GHOST} />
+        <text x="255" y="711" textAnchor="middle">
           expo-audio
         </text>
-        <rect x="310" y="660" width="150" height="30" rx="6" className={GHOST} />
-        <text x="385" y="675" textAnchor="middle">
+        <rect x="310" y="696" width="150" height="30" rx="6" className={GHOST} />
+        <text x="385" y="711" textAnchor="middle">
           react-native-mmkv
         </text>
       </g>
-      <text x="476" y="675" className={cn(T11, MUTED)}>
+      <text x="476" y="711" className={cn(T11, MUTED)}>
         platform SDKs, reached by the host only
       </text>
 
@@ -290,18 +315,18 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         taking state, never store methods.
       </text>
 
-      <rect x="740" y="476" width="280" height="100" rx="6" className={CALLOUT} />
-      <line x1="740" y1="526" x2="704" y2="526" className={LEAD} />
-      <text x="754" y="498" className={cn(T11, MUTED)}>
+      <rect x="740" y="492" width="280" height="104" rx="6" className={CALLOUT} />
+      <line x1="740" y1="544" x2="704" y2="544" className={LEAD} />
+      <text x="754" y="514" className={cn(T11, MUTED)}>
         convention
       </text>
-      <text x="754" y="518" className={T12}>
+      <text x="754" y="534" className={T12}>
         Subpath imports, no barrel:
       </text>
-      <text x="754" y="538" className={cn(MONO, T11)}>
+      <text x="754" y="554" className={cn(MONO, T11)}>
         @correctiv/app-core/stores/session
       </text>
-      <text x="754" y="558" className={T12}>
+      <text x="754" y="574" className={T12}>
         The root entry exposes only the ports.
       </text>
     </svg>
@@ -337,7 +362,7 @@ export function InsideCore({ alt = true }: { alt?: boolean }) {
         <div className={ALT} id="d3-alt">
           <h3>The same diagram as a list</h3>
           <p>
-            <code>packages/app-core</code>, 54 TypeScript files. Imports point down the stack.
+            <code>packages/app-core</code>, 55 TypeScript files. Imports point down the stack.
             Layers from the top:
           </p>
           <ol>
@@ -361,8 +386,12 @@ export function InsideCore({ alt = true }: { alt?: boolean }) {
             <li>
               <strong>ports</strong> and <strong>types</strong>, the contracts:{' '}
               <code>ports/index.ts</code>, one file, declares <code>KeyValueStore</code>,{' '}
-              <code>BlobStore</code>, <code>ContentBundle</code>, <code>AudioBackend</code> and{' '}
-              <code>configurePlatform()</code>.
+              <code>BlobStore</code>, <code>ContentBundle</code>, <code>AudioBackend</code>,{' '}
+              <code>ErrorReporter</code> and <code>configurePlatform()</code>. The drawing puts the
+              first four on one row and <code>ErrorReporter</code> on the next, because the first
+              four are what the core needs in order to work and this one is what it needs in order
+              to be heard: the app runs without it, which is why its default reports nowhere. Beside
+              them, <strong>types</strong>, one file of shared contracts.
             </li>
           </ol>
           <p>
@@ -372,7 +401,7 @@ export function InsideCore({ alt = true }: { alt?: boolean }) {
             list of names: react-native, expo, node built-ins, the NativeScript scopes, and the view
             layers the core used to be tied to. It matches the start of the import, so the storage
             SDK is caught by the <code>react-native</code> entry rather than needing one of its own.
-            The same file also checks that <code>ports/index.ts</code> still declares all four
+            The same file also checks that <code>ports/index.ts</code> still declares all five
             ports, so a capability cannot reach the host without being named there.
           </p>
           <p>

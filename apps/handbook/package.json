@@ -13,7 +13,8 @@
     "renders": "node scripts/renders.mjs dev",
     "renders:dist": "node scripts/renders.mjs dist",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "measure-sources": "node scripts/measure-sources.mjs"
   },
   "devDependencies": {
     "@correctiv/app-core": "*",

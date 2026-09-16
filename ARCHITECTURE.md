@@ -29,7 +29,7 @@ itself, and the same reason a third host costs one file rather than a rewrite.
 `packages/app-core/test/boundary.test.ts` fails the build if a platform import ever
 appears in the core.
 
-## The four ports
+## The five ports
 
 Everything the core cannot do on its own is declared in
 `packages/app-core/src/ports/index.ts` and supplied at startup with
@@ -41,6 +41,7 @@ Everything the core cannot do on its own is declared in
 | `BlobStore` | the HTTP cache, asynchronously | a second MMKV store, bounded and evictable |
 | `ContentBundle` | what shipped inside the app | generated TS modules |
 | `AudioBackend` | playback, as status ticks | expo-audio's status events |
+| `ErrorReporter` | where a fault goes | a log line, and nothing else yet |
 
 Both storage ports are asynchronous, and what separates them is what they hold: a
 settings string against a megabyte of cached feeds. `KeyValueStore` was synchronous
@@ -58,6 +59,18 @@ localStorage is no more able to answer before the first frame than AsyncStorage 
 A synchronous backend under an asynchronous port simply resolves a value.
 [ADR 0026](adr/0026-react-native-review-and-hardening.md) §4 has the swap and its
 measurements.
+
+`ErrorReporter` is the fifth and the newest, and it is declared before anybody has
+chosen what receives a report. The expensive half of reporting is the shape — where
+a fault is reported from, what it carries, and whether the core may report at all —
+and none of that depends on the service. So the port exists, its default reports
+nowhere, and choosing a provider is a change to
+`apps/mobile/src/lib/platform/expo.ts` and to nothing else. A report carries a code,
+a domain and whatever context the caller already held, never a sentence; two places
+report, the host's error boundary and the core, and a screen is deliberately not one
+of them. [ADR 0032](adr/0032-a-port-for-the-error-report-before-a-provider-for-it.md)
+argues all of it, and [#95](https://github.com/faktenforum/correctiv-app/issues/95)
+still holds the question it does not answer.
 
 **Two stores, not one, and that is the eviction policy's fence.** The cache has a
 count limit, a byte budget, a maximum entry size and least-recently-used eviction

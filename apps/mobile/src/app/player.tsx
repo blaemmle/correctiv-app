@@ -3,7 +3,7 @@ import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ProgressBar } from '@/components/player/ProgressBar';
-import { SafeAreaView, Typo } from '@/components/ui';
+import { SafeAreaView, SplitRow, Typo } from '@/components/ui';
 import { AUDIO_ERROR_LABELS } from '@correctiv/app-core/stores/audio';
 import { formatTimeHm } from '@correctiv/app-core/lib/format';
 import { seekTo, setSpeed, togglePlay } from '@/lib/audio/player';
@@ -112,14 +112,14 @@ export default function PlayerScreen() {
                   durationSec={durationSec}
                   onSeek={(seconds) => void seekTo(seconds)}
                 />
-                <View className="flex-row justify-between">
+                <SplitRow>
                   <Typo variant="text-s" color="grey-500">
                     {formatTimeHm(positionSec)}
                   </Typo>
                   <Typo variant="text-s" color="grey-500">
                     {formatTimeHm(durationSec)}
                   </Typo>
-                </View>
+                </SplitRow>
               </>
             )}
 
