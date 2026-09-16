@@ -174,6 +174,13 @@ that argument speak German. The line is the merge: what goes into the repository
 English, what is said about it on the way in is not. A commit message is on the
 English side of that line, because it stays.
 
+**A German body closes no issue**, and this is the one place the rule costs something.
+GitHub reads `closes`, `fixes` and `resolves` and nothing else, so `Schließt #158` is
+prose: the pull request merges and the issue stays open. Write the English keyword on
+its own line if the merge should close it, or close it by hand afterwards with a
+comment saying what landed. Both #158 and #166 were closed by hand after their pull
+requests had merged, which is how this got written down.
+
 German typography, not English, wherever German is written, a pull request included:
 quotation marks are „…“, and the em dash does not appear at all. Where a sentence
 wants a break, use a comma or a full stop; the Halbgeviertstrich – belongs only where
