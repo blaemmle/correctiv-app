@@ -281,8 +281,10 @@ describe('the ledger against the default branch', () => {
     // The whole design, in one assertion. A record the default branch holds is
     // still held, a number it holds is still held, and every history it holds is
     // a PREFIX of the history now. Appending is the only permitted direction, so
-    // a reword passes and a swap cannot: a swap has to put an old text where it
-    // was not, and that breaks a prefix wherever it lands.
+    // this refuses every edit that takes something out and permits every edit
+    // that adds. A swap that went through `adr:lock` is an addition and passes
+    // here; what it cannot do afterwards is remove the addition, which is why the
+    // record of it is permanent. See the file's docstring for the whole of it.
     if (baseline.state !== 'read') return;
     const { ledger: published, problems } = readLedger(baseline.text);
     expect(report(`${LEDGER_PATH} on origin/main cannot be read.`, problems)).toBe('');

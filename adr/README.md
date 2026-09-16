@@ -145,16 +145,25 @@ is what holds the records against it.
 **One check in there is worth the rest put together**, and it is the one that reads
 `git show origin/main:adr/decisions.lock.json`: the ledger in a working tree has to be
 an *extension* of the published one. No record dropped, no number dropped, every
-history a prefix of its new self. Appending is the only direction it permits, so a
-reword passes and a swap cannot, because a swap has to put an old text where it never
-stood.
+history a prefix of its new self. Appending is the only direction it permits.
 
-The rest of the checks read the working tree, and it is worth being exact about what
-that means. A renumbering that edits the records and the ledger in one pass leaves a
-tree that agrees with itself perfectly, and two cold reviews walked through exactly
-that: swap two numbers and reword both headings by a character, and `adr:lock` records
-two rewords; swap two numbers and swap their two histories, and it has nothing to add.
-Both were green under every within-tree check. Those checks stay because they catch
+**What that buys is permanence, not prevention**, and the difference is the part to
+read carefully, because the first version of this section claimed the stronger thing.
+A renumbering put through `npm run adr:lock` only appends, so it passes: §1 and §3
+each gain the other's heading. What the check makes impossible is taking that back
+out. The ledger then carries both texts under both numbers for good, and the commit
+that did it shows two appends side by side, which is a shape no ordinary edit
+produces. A number cannot be moved quietly; it can still be moved.
+
+The rest of the checks read the working tree alone, and a renumbering that edits the
+records and the ledger in one pass leaves a tree that agrees with itself perfectly.
+Two cold reviews walked straight through them: swap two numbers and reword both
+headings by one character, and `adr:lock` records two rewordings; swap two numbers and
+swap their two histories, and it has nothing to add. The second is refused now. The
+first is refused only where the reword is punctuation, because the within-record check
+compares headings with their punctuation, spacing and case taken off; a swap whose
+headings are genuinely rewritten is caught by nothing, and that is written down here
+rather than left for the third review to find. These checks stay because they catch
 the accident, the half-finished edit and the copy-paste for almost nothing, and
 because they run in a checkout that has never fetched. They are not a defence against
 somebody who means it. Nothing in a repository is, and a check that says it is, is
