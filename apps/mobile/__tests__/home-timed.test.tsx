@@ -1,14 +1,18 @@
 import { act } from 'react-test-renderer';
 
 /**
- * The one block on Home that moves with the clock.
+ * The one block on Home that moves with the clock, seen from the screen.
  *
  * The requirements ask for modules "pushed to the top of the home screen between
- * certain hours, after they drop into the chronological feed". The hours themselves
- * are covered in `packages/app-core/test/daypart.test.ts`; what is worth pinning here
- * is that the callout is rendered ONCE either way. Two mutually exclusive conditions
- * over the same block is exactly the shape that produces a duplicate when one of them
- * is later edited, and a duplicated teaser on Home is not something a type checks.
+ * certain hours, after they drop into the chronological feed". The hours are covered in
+ * `packages/app-core/test/daypart.test.ts` and the document's two callout sections in
+ * `home-layout.test.tsx`; what is worth pinning HERE is the one thing neither of those
+ * can see, and it is the last test in this file: that the screen moves the card when the
+ * clock crosses a boundary and nothing else happens.
+ *
+ * The rest reads the rendered card rather than a section id, so it is also the check
+ * that the document's two positions are two positions on a screen and not two entries in
+ * a list.
  */
 
 jest.mock('expo-router', () => ({
@@ -96,7 +100,7 @@ describe('the callout on Home', () => {
   /**
    * Nothing else re-renders Home on the hour: a tab screen stays mounted, and a feed
    * landing or a pull to refresh is not a clock. So the screen owns one timer to the
-   * next boundary (`useTimedModule`), and this is the test that it fires. Rendered a
+   * next boundary (`useDaypart`), and this is the test that it fires. Rendered a
    * minute before lunchtime, then the clock moves and nothing else does.
    */
   it('moves when the clock crosses a boundary, with nothing else happening', () => {

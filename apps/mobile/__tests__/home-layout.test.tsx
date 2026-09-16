@@ -1,0 +1,205 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+/**
+ * Home is a document now, and this is the pair of facts that keeps the document and the
+ * app from parting ([ADR 0036](../../../adr/0036-the-home-screen-becomes-data.md)).
+ *
+ * **Both directions, and the second one is the one a type cannot see.** A module in the
+ * document with no renderer is caught at runtime — the parser drops the section and
+ * reports it — so the screen survives it and nobody finds out. A renderer no section
+ * names fails in no way at all: it is a block somebody wrote, wired up, and never saw on
+ * a screen. Neither is a compile error, because the map is keyed by string on purpose:
+ * §7 wants a fetched document to be readable when it is ahead of the app, which a closed
+ * union of module names would make impossible.
+ *
+ * The shipped document is read off DISK rather than imported, so that this file is
+ * asserting about the JSON a reviewer sees in the diff and not about whatever the module
+ * graph happened to hand it.
+ */
+
+/**
+ * Feeds do not decide anything here, but a section with no data renders no marker.
+ *
+ * Complete items, image and reading time included, because `useArticleMeta` fetches the
+ * article page for whichever of the two a card is missing — an update after the test body
+ * has ended, and the console noise a real warning would hide in.
+ */
+const ITEMS = Array.from({ length: 8 }, (_, i) => ({
+  id: `item-${i}`,
+  feed: 'recherchen' as const,
+  title: `Recherche ${i}`,
+  url: `https://correctiv.org/${i}`,
+  teaser: 'Teaser',
+  publishedAt: '2026-09-01T08:00:00.000Z',
+  categories: [],
+  imageUrl: `https://correctiv.org/${i}.jpg`,
+  readingMinutes: 4,
+}));
+
+let mockFeed = { data: ITEMS, loading: false, offline: false, reload: jest.fn() };
+
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
+  useLocalSearchParams: jest.fn(() => ({})),
+}));
+
+jest.mock('@/lib/feeds/useFeed', () => ({
+  useFeed: () => mockFeed,
+}));
+
+/**
+ * Stubbed for the reason `home-timed.test.tsx` stubs them: both lazy-load on first use,
+ * and a thunk that lands after the test body is an update outside `act`.
+ */
+jest.mock('@/lib/store/core', () => ({
+  ...jest.requireActual<typeof import('@/lib/store/core')>('@/lib/store/core'),
+  useSpotlight: () => ({ issues: [], status: 'idle', recent: [] }),
+  useVideoChannel: () => ({ videos: [], status: 'idle', error: null }),
+}));
+
+import { act } from 'react-test-renderer';
+
+import { parseHomeLayout, sectionsAt, type HomeLayout } from '@correctiv/app-core/lib/home-layout';
+import { DAYPARTS, daypartAt } from '@correctiv/app-core/lib/daypart';
+import { resetStore } from '@correctiv/app-core/stores/store';
+
+import { render, walkHostNodes } from './support/rendering';
+
+import HomeScreen from '@/app/(tabs)/index';
+import { HOME_MODULES, LIFTED_CALLOUT, placeTestID } from '@/lib/home/modules';
+import { coreStore } from '@/lib/store/core';
+
+const DOCUMENT_PATH = join(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  'packages',
+  'app-core',
+  'src',
+  'data',
+  'home.layout.json',
+);
+
+const shipped = JSON.parse(readFileSync(DOCUMENT_PATH, 'utf8')) as unknown;
+const parsed = parseHomeLayout(shipped);
+const layout = parsed.layout as HomeLayout;
+
+beforeEach(() => {
+  mockFeed = { data: ITEMS, loading: false, offline: false, reload: jest.fn() };
+  jest.clearAllMocks();
+  act(() => {
+    coreStore.dispatch(resetStore());
+  });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+describe('the shipped home document', () => {
+  it('reads cleanly, and says something', () => {
+    expect(parsed.problems).toEqual([]);
+    expect(layout.sections.length).toBeGreaterThan(5);
+  });
+
+  it('names a renderer this app holds for every section', () => {
+    const missing = layout.sections.filter((section) => !(section.module in HOME_MODULES));
+    expect(missing.map((section) => `${section.id} → ${section.module}`)).toEqual([]);
+  });
+
+  it('names every renderer this app holds, so none is written and never drawn', () => {
+    const named = new Set(layout.sections.map((section) => section.module));
+    expect(Object.keys(HOME_MODULES).filter((module) => !named.has(module))).toEqual([]);
+  });
+
+  /** The spacing of the lifted callout hangs off this id; `modules.tsx` says why. */
+  it('still carries the lifted callout under the id the renderer keys on', () => {
+    expect(layout.sections.map((section) => section.id)).toContain(LIFTED_CALLOUT);
+  });
+
+  /**
+   * The property the two callout sections exist to hold, and the one a document cannot
+   * express: their daypart lists must partition the day. Two mutually exclusive
+   * conditions over the same card is exactly the shape that produces a duplicate when
+   * one of them is later edited, and a duplicated teaser on Home is not something a type
+   * checks.
+   */
+  it('shows the callout exactly once in every part of the day', () => {
+    for (const daypart of DAYPARTS) {
+      const shown = sectionsAt(layout, daypart).filter(
+        (section) => section.module === 'callout-teaser',
+      );
+      expect(shown.map((section) => section.id)).toHaveLength(1);
+    }
+  });
+});
+
+/** Local time, as `daypartAt` reads it. */
+const at = (hour: number) => new Date(2026, 8, 3, hour, 0, 0, 0);
+
+/** Taken from the renderer's own helper, so a change to the addressing is one edit. */
+const PLACE_PREFIX = placeTestID('');
+
+/** The section ids the tree actually carries, top to bottom. */
+function renderedPlaces(tree: ReturnType<typeof render>): string[] {
+  const ids: string[] = [];
+  walkHostNodes(tree, {
+    onEnter: (node) => {
+      const testID = node.props.testID;
+      if (typeof testID === 'string' && testID.startsWith(PLACE_PREFIX)) {
+        ids.push(testID.slice(PLACE_PREFIX.length));
+      }
+    },
+  });
+  return ids;
+}
+
+function renderAt(hour: number) {
+  jest.useFakeTimers().setSystemTime(at(hour));
+  return render(<HomeScreen />);
+}
+
+describe('what Home draws', () => {
+  /**
+   * The order is the document's and the screen adds none of its own, so this walks the
+   * tree and compares. A section that has nothing to show renders nothing at all — the
+   * feed status with a feed that is neither loading nor offline is the one here — so the
+   * assertion is "a subsequence, in order" rather than "equal", and the count below is
+   * what stops that weaker claim passing on an empty screen.
+   */
+  it.each(DAYPARTS.map((daypart) => [daypart]))(
+    'draws the %s sections in the document order',
+    (daypart) => {
+      const hour = { morning: 7, midday: 12, evening: 19, 'off-hours': 3 }[daypart];
+      expect(daypartAt(at(hour))).toBe(daypart);
+
+      const wanted = sectionsAt(layout, daypart).map((section) => section.id);
+      const drawn = renderedPlaces(renderAt(hour));
+
+      expect(drawn).toEqual(wanted.filter((id) => drawn.includes(id)));
+      // Everything but the feed status, which has nothing to say about a loaded feed.
+      expect(drawn).toEqual(wanted.filter((id) => id !== 'feed-status'));
+    },
+  );
+
+  it('draws the feed status when the articles came out of the bundle', () => {
+    mockFeed = { ...mockFeed, offline: true };
+    expect(renderedPlaces(renderAt(12))).toContain('feed-status');
+  });
+
+  it('puts the callout above the hero at lunchtime and below the rest otherwise', () => {
+    const midday = renderedPlaces(renderAt(12));
+    expect(midday.indexOf(LIFTED_CALLOUT)).toBeLessThan(midday.indexOf('hero'));
+
+    const evening = renderedPlaces(renderAt(19));
+    expect(evening).not.toContain(LIFTED_CALLOUT);
+    expect(evening.indexOf('callout')).toBeGreaterThan(evening.indexOf('hero'));
+  });
+
+  it('draws every place exactly once', () => {
+    const drawn = renderedPlaces(renderAt(12));
+    expect([...new Set(drawn)]).toEqual(drawn);
+  });
+});
