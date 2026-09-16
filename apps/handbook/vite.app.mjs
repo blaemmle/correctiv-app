@@ -12,6 +12,8 @@
  * site's config still gets it checked.
  */
 
+import { readdirSync, realpathSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { uniwind } from 'uniwind/vite';
@@ -109,9 +111,120 @@ export const appResolve = {
  * which reads as a CSS problem and is a plugin-order one.
  *
  * `notADevApp()` is last, and that one is load-bearing too; see below.
+ * `notHermes()` sits beside it and answers the same kind of question: which of
+ * the app's startup assumptions are about a runtime this build does not have.
  */
 export function appPlugins() {
-  return [rnw(), uniwind({ cssEntryFile: APP_CSS_ENTRY }), notADevApp()];
+  return [rnw(), uniwind({ cssEntryFile: APP_CSS_ENTRY }), notHermes(), notADevApp()];
+}
+
+/** `apps/mobile/src/i18n`, where the one app module this build replaces lives. */
+const HERMES_DIR = join(APP_SRC, 'i18n');
+
+/**
+ * Every spelling of that module, rather than the one it happens to have.
+ *
+ * A pattern and not a path, because the three ways the equality test that stood
+ * here failed were all ways of being the same file under a different string, and
+ * each of them put #160's blank page back with nothing said:
+ *
+ * - `polyfills.web.ts`. `WEB_FIRST_EXTENSIONS` above *prefers* it, so adding one
+ *   is enough to resolve past a rule written about `polyfills.ts` — and the file
+ *   that would be added is the one that exists in order to be excluded here.
+ * - A checkout reached through a symlink. `APP_SRC` comes from `import.meta.url`
+ *   and Vite resolves ids through the real path, so the two strings name one file
+ *   and do not match. Hence `realpathSync` on both sides.
+ * - Windows, where the id arrives with backslashes in it. Hence the normalising.
+ *
+ * None of that is a proof. What it is, is closed against the shapes somebody has
+ * actually produced; the thing that catches the rest is
+ * `scripts/renders.mjs`, which opens the page and does not care what the module
+ * was called (ADR 0035).
+ */
+const HERMES_MODULE = /^polyfills(\.[^.]+)*\.(m|c)?[jt]sx?$/;
+
+/** One real path, comparable with an id whatever route the file system took to it. */
+function realNormalised(path) {
+  try {
+    return realpathSync(path).replaceAll('\\', '/');
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The app's Hermes polyfills, left out of a build whose runtime is a browser.
+ *
+ * `i18n/polyfills.ts` installs the two `Intl` objects Hermes does not ship, and
+ * it is conditional on purpose: `if (!('PluralRules' in Intl))`, so on iOS, on
+ * web and in every browser since 2018 the branch is not taken and the `require`
+ * calls inside it never run (ADR 0026 §6). The condition is a RUNTIME one, and
+ * the two bundlers disagree about what to do with a `require` that a runtime
+ * will never reach:
+ *
+ * | build | what it does with the three `require` calls |
+ * |---|---|
+ * | Metro | keeps them, bundles the modules, skips them at runtime — the trade the app wants |
+ * | this one, production | hoists each to `import * as ns` and reads `(ns.default \|\| ns)` — three `IMPORT_IS_UNDEFINED` warnings, and it runs |
+ * | this one, dev server | hoists each to a DEFAULT import — and `@formatjs/intl-pluralrules/locale-data/de.js` exports nothing at all |
+ *
+ * That last cell is a link-time `SyntaxError`, which takes down the whole module
+ * graph before a line of it evaluates: `npm run handbook` served an empty `#root`
+ * on every route while `npm run build:handbook` stayed green, for long enough that
+ * two agents built themselves ways around it rather than reporting it (#160).
+ *
+ * So this build does not compile that module. It is not a polyfill it needs, the
+ * app's source keeps the conditional exactly as measured, and the three warnings
+ * the production build printed — documented in that file as "expected", which is
+ * how a warning stops being read — go with it.
+ *
+ * `enforce: 'pre'` so the replacement is in place before `vite-plugin-commonjs`
+ * sees the `require` calls, which is the transform that creates the import in the
+ * first place.
+ */
+function notHermes() {
+  let dir;
+  return {
+    name: 'handbook:not-hermes',
+    enforce: 'pre',
+
+    /*
+     * Loud when there is nothing left to exclude.
+     *
+     * The old rule named one path and returned `null` for everything else, so the
+     * day that file is renamed, moved or split it goes on matching nothing and
+     * says so nowhere — and a replacement that never fires looks exactly like a
+     * replacement that was not needed. This runs in both build paths, before
+     * either compiles anything.
+     */
+    configResolved() {
+      dir = realNormalised(HERMES_DIR);
+      const found = dir === undefined ? [] : readdirSync(dir).filter((n) => HERMES_MODULE.test(n));
+      if (found.length === 0) {
+        throw new Error(
+          `handbook:not-hermes has nothing to exclude: no polyfills module under ${HERMES_DIR}.\n` +
+            `It was apps/mobile/src/i18n/polyfills.ts, and this build must not compile it — ` +
+            `its require() calls become a default import of a module that exports nothing, ` +
+            `which empties every route of the dev server (#160, ADR 0035).\n` +
+            `If it moved, move this rule with it. If it is gone, delete this plugin.`,
+        );
+      }
+    },
+
+    load(id) {
+      const file = id.split('?')[0].replaceAll('\\', '/');
+      // Cheap first: this runs for every module in the graph, and only a handful
+      // of them are even shaped like the one being excluded.
+      if (!/\/i18n\/polyfills[^/]*$/.test(file)) return null;
+      const real = realNormalised(file);
+      if (real === undefined || dirname(real) !== dir) return null;
+      if (!HERMES_MODULE.test(basename(real))) return null;
+      // A module, not nothing: `Localisation.tsx` imports it for its side effect
+      // and an empty string is not a valid ES module to every consumer of this
+      // hook.
+      return 'export {};\n';
+    },
+  };
 }
 
 /**

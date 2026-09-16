@@ -45,6 +45,34 @@ that owns it, not the UI tree. For audio that is
 `state:stopped` per player. `adb shell dumpsys window`, `pidof` and logcat are the
 equivalents for focus, liveness and errors.
 
+**The handbook has two build paths and they do not agree.** `npm run build:handbook`
+ran green while `npm run handbook` served an empty `#root` on every route, and the
+green one is the only one CI had. The cause was one file compiled twice:
+`apps/mobile/src/i18n/polyfills.ts` calls `require()` inside a runtime condition, the
+production build hoisted that to a namespace import and printed a warning the file
+itself documented as expected, and the dev server hoisted it to a **default** import
+of a module that exports nothing — a link-time `SyntaxError`, which kills the whole
+graph before a line of it evaluates. It stood for a day, in which two agents built
+themselves ways around the blank page instead of reporting it: one served `dist`
+statically, the other wrote an entry point importing a single page. Both worked, which
+is the part worth noticing. → After anything that touches `vite.app.mjs`,
+`vite.config.ts`, or a module `apps/handbook` compiles out of `apps/mobile`, open
+both:
+
+```bash
+npm run handbook:renders        # starts the dev server, asserts the page rendered
+npm run build:handbook && npm run handbook:renders:dist
+```
+
+`apps/handbook/scripts/renders.mjs` is what those run, and it is the only check in the
+repository that opens a browser. Three things have to hold, and the second is the one
+that is not obvious: the shell mounted, what mounted is not the error boundary standing
+in for a route that threw — it wraps the main area only, so a broken route still leaves
+a header, a rail and a page full of words — and the browser logged no error. The second
+command is in that order on purpose: `renders:dist` reads `dist/` and refuses to judge
+one older than the working tree. It says in its own header what it cannot see, which is
+everything about how the page looks.
+
 ## Expo / React Native
 
 - **`react-native-webview` has no web build.** It renders "React Native WebView does
