@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { Hairline, Typo } from '@/components/ui';
+import { Hairline, SplitRow, Typo } from '@/components/ui';
 import { formatDateWeekdayDe } from '@correctiv/app-core/lib/format';
 
 /**
@@ -14,14 +14,18 @@ import { formatDateWeekdayDe } from '@correctiv/app-core/lib/format';
 export function HomeHeader() {
   return (
     <View className="mb-m">
-      <View className="flex-row items-center justify-between">
+      {/* A `SplitRow`, not a row of its own: the date is the longest string on
+          this screen that nobody chose the length of, and at a large system font
+          it was the first thing to leave the right edge. Below it the wordmark
+          keeps the line and the date takes the one under it. */}
+      <SplitRow>
         <Typo variant="text-m" weight="bold" style={{ letterSpacing: 1.5 }}>
           CORRECTIV
         </Typo>
         <Typo variant="text-s" color="on-canvas-muted">
           {formatDateWeekdayDe(new Date())}
         </Typo>
-      </View>
+      </SplitRow>
       <Hairline className="mt-s" />
     </View>
   );

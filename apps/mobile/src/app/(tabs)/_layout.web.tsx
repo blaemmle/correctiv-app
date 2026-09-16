@@ -5,7 +5,7 @@ import { View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MiniPlayer } from '@/components/player/MiniPlayer';
-import { useColors } from '@/lib/theme';
+import { spacingPx, useColors } from '@/lib/theme';
 
 /**
  * The web tab bar, and the reason there are two of these files.
@@ -102,6 +102,24 @@ export default function TabsLayout() {
             paddingBottom: insets.bottom,
           },
           tabBarLabelStyle: { fontFamily: 'SourceSans3_600SemiBold', fontSize: 11 },
+          /**
+           * A minimum gap between two tabs, which is the same thing `ui/SplitRow`
+           * gives every two-sided row this app draws
+           * ([#158](https://github.com/faktenforum/correctiv-app/issues/158)). On
+           * the native bar five German labels run into each other above 130 %
+           * system font; here they cannot, because **the web has no system font
+           * scale**. React Native Web draws in px and a browser's zoom scales the
+           * whole page, text and layout together, so the ratio that breaks the
+           * Material bar never changes. This is therefore a guard rather than a
+           * fix for something photographed, and it is cheap: the labels have room
+           * to spare at every size the demo is looked at.
+           *
+           * **Not the native file's font-scale rule.** React Native Web's
+           * `Dimensions` hard-codes `fontScale: 1`, so the condition that hides
+           * the labels over there could never fire here — it would be a branch
+           * that reads as a decision and is dead.
+           */
+          tabBarItemStyle: { paddingHorizontal: spacingPx['3xs'] },
         }}
       >
         <Tabs.Screen

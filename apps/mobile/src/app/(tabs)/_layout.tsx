@@ -1,6 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { defineMessages, useIntl } from 'react-intl';
-import { Platform, View } from 'react-native';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MiniPlayer } from '@/components/player/MiniPlayer';
@@ -53,6 +53,29 @@ const COPY = defineMessages({
 const IS_IOS = Platform.OS === 'ios';
 
 /**
+ * The system font scale up to which five labels still fit across the bar, and the
+ * one number in this file that was measured rather than chosen.
+ *
+ * Material lays the five items out at a fifth of the width each and lets a label
+ * overflow its item, so past a certain size the labels do not ellipsize into their
+ * own cells — they run into their neighbours. Photographed on
+ * `Medium_Phone_API_36`, 1080x2400 at 420dpi, one shot per step of Android's own
+ * slider:
+ *
+ *  - **1.0, 1.15** — five labels, whole, with clear space between them.
+ *  - **1.3** — five labels, whole, the gap down to about two pixels. Still legible,
+ *    and this is the last step that is.
+ *  - **1.5** — `EntdeckenMediathekMitmach…`. Two labels touching and a third
+ *    truncated into the fourth. Nothing says where one ends.
+ *  - **2.0** — `Entde…Media…Mitm…`, which is the picture in
+ *    [#158](https://github.com/faktenforum/correctiv-app/issues/158).
+ *
+ * Re-measure it rather than trust it: it is a property of these five German words
+ * at this screen width, and renaming a tab or shipping a second language moves it.
+ */
+const LABELS_FIT_UP_TO = 1.3;
+
+/**
  * Where the mini player sits on Android. Measured, not guessed — and it was guessed
  * once, which is the reason for the length of this comment.
  *
@@ -73,6 +96,16 @@ const IS_IOS = Platform.OS === 'ios';
  * scale, and `labelVisibilityMode` — under Material's `auto` the same bar measured
  * 60dp, because dropping the labels makes it shorter. Change either and re-measure.
  * **A screenshot of a playing track is the only check that sees this.**
+ *
+ * **Re-measured on 2026-09-16, because `labelVisibilityMode` below became conditional.**
+ * At 100 % the bar is still y=2126..2337, 80.4dp, unchanged. At 200 % it is
+ * y=2086..2337, which is 95.6dp — so the mini player sits about 16dp inside it there.
+ * Dropping the four unselected labels does **not** shorten the bar the way `auto`
+ * does, because the selected item keeps its own label and the bar is as tall as its
+ * tallest item. That is the font-scale half of the warning above with a number on it:
+ * it was true before this constant met a large font and is not made worse by the
+ * change, and it is [#158](https://github.com/faktenforum/correctiv-app/issues/158)'s
+ * nearest neighbour rather than part of it.
  */
 const ANDROID_TAB_BAR_HEIGHT = 80;
 
@@ -80,6 +113,34 @@ export default function TabsLayout() {
   const intl = useIntl();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+
+  /**
+   * **The tab bar's own answer to #158, because it is the platform's bar.**
+   *
+   * The rest of that issue is one component, `ui/SplitRow`: a two-sided row that
+   * keeps a minimum gap and wraps when it cannot. Nothing of the sort is available
+   * here. Material owns this bar's layout, `react-native-screens` exposes its
+   * colours, its label visibility and its font, and no padding, no minimum gap and
+   * no second line — so the only two levers are the font size and whether there are
+   * labels at all.
+   *
+   * The font size is not a lever. ADR 0033 puts one text size on the whole app with
+   * the system's as its default, and names this defect as what has to land before
+   * that row can be offered; shrinking the labels to fit would defeat the setting it
+   * is being fixed for. So this drops the labels of the four unselected tabs at the
+   * scale where they stop being labels, and keeps the selected one, which Material
+   * then gives the room it needs.
+   *
+   * It is a real loss and worth naming: `Entdecken` (a compass) and `Mitmachen`
+   * (three figures) are the two nobody can name from the glyph, which is why this
+   * bar asks for `labeled` in the first place. What it buys is that at 150 % and
+   * above the four glyphs are separated and the fifth says where you are, instead of
+   * five labels with no space between them saying nothing. TalkBack is unaffected
+   * either way: Material takes each item's `contentDescription` from its title and
+   * not from the visible label, so a hidden label is still announced.
+   */
+  const labelVisibilityMode = fontScale > LABELS_FIT_UP_TO ? 'selected' : 'labeled';
 
   /*
    * Five triggers, written out rather than mapped. Android's Material tabs cap at
@@ -105,8 +166,14 @@ export default function TabsLayout() {
        * asks for; `auto`'s drop-the-labels behaviour is the Material 2 rule it
        * inherited. It also keeps this bar and the web one legible in the same way,
        * which is worth something when they are meant to be the same product.
+       *
+       * Above `LABELS_FIT_UP_TO` it is `selected` instead, for the reason written
+       * where that constant is measured: five labels stop fitting long before the
+       * system font stops growing, and `auto` is still not the answer — it drops
+       * them by tab COUNT, at every size, which is the behaviour this comment was
+       * written to refuse.
        */
-      labelVisibilityMode="labeled"
+      labelVisibilityMode={labelVisibilityMode}
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>{intl.formatMessage(COPY.home)}</NativeTabs.Trigger.Label>

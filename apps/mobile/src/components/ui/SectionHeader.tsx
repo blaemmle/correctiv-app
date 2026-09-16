@@ -1,5 +1,6 @@
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 
+import { SplitRow } from './SplitRow';
 import { Typo } from './Typo';
 
 export type SectionHeaderProps = {
@@ -27,7 +28,7 @@ export type SectionHeaderProps = {
  */
 export function SectionHeader({ title, actionLabel, onAction, className }: SectionHeaderProps) {
   return (
-    <View className={['flex-row items-end justify-between', className ?? ''].join(' ')}>
+    <SplitRow align="end" className={className}>
       <Typo variant="headline-m">{title}</Typo>
       {actionLabel ? (
         <Pressable
@@ -42,6 +43,6 @@ export function SectionHeader({ title, actionLabel, onAction, className }: Secti
           </Typo>
         </Pressable>
       ) : null}
-    </View>
+    </SplitRow>
   );
 }

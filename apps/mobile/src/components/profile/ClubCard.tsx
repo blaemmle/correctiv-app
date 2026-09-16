@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { defineMessages, useIntl } from 'react-intl';
 import { View } from 'react-native';
 
-import { Overline, Typo } from '@/components/ui';
+import { Overline, SplitRow, Typo } from '@/components/ui';
 import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 import { colors } from '@/lib/theme';
 
@@ -56,10 +56,10 @@ export function ClubCard({
   const intl = useIntl();
   return (
     <View className="mt-s rounded-md bg-accent-alternative p-m">
-      <View className="flex-row items-center justify-between">
+      <SplitRow>
         <Overline label={CLUB} color="always-dark" />
         <Ionicons name="heart" size={20} color={colors['always-dark']} />
-      </View>
+      </SplitRow>
       <Typo variant="headline-l" color="always-dark" className="mt-m">
         {name || intl.formatMessage(COPY.fallbackName)}
       </Typo>

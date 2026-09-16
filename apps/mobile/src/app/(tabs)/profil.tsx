@@ -5,7 +5,7 @@ import { Pressable, View } from 'react-native';
 import { ClubCard } from '@/components/profile/ClubCard';
 import { NavCard } from '@/components/profile/NavCard';
 import { SettingRow } from '@/components/profile/SettingRow';
-import { Button, Hairline, Overline, Screen, SectionCard, Typo } from '@/components/ui';
+import { Button, Hairline, Overline, Screen, SectionCard, SplitRow, Typo } from '@/components/ui';
 import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 import type { NewsletterKey } from '@correctiv/app-core/stores/settings';
 import type { Entitlement } from '@correctiv/app-core/types/models';
@@ -354,13 +354,13 @@ function impactLine(intl: IntlShape, memberSince: string | null, hasArticles: bo
 /** One label/value line in the membership card. */
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row items-center justify-between gap-s">
+    <SplitRow align="baseline">
       <Typo variant="text-m" color="on-canvas-muted">
         {label}
       </Typo>
       <Typo variant="text-m" weight="semibold" className="shrink text-right">
         {value}
       </Typo>
-    </View>
+    </SplitRow>
   );
 }

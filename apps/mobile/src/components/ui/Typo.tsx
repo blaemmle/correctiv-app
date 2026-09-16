@@ -68,6 +68,35 @@ export function Typo({
   return (
     <Text
       className={className}
+      /*
+       * German compounds are longer than the lines a phone draws, and a word that
+       * does not fit is broken somewhere whatever we say. Off — which is Android's
+       * default — it is broken wherever the line happens to end and no hyphen is
+       * printed, which is how Home's teaser read "Gebäud / emodernisierungsgesetz"
+       * at 200 % system font (#158). `normal` hands the break to Android's own
+       * hyphenator, which knows where a German word may be divided and marks it.
+       *
+       * **Not on a headline**, and that line was measured rather than preferred.
+       * Hyphenation does not know about the font scale, so switching it on for
+       * everything changes 100 % as well. Shot on the emulator before and after:
+       * every screen whose words are the app's own came back identical — the gate,
+       * both onboarding steps, Entdecken, the settings — at 0.7 % RMSE, which is
+       * the clock in the status bar. The one thing that moved was a live headline,
+       * which divided as "Abgeord-netenhaus" where it had wrapped whole. German
+       * headlines are not hyphenated, and #158 asks for the 200 % defect to be
+       * fixed without changing 100 %, so the rule stops at the display sizes.
+       *
+       * What that leaves standing: a headline holding a single word longer than the
+       * line still breaks without a hyphen at 200 %. There is no such headline in
+       * the app's own copy, and a feed could carry one.
+       *
+       * Android only — the prop's own name says so, and there is no iOS or web
+       * equivalent to keep in step.
+       *
+       * Before `{...rest}`, so a caller can still turn it off for a line that must
+       * not be divided.
+       */
+      android_hyphenationFrequency={variant.startsWith('headline') ? 'none' : 'normal'}
       style={[typography[variant], override, { color: colors[color] }, style]}
       {...rest}
     />
