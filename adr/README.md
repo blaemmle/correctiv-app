@@ -35,6 +35,8 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0028](0028-one-shell-and-a-route-that-declares-its-context.md) | One shell, and a route that declares its context | accepted; retires two of 0027's and two code comments, answers #112, three open items named |
 | [0029](0029-the-handbook-keeps-its-own-primitives.md) | The handbook keeps its own primitives, and the app's stack stops at the specimen | accepted; retires nothing, measured and rejected |
 | [0030](0030-the-platforms-header-and-ours-on-web.md) | The platform's header on the phone, and ours on web | accepted; carries out 0026 §9 with two named exceptions, retires one claim each in 0004 and 0026 plus half a code comment, **iOS unrun** |
+| [0031](0031-what-a-check-in-this-repository-owes-its-reader.md) | What a check in this repository owes its reader | accepted; retires nothing, four rules the six source-reading checks arrived at independently |
+| [0032](0032-a-port-for-the-error-report-before-a-provider-for-it.md) | A port for the error report, before a provider for it | **proposed, nothing built**; leaves the provider, the production policy and every retry question to #95 |
 
 Nine notes for readers of the older ones:
 
