@@ -121,7 +121,19 @@ be built to match whichever one somebody read first.
 
 ## What it retires
 
-Nothing yet. The comment at `apps/mobile/src/app/_layout.tsx` about issue #95 stays
+**Two counts in [ADR 0006](0006-one-core-two-hosts.md)**, which says "four ports" in its
+superseded-in-part note and again over the port table. Both are struck there. The
+argument that section makes — what a port is, and why the core declares one instead of
+widening an allow-list — is untouched; only the number moved.
+
+Six more places said "four" outside the records and are corrected rather than struck,
+because prose in a living document gets corrected: `README.md`, `ARCHITECTURE.md`'s
+heading, `apps/handbook/plugin/registry.ts`, `apps/handbook/src/pages/Landing.tsx`, a
+comment in `Document.tsx`, and a pointer in `apps/mobile/__tests__/web-target.test.ts`.
+`apps/handbook/test/diagrams.test.ts` derives the number from `CorePlatform` now, so the
+next port does not need this paragraph.
+
+The comment at `apps/mobile/src/app/_layout.tsx` about issue #95 stays
 true about the seam; if this is accepted, the sentence "no provider is picked yet, so
 for now it goes to the log and nowhere else" becomes the host's implementation of this
 port rather than a placeholder, and the comment should say so.

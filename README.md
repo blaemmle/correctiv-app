@@ -21,7 +21,7 @@ to `main`. Four addresses worth going to directly:
 | [`/workbench`](https://faktenforum.github.io/correctiv-app/workbench) | The app itself in a phone or tablet frame, with an inspector for its state, its console, its palette and its layout. No install, no emulator. |
 | [`/sources`](https://faktenforum.github.io/correctiv-app/sources) | What each part of the app reads: a live source, sample data standing in for an API that does not exist yet, or nothing at all. |
 | [`/decisions`](https://faktenforum.github.io/correctiv-app/decisions) | Every architecture record, and which of their claims a later one has made false. |
-| [`/architecture`](https://faktenforum.github.io/correctiv-app/architecture) | One core, four ports, and the article path end to end. |
+| [`/architecture`](https://faktenforum.github.io/correctiv-app/architecture) | One core, its ports, and the article path end to end. |
 
 The screens work end to end and the backends behind them do not exist yet. Sign-in,
 the club join, the callouts and the Faktenforum claims run on typed sample data shaped

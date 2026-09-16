@@ -127,7 +127,7 @@ describe('web target', () => {
   it('reaches the bundled articles and feeds only through the platform adapter', () => {
     // The sibling rule above, for the other generated module. `lib/platform/expo.ts`
     // is the one file that knows the bundle exists — that is what the `ContentBundle`
-    // port is (ARCHITECTURE.md → The four ports, ADR 0006). A screen that imports it
+    // port is (ARCHITECTURE.md → The five ports, ADR 0006 and 0032). A screen that imports it
     // directly gets a list that cannot go live, evaluated once at module scope, plus
     // 6000 lines of snapshots in its route's import graph. `(tabs)/profil.tsx` did.
     const offenders = files.filter((file) => {
