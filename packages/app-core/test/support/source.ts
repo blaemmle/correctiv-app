@@ -1,12 +1,14 @@
 /**
  * A source file with its comments taken out, and its line numbering intact.
  *
- * Four checks across two workspaces read source as text, and every one of them has
- * to let a comment name the thing it is explaining: `colour-tiers.test.ts` writes
- * the tier names out in its own prose, an English comment quoting a German label is
- * exactly what AGENTS.md's language rule asks for, and `src/global.css` explains at
- * length which workbench test fails if its `@source` line goes. One helper rather
- * than one each, because the first two were copies and the bug below was in both.
+ * Several checks across two workspaces read source as text, and every one of them
+ * has to let a comment name the thing it is explaining: `colour-tiers.test.ts`
+ * writes the tier names out in its own prose, an English comment quoting a German
+ * label is exactly what AGENTS.md's language rule asks for, and `src/global.css`
+ * explains at length which workbench test fails if its `@source` line goes. One
+ * helper rather than one each, because the first two were copies and the bug below
+ * was in both. No count here on purpose: it was three, it is more now, and a number
+ * in a comment is a fact nothing reads back.
  *
  * It lives in the CORE's test directory and the app re-exports it
  * (`apps/mobile/__tests__/support/source.ts`), which is the only direction that
@@ -46,9 +48,9 @@
  * workspaces, and a colour token after one is invisible to `colour-tiers.test.ts`.
  * Closing either properly means scanning quotes, template literals and regex
  * literals with their escapes, which is a bug surface of its own in a helper whose
- * failure mode is four checks passing on less source than they think they read.
- * Named rather than closed, and named HERE rather than in one of them, because all
- * four inherit it.
+ * failure mode is every check built on it passing on less source than it thinks it
+ * read. Named rather than closed, and named HERE rather than in one of them,
+ * because every one of them inherits it.
  *
  * `apps/mobile/__tests__/no-workbench-dependency.test.ts` carries the guard that
  * makes the blank-file failure visible rather than quiet: every JSON it reads still

@@ -198,7 +198,7 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
  * caught sat on the list below for a different reason. So is a German string
  * written after a ` //` INSIDE a string literal, which that helper takes for a
  * comment and truncates; the limit is written down where the helper is, because
- * all three checks that read source inherit it.
+ * every check that reads source inherits it.
  *
  * Escapes are not on that list. `withEscapesDecoded` writes `'Pr\u00fcfen'` back
  * to `'Prüfen'` first, so a German string with one escaped letter in it — what a

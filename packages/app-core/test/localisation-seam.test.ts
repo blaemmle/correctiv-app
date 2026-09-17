@@ -157,7 +157,7 @@ function sourceFiles(dir: string): string[] {
  *    `src/lib/format.ts`, named in that function's own comment.
  *  - A German string after a ` //` inside a string literal, which `withoutComments`
  *    takes for a comment and truncates. Named in `test/support/source.ts`, where
- *    the function is, because all three checks that read source share it.
+ *    the function is, because every check that reads source shares it.
  *  - German inside `src/data/`, excluded by path — see `CONTENT` and
  *    `UI_VOCABULARY_IN_DATA` above for what that does and does not claim.
  *
