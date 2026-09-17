@@ -669,11 +669,12 @@ export function formatLayoutDocument(layout: HomeLayout): string {
   return `${print(obj(entries), 0, 0, '')}\n`;
 }
 
-// --- the two names both ends spell ----------------------------------------------
+// --- the names both ends spell ---------------------------------------------------
 
 /**
  * Re-exported rather than declared here, and `names.ts` says why in full: the dev
- * server needs both before it can match a request, and it cannot import this file at
- * all, because Node will not follow the core's JSON import without an attribute.
+ * server needs the key and the address before it can match a request, and it cannot
+ * import this file at all, because Node will not follow the core's JSON import without
+ * an attribute.
  */
 export { HOME_LAYOUT_ENDPOINT, HOME_LAYOUT_KEY, HOME_TIME_KEY } from './names';

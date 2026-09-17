@@ -1,14 +1,17 @@
 /**
- * The two names the editor's two ends have to spell the same way.
+ * The names the editor's two ends have to spell the same way.
  *
  * A leaf with no imports at all, and that is the whole reason it is a file. Vite loads
  * `vite.config.ts` with Node, and Node refuses the core's `home.layout.json` without an
  * import attribute — so a dev-server plugin cannot reach a module that imports the core,
- * and both of these are needed before a request can even be matched. Everything else the
- * endpoint needs is loaded through Vite's own pipeline when a request arrives, which is
- * what `plugin/home-layout.ts` does and says.
+ * and the endpoint needs both the key and the address before a request can even be
+ * matched. Everything else it needs is loaded through Vite's own pipeline when a request
+ * arrives, which is what `plugin/home-layout.ts` does and says.
  *
- * `document.ts` re-exports both, so nothing in the browser has to know this file exists.
+ * `document.ts` re-exports them, so nothing in the browser has to know this file exists.
+ * The third name below, the simulated clock's, is here for the company rather than for
+ * the dev server: it is the second half of the same seam, and a key that named the same
+ * tool from another file is how two spellings of one key start.
  */
 
 /**
