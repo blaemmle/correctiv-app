@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { withoutComments } from './support/source';
+import { withoutComments } from '@correctiv/prose-and-code';
 
 /**
  * The five German words `LABELS_FIT_UP_TO` was measured against, pinned.

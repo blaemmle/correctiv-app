@@ -1,0 +1,15 @@
+{
+  "name": "@correctiv/prose-and-code",
+  "description": "Helpers for the checks that hold a repository's prose to its code: a walk that cannot pass on nothing, a two-sided ratchet, a drift check, comment stripping, and a number read out of a sentence. Node and TypeScript, no framework, no test runner of its own.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
+  }
+}

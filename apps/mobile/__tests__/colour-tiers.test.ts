@@ -1,7 +1,13 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-import { withoutComments } from './support/source';
+import {
+  filesUnder,
+  floorFaults,
+  ratchet,
+  under,
+  withoutComments,
+} from '@correctiv/prose-and-code';
 
 /**
  * The check AGENTS.md says does not exist.
@@ -86,17 +92,6 @@ const APPLIES = /colou?r|palette|tint|background/i;
 const PRIMITIVE = 'white|black|neutral-\\d+';
 const V1_ALIAS = 'grey-\\d+|emphasis|alternative';
 
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) return sourceFiles(path);
-    return /\.(tsx?|css)$/.test(entry) ? [path] : [];
-  });
-}
-
-/** Path under `src/`, with `/` on every OS. */
-const under = (path: string) => relative(SRC, path).split(sep).join('/');
-
 /**
  * The gallery, excluded for the reason `__tests__/localisation-seam.test.ts`
  * excludes it and so that the two checks read one app rather than two: it is a
@@ -112,7 +107,9 @@ const under = (path: string) => relative(SRC, path).split(sep).join('/');
  */
 const DEVELOPER_ONLY = /^gallery\//;
 
-const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
+const FILES = filesUnder(SRC, /\.(tsx?|css)$/).filter(
+  (path) => !DEVELOPER_ONLY.test(under(SRC, path)),
+);
 
 interface Use {
   /** Path under `src/`, with `/` on every OS. */
@@ -126,7 +123,7 @@ function uses(tokens: string): Use[] {
   const asName = quoted(tokens);
   const asProperty = member(tokens);
   return FILES.flatMap((path) => {
-    const file = under(path);
+    const file = under(SRC, path);
     return withoutComments(readFileSync(path, 'utf8'))
       .split('\n')
       .flatMap((text, index) => {
@@ -137,15 +134,8 @@ function uses(tokens: string): Use[] {
   });
 }
 
-/** `{ 'app/atlas.tsx': { 'grey-500': 5 } }` — one count per file per token. */
-function tally(found: Use[]): Record<string, Record<string, number>> {
-  const out: Record<string, Record<string, number>> = {};
-  for (const { file, token } of found) {
-    out[file] ??= {};
-    out[file][token] = (out[file][token] ?? 0) + 1;
-  }
-  return out;
-}
+/** `app/atlas.tsx: grey-500` — the key the ratchet below counts and excuses by. */
+const site = ({ file, token }: Use) => `${file}: ${token}`;
 
 /**
  * **What a green run here does NOT mean**, at the top of the assertions rather than
@@ -175,7 +165,7 @@ describe('colour comes from the tier that means the role', () => {
   it('reads the app it is checking (guards against a silently empty walk)', () => {
     // A walk that matched nothing writes no offenders, and every assertion below
     // passes over it.
-    expect(FILES.length).toBeGreaterThan(50);
+    expect(floorFaults({ 'files under src/': { found: FILES.length, atLeast: 50 } })).toEqual([]);
   });
 
   it('writes no primitive where a semantic token exists', () => {
@@ -215,85 +205,71 @@ const NO_SUCCESSOR: Record<string, string> = {
  * its number down with it and cannot leave an excuse behind for the next person to
  * read as permission.
  *
- * The counts are per file rather than per tier because "anywhere new" includes a
- * fourth `grey-500` in a file that already had three. Fifty uses across
+ * The counts are per file AND per token because "anywhere new" includes a fourth
+ * `grey-500` in a file that already had three — so the key is `file: token` and the
+ * value is how many, which is the counted form `ratchet` takes. Fifty uses across
  * thirty-four files on 2026-09-15; forty-five of them are `grey-500`, which is the
  * same forty-five ADR 0022 counted, arrived at independently.
  */
-const STILL_ON_THE_V1_TIER: Record<string, Record<string, number>> = {
-  'app/(tabs)/_layout.tsx': { 'grey-500': 1 },
-  'app/(tabs)/_layout.web.tsx': { 'grey-500': 1 },
-  'app/(tabs)/mitmachen.tsx': { 'grey-500': 1 },
-  'app/atlas.tsx': { 'grey-500': 5 },
-  'app/aufruf/[slug].tsx': { 'grey-500': 2 },
-  'app/backstage.tsx': { 'grey-500': 4 },
-  'app/behauptung/[id].tsx': { 'grey-500': 2 },
-  'app/einstellungen.tsx': { 'grey-500': 1 },
-  'app/faktenforum.tsx': { 'grey-500': 1 },
-  'app/formular.tsx': { 'grey-500': 1 },
-  'app/gespeichert.tsx': { 'grey-500': 2 },
-  'app/player.tsx': { 'grey-500': 3 },
-  'app/spotlight.tsx': { 'grey-500': 1 },
-  'app/suche.tsx': { 'grey-500': 1 },
-  'app/tagebuch/[id].tsx': { 'grey-500': 1 },
-  'app/video.tsx': { 'grey-500': 1 },
-  'components/discover/ProjectRow.tsx': { 'grey-500': 1 },
-  'components/discover/SampleHitRow.tsx': { 'grey-500': 2 },
-  'components/discover/SearchEntry.tsx': { 'grey-500': 1 },
-  'components/feed/ArticleHero.tsx': { 'grey-500': 1 },
-  'components/feed/ArticleRow.tsx': { 'grey-500': 1 },
-  'components/gate/LoginGate.tsx': { 'grey-500': 2 },
-  'components/home/SpotlightBriefing.tsx': { 'grey-500': 1 },
-  'components/media/EpisodeRow.tsx': { 'grey-500': 1 },
-  'components/media/MediaCard.tsx': { 'grey-500': 1 },
-  'components/media/SeriesTile.tsx': { 'grey-500': 1 },
+const STILL_ON_THE_V1_TIER: Record<string, number> = {
+  'app/(tabs)/_layout.tsx: grey-500': 1,
+  'app/(tabs)/_layout.web.tsx: grey-500': 1,
+  'app/(tabs)/mitmachen.tsx: grey-500': 1,
+  'app/atlas.tsx: grey-500': 5,
+  'app/aufruf/[slug].tsx: grey-500': 2,
+  'app/backstage.tsx: grey-500': 4,
+  'app/behauptung/[id].tsx: grey-500': 2,
+  'app/einstellungen.tsx: grey-500': 1,
+  'app/faktenforum.tsx: grey-500': 1,
+  'app/formular.tsx: grey-500': 1,
+  'app/gespeichert.tsx: grey-500': 2,
+  'app/player.tsx: grey-500': 3,
+  'app/spotlight.tsx: grey-500': 1,
+  'app/suche.tsx: grey-500': 1,
+  'app/tagebuch/[id].tsx: grey-500': 1,
+  'app/video.tsx: grey-500': 1,
+  'components/discover/ProjectRow.tsx: grey-500': 1,
+  'components/discover/SampleHitRow.tsx: grey-500': 2,
+  'components/discover/SearchEntry.tsx: grey-500': 1,
+  'components/feed/ArticleHero.tsx: grey-500': 1,
+  'components/feed/ArticleRow.tsx: grey-500': 1,
+  'components/gate/LoginGate.tsx: grey-500': 2,
+  'components/home/SpotlightBriefing.tsx: grey-500': 1,
+  'components/media/EpisodeRow.tsx: grey-500': 1,
+  'components/media/MediaCard.tsx: grey-500': 1,
+  'components/media/SeriesTile.tsx: grey-500': 1,
   // `grey-250` left this file in #151, which moved the progress track to `stroke`.
-  'components/participate/CalloutCard.tsx': { 'grey-500': 1 },
-  'components/participate/ClaimStatusTag.tsx': { 'grey-250': 1 },
-  'components/participate/FormField.tsx': { 'grey-500': 1 },
-  'components/player/MiniPlayer.tsx': { 'grey-500': 1 },
-  'components/profile/NavCard.tsx': { 'grey-500': 1 },
-  'components/profile/SettingRow.tsx': { 'grey-300': 1, 'grey-500': 1 },
-  'components/ui/Badge.tsx': { 'grey-250': 1 },
-  'components/ui/Thumbnail.tsx': { 'grey-300': 1 },
+  'components/participate/CalloutCard.tsx: grey-500': 1,
+  'components/participate/ClaimStatusTag.tsx: grey-250': 1,
+  'components/participate/FormField.tsx: grey-500': 1,
+  'components/player/MiniPlayer.tsx: grey-500': 1,
+  'components/profile/NavCard.tsx: grey-500': 1,
+  'components/profile/SettingRow.tsx: grey-300': 1,
+  'components/profile/SettingRow.tsx: grey-500': 1,
+  'components/ui/Badge.tsx: grey-250': 1,
+  'components/ui/Thumbnail.tsx: grey-300': 1,
 };
 
 describe('the deprecated v1 tier only leaves', () => {
-  const found = tally(uses(V1_ALIAS));
+  const { arrivals, stale } = ratchet(uses(V1_ALIAS).map(site), STILL_ON_THE_V1_TIER);
 
   it('acquires no new use of a v1 alias', () => {
-    const arrivals: string[] = [];
-    for (const [file, tokens] of Object.entries(found)) {
-      for (const [token, count] of Object.entries(tokens)) {
-        const allowed = STILL_ON_THE_V1_TIER[file]?.[token] ?? 0;
-        if (count > allowed) arrivals.push(`${file}: ${token} ×${count}, excused ×${allowed}`);
-      }
-    }
-
-    expect(arrivals.sort()).toEqual([]);
+    expect(arrivals).toEqual([]);
   });
 
   it('excuses nothing that has since been migrated', () => {
     // The direction a one-sided list cannot do, and the one that makes the
     // migration finishable: the last `grey-500` to go takes this file's last entry
     // with it, and then the whole tier is gone rather than merely tolerated.
-    const stale: string[] = [];
-    for (const [file, tokens] of Object.entries(STILL_ON_THE_V1_TIER)) {
-      for (const [token, count] of Object.entries(tokens)) {
-        const actual = found[file]?.[token] ?? 0;
-        if (actual < count) stale.push(`${file}: ${token} excused ×${count}, found ×${actual}`);
-      }
-    }
-
-    expect(stale.sort()).toEqual([]);
+    expect(stale).toEqual([]);
   });
 
   it('excuses only the three aliases ADR 0022 says have no successor', () => {
     // A ratchet that takes any v1 name would let `bg-grey-100` in behind a file
     // that was already listed for `grey-500`, and `grey-100` is `canvas`.
-    const unexplained = Object.entries(STILL_ON_THE_V1_TIER)
-      .flatMap(([file, tokens]) => Object.keys(tokens).map((token) => `${file}: ${token}`))
-      .filter((entry) => !NO_SUCCESSOR[entry.split(': ')[1]]);
+    const unexplained = Object.keys(STILL_ON_THE_V1_TIER).filter(
+      (entry) => !NO_SUCCESSOR[entry.split(': ')[1]],
+    );
 
     expect(unexplained).toEqual([]);
   });

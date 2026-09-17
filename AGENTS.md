@@ -250,6 +250,17 @@ measured in [ARCHITECTURE.md](ARCHITECTURE.md) and is deliberately not repeated 
 because a duration typed in two places is two facts and one of them goes wrong on its
 own. Do not introduce eslint or prettier.
 
+**A check that reads this repository as text is written with
+[`packages/prose-and-code`](packages/prose-and-code/README.md)** rather than by hand:
+the walk, the floor that stops it passing on nothing, the excuse list asserted in both
+directions, the drift check, the comment strippers with the guard that says when one
+has eaten a file, and the number in a sentence held to what the code counts.
+Its README says what each one catches, and that is the only place that says it — a
+check here carries the argument for its own rule and not the argument for the
+mechanism. The package is Apache-2.0 inside an AGPL repository
+([ADR 0043](adr/0043-two-concepts-become-packages-and-the-shell-stays.md) §3), so it
+may import nothing else in here; everything else here may import it.
+
 **A green check proves nothing about how the app looks or whether it runs.** After a
 route, a bundle config or a platform split, run `npm run build:web`, then
 `node screens/tools/serve-clean.mjs apps/mobile/dist 8099` and open it. A plain

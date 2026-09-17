@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
+import { filesUnder, floorFaults, ratchet, under } from '@correctiv/prose-and-code';
 import ts from 'typescript';
 
 /**
@@ -72,18 +73,7 @@ const DEVELOPER_ONLY = /^gallery\//;
  */
 const TEXT_BEARING = new Set(['Typo', 'Text', 'Button', 'Badge', 'Chip']);
 
-/** Path under `src/`, with `/` on every OS. */
-const under = (path: string) => relative(SRC, path).split(sep).join('/');
-
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) return sourceFiles(path);
-    return entry.endsWith('.tsx') ? [path] : [];
-  });
-}
-
-const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
+const FILES = filesUnder(SRC, /\.tsx$/).filter((path) => !DEVELOPER_ONLY.test(under(SRC, path)));
 
 const openingOf = (node: ts.JsxElement | ts.JsxSelfClosingElement) =>
   ts.isJsxSelfClosingElement(node) ? node : node.openingElement;
@@ -158,7 +148,7 @@ function read(): { boxes: Box[]; tags: Set<string>; elements: number } {
   let elements = 0;
 
   for (const path of FILES) {
-    const file = under(path);
+    const file = under(SRC, path);
     const source = ts.createSourceFile(
       path,
       readFileSync(path, 'utf8'),
@@ -205,12 +195,24 @@ const MEASURED_AND_LEFT: Record<string, string> = {
 };
 
 describe('a box drawn around text does not fix its height', () => {
+  const { arrivals, stale } = ratchet(
+    app.boxes.map((box) => ({
+      key: box.where,
+      as: `<${box.tag} style={{ height: ${box.height} }}> holds text`,
+    })),
+    MEASURED_AND_LEFT,
+  );
+
   it('reads the app it is checking (guards against a silently empty walk)', () => {
     // A moved directory or a parser that returned nothing writes no offenders, and
     // every assertion below passes over it. Two numbers, because a walk that found
     // files but no JSX would still satisfy the first.
-    expect(FILES.length).toBeGreaterThan(50);
-    expect(app.elements).toBeGreaterThan(300);
+    expect(
+      floorFaults({
+        'files under src/': { found: FILES.length, atLeast: 50 },
+        'JSX elements parsed': { found: app.elements, atLeast: 300 },
+      }),
+    ).toEqual([]);
   });
 
   it('knows the components that put words in a box', () => {
@@ -223,20 +225,13 @@ describe('a box drawn around text does not fix its height', () => {
   });
 
   it('acquires no new one', () => {
-    const arrivals = app.boxes
-      .filter((box) => !MEASURED_AND_LEFT[box.where])
-      .map((box) => `${box.where} → <${box.tag} style={{ height: ${box.height} }}> holds text`);
-
-    expect(arrivals.sort()).toEqual([]);
+    expect(arrivals).toEqual([]);
   });
 
   it('excuses nothing that has since been let go', () => {
     // The direction a one-sided list cannot do, and the one that makes this
     // finishable: the last `height` to become a `minHeight` takes the last entry
     // above with it.
-    const found = new Set(app.boxes.map((box) => box.where));
-    const stale = Object.keys(MEASURED_AND_LEFT).filter((where) => !found.has(where));
-
-    expect(stale.sort()).toEqual([]);
+    expect(stale).toEqual([]);
   });
 });

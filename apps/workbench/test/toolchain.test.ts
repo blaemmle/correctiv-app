@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { floorFaults, numberInProse } from '@correctiv/prose-and-code';
+
 import { ROOT } from '../plugin/collect.ts';
 
 /**
@@ -74,29 +76,49 @@ describe('the Node version', () => {
     // Guards every assertion below: a range spelled `^24.1.0` or `>= 24` still
     // yields 24, but a rewrite to something with no leading number would make
     // the three checks below compare against NaN and pass nothing.
-    expect(required).toBeGreaterThan(0);
+    expect(
+      floorFaults({ 'a major version in engines.node': { found: required, atLeast: 1 } }),
+    ).toEqual([]);
   });
 
   it('is the one `.nvmrc` hands a developer', () => {
-    const nvmrc = readFileSync(join(ROOT, '.nvmrc'), 'utf8').trim();
-    expect(Number(nvmrc.replace(/^v/, '').split('.')[0])).toBe(required);
+    expect(
+      numberInProse({
+        documents: [{ name: '.nvmrc', text: readFileSync(join(ROOT, '.nvmrc'), 'utf8') }],
+        pattern: /^v?(\d+)/,
+        value: required,
+        what: 'engines.node asks for',
+      }),
+    ).toEqual([]);
   });
 
   it('is the one every CI job runs', () => {
+    // Every workflow rather than the interesting one, and each file named: a
+    // workflow that pins nothing is a different defect from one that pins the wrong
+    // number, and only one of the two is visible in a count. The first defect is
+    // the empty-match fault, which fires when NO workflow pins a version at all.
     const dir = join(ROOT, '.github/workflows');
-    const pinned = readdirSync(dir).flatMap((file) => {
-      const text = readFileSync(join(dir, file), 'utf8');
-      return [...text.matchAll(/node-version:\s*'?(\d+)/g)].map((hit) => `${file}: ${hit[1]}`);
-    });
-    // Named rather than counted: a workflow that pins nothing is a different
-    // defect from one that pins the wrong number, and only one of the two is
-    // visible in a count.
-    expect(pinned.filter((entry) => !entry.endsWith(`: ${required}`))).toEqual([]);
-    expect(pinned.length).toBeGreaterThan(0);
+    expect(
+      numberInProse({
+        documents: readdirSync(dir).map((file) => ({
+          name: file,
+          text: readFileSync(join(dir, file), 'utf8'),
+        })),
+        pattern: /node-version:\s*'?(\d+)/,
+        value: required,
+        what: 'engines.node asks for',
+      }),
+    ).toEqual([]);
   });
 
   it('is the one the README tells a newcomer to install', () => {
-    const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
-    expect(/^Node (\d+)/m.exec(readme)?.[1]).toBe(String(required));
+    expect(
+      numberInProse({
+        documents: [{ name: 'README.md', text: readFileSync(join(ROOT, 'README.md'), 'utf8') }],
+        pattern: /^Node (\d+)/m,
+        value: required,
+        what: 'engines.node asks for',
+      }),
+    ).toEqual([]);
   });
 });

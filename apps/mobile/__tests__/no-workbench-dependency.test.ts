@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 
-import { IMPORT_RE, specifier, withoutComments } from './support/source';
+import { eatenByStripping, withoutComments } from '@correctiv/prose-and-code';
+
+import { IMPORT_RE, specifier } from './support/source';
 
 /**
  * ADR 0040, the configuration half.
@@ -231,6 +233,8 @@ const THIS_FILE = 'apps/mobile/__tests__/no-workbench-dependency.test.ts';
 const NAMES_IT_IN_PROSE: Record<string, string> = {
   'apps/mobile/scripts/generate-component-ids.mjs':
     "the error message and the doc comment it writes into `src/gallery/components.generated.ts`, which name the workbench's `api.mjs` as the third place a component address is spelled",
+  'packages/prose-and-code/test/licence-boundary.test.ts':
+    "the list of names that Apache-2.0 code in `packages/prose-and-code` may not import, the workbench among them. It is a check that FORBIDS the import, so the name is there to be refused, which is ADR 0040 §3's line drawn by another check rather than crossed. The import net below reads the file with nothing excused, so an actual import would still be red.",
 };
 
 describe('the app does not depend on the workbench', () => {
@@ -273,18 +277,18 @@ describe('the app does not depend on the workbench', () => {
    * eaten the middle of does not parse — and unlike a length or a keyword it needs
    * no number that goes stale. tsconfig is JSONC, which is why this runs after the
    * strip rather than before it.
+   *
+   * The shape of the guard is `@correctiv/prose-and-code`'s `eatenByStripping`,
+   * because a stripper that can produce nonsense should be able to say so wherever
+   * one is used, and the oracle — here `JSON.parse`, which is its default — is the
+   * caller's, because only the caller knows what the file was supposed to be.
    */
   it('reads JSON that is still JSON once the comments are out', () => {
-    const broken = [...configs, ...sources]
-      .filter((full) => full.endsWith('.json'))
-      .flatMap((full) => {
-        try {
-          JSON.parse(withoutComments(readFileSync(full, 'utf8')));
-          return [];
-        } catch (error) {
-          return [`${rel(full)} — ${(error as Error).message.split('\n')[0]}`];
-        }
-      });
+    const broken = eatenByStripping({
+      documents: [...configs, ...sources]
+        .filter((full) => full.endsWith('.json'))
+        .map((full) => ({ name: rel(full), text: readFileSync(full, 'utf8') })),
+    });
 
     expect(broken).toEqual([]);
   });

@@ -85,13 +85,23 @@ before you want the demo to show recent articles.
 - [`apps/workbench`](apps/workbench) is the published site, including `/preview`.
 - [`packages/design-tokens`](packages/design-tokens) and [`tokens/`](tokens/README.md)
   are the colours, spacing and type scale, vendored from CORRECTIV's design tokens.
+- [`packages/prose-and-code`](packages/prose-and-code) is the helpers the checks in
+  here are written with: a walk that cannot pass on nothing, an excuse list that can
+  only shrink, a number in a sentence held to what the code counts. Apache-2.0 and
+  framework-free, so another project can take it.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) is how they fit together, [AGENTS.md](AGENTS.md) is
 how to work in here, and [RELEASE.md](RELEASE.md) is how a build reaches a device.
 
 ## Licence
 
-AGPL-3.0-or-later, see [`LICENSE`](LICENSE). The MIT notice for the parts scaffolded
+AGPL-3.0-or-later, see [`LICENSE`](LICENSE), with one exception that has a `LICENSE`
+of its own: [`packages/prose-and-code`](packages/prose-and-code) is **Apache-2.0**,
+because it is meant to be taken by projects that cannot take AGPL
+([ADR 0043](adr/0043-two-concepts-become-packages-and-the-shell-stays.md) §3). That
+is a rule about imports rather than a field in a manifest — nothing in that directory
+may import anything else in here — and `packages/prose-and-code/test/licence-boundary.test.ts`
+is the check under it. The MIT notice for the parts scaffolded
 by `create-expo-app` and for the bundled fonts is kept in
 [`apps/mobile/NOTICE.md`](apps/mobile/NOTICE.md); the design tokens are vendored from
 [correctiv/wp-design-tokens](https://github.com/correctiv/wp-design-tokens)

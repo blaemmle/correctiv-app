@@ -42,6 +42,7 @@
     "uniwind": "^1.11.0"
   },
   "devDependencies": {
+    "@correctiv/prose-and-code": "*",
     "@formatjs/cli": "^6.16.28",
     "@rozenite/metro": "2.4.0",
     "@rozenite/mmkv-plugin": "2.1.0",

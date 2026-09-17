@@ -17,8 +17,10 @@
  * belongs in the package that owns them and in a process of its own, not in this
  * app's jest workers. The header there says the rest.
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
+import { filesUnder, numberInProse, withoutComments } from '@correctiv/prose-and-code';
 
 import {
   colors,
@@ -341,28 +343,12 @@ describe('two-scheme palette', () => {
  * `grey-500` are deliberately out of scope: the ADR's table says the semantic tier
  * has no foreground that faint, so there are dozens of them and they are correct.
  */
-/** Every `.ts`/`.tsx` under a directory, so a new file is scanned without being listed. */
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sourceFiles(path);
-    return /\.tsx?$/.test(entry.name) ? [path] : [];
-  });
-}
-
 /**
+ * `@correctiv/prose-and-code` is where the walk and the comment stripper live now.
  * Prose about a token is not a use of one; the two files kept below explain
  * themselves at length, and `Typo` and `LiveBanner` name the tiers in theirs.
- *
- * A block comment leaves its newlines behind, so an offender is reported at the
- * line it is on. Dropping them shifts every line after the first doc comment in the
- * file, which is most of them here, and the report then points at innocent code.
  */
-function withoutComments(code: string): string {
-  return code
-    .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, ''))
-    .replace(/(^|\s)\/\/[^\n]*/g, '$1');
-}
+const SOURCE = /\.tsx?$/;
 
 describe('the deprecated aliases', () => {
   /**
@@ -386,7 +372,7 @@ describe('the deprecated aliases', () => {
     );
 
     const offenders: string[] = [];
-    for (const file of sourceFiles(SRC)) {
+    for (const file of filesUnder(SRC, SOURCE)) {
       const relative = file.slice(SRC.length + 1);
       const lines = withoutComments(readFileSync(file, 'utf8')).split('\n');
       for (const [index, line] of lines.entries()) {
@@ -431,15 +417,27 @@ describe("the app's two role colours", () => {
     // prints `color="always-light"` beside the specimen using it, so a rename has to
     // edit it like any other. Every such line writes exactly one name, which is why
     // lines and occurrences agree and the count needs no tie-break.
-    const sites = sourceFiles(join(APP, 'src')).flatMap((file) =>
+    const sites = filesUnder(join(APP, 'src'), SOURCE).flatMap((file) =>
       withoutComments(readFileSync(file, 'utf8'))
         .split('\n')
         .flatMap((line) => line.match(/always-light|always-dark/g) ?? []),
     );
 
-    const agents = readFileSync(resolve(APP, '../../AGENTS.md'), 'utf8');
-    const claimed = /all (\d+) existing call sites/.exec(agents)?.[1];
-    expect([claimed, String(sites.length)]).toEqual([String(sites.length), String(sites.length)]);
+    // The sentence is quoted rather than derived, and it stays here rather than in
+    // the helper: the phrasing is what makes it findable, and a pattern loose
+    // enough to fit whatever AGENTS.md says next would match something that is not
+    // this claim. What the helper adds is the other failure — a rewritten sentence
+    // that this stops matching, which used to compare `undefined` and said so in a
+    // way nobody could read.
+    const agents = resolve(APP, '../../AGENTS.md');
+    expect(
+      numberInProse({
+        documents: [{ name: 'AGENTS.md', text: readFileSync(agents, 'utf8') }],
+        pattern: /all (\d+) existing call sites/,
+        value: sites.length,
+        what: 'apps/mobile/src writes the two names on',
+      }),
+    ).toEqual([]);
   });
 });
 

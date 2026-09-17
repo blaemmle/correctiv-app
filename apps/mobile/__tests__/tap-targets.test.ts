@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { spacingPx, type SpacingToken } from '@correctiv/design-tokens/tokens.generated';
+import { filesUnder, floorFaults, ratchet, under } from '@correctiv/prose-and-code';
 import ts from 'typescript';
 
 import { sizes } from '../src/lib/theme/sizes';
@@ -68,18 +69,7 @@ const INTERACTIVE = new Set([
   'TouchableWithoutFeedback',
 ]);
 
-/** Path under `src/`, with `/` on every OS. */
-const under = (path: string) => relative(SRC, path).split(sep).join('/');
-
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) return sourceFiles(path);
-    return entry.endsWith('.tsx') ? [path] : [];
-  });
-}
-
-const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
+const FILES = filesUnder(SRC, /\.tsx$/).filter((path) => !DEVELOPER_ONLY.test(under(SRC, path)));
 
 const openingOf = (node: ts.JsxElement | ts.JsxSelfClosingElement) =>
   ts.isJsxSelfClosingElement(node) ? node : node.openingElement;
@@ -231,7 +221,7 @@ function read(): { controls: Control[]; slops: Slop[]; elements: number } {
   let elements = 0;
 
   for (const path of FILES) {
-    const file = under(path);
+    const file = under(SRC, path);
     const source = ts.createSourceFile(
       path,
       readFileSync(path, 'utf8'),
@@ -308,9 +298,16 @@ describe('a control is big enough for a thumb', () => {
     // every assertion below passes over it. Three numbers, because a walk that found
     // files but no JSX would satisfy the first, and one that found JSX but computed
     // no heights would satisfy the second.
-    expect(FILES.length).toBeGreaterThan(50);
-    expect(app.elements).toBeGreaterThan(300);
-    expect(app.controls.length).toBeGreaterThan(10);
+    expect(
+      floorFaults({
+        'files under src/': { found: FILES.length, atLeast: 50 },
+        'JSX elements parsed': { found: app.elements, atLeast: 300 },
+        'controls with a box this could measure': {
+          found: app.controls.length,
+          atLeast: 10,
+        },
+      }),
+    ).toEqual([]);
   });
 
   it('keeps the floor at the figure the guideline names', () => {
@@ -322,25 +319,26 @@ describe('a control is big enough for a thumb', () => {
     expect(sizes.tapTarget).toBe(44);
   });
 
-  it('acquires no control under the floor', () => {
-    const small = underTheFloor(app.controls)
-      .filter((control) => !MEASURED_AND_LEFT[control.where])
-      .map((control) => {
-        const width = control.width === undefined ? '' : `${control.width} wide and `;
-        return `${control.where} → <${control.tag}> is ${width}${control.height} tall, from ${control.from}`;
-      });
+  const small = ratchet(
+    underTheFloor(app.controls).map((control) => {
+      const width = control.width === undefined ? '' : `${control.width} wide and `;
+      return {
+        key: control.where,
+        as: `<${control.tag}> is ${width}${control.height} tall, from ${control.from}`,
+      };
+    }),
+    MEASURED_AND_LEFT,
+  );
 
-    expect(small.sort()).toEqual([]);
+  it('acquires no control under the floor', () => {
+    expect(small.arrivals).toEqual([]);
   });
 
   it('excuses nothing that has since been given the room', () => {
     // The direction a one-sided list cannot do. An excuse addressed by line also
     // fails when the control it named moves, which is deliberate: the next control
     // to land on that line would otherwise inherit the permission.
-    const small = new Set(underTheFloor(app.controls).map((control) => control.where));
-    const stale = Object.keys(MEASURED_AND_LEFT).filter((where) => !small.has(where));
-
-    expect(stale.sort()).toEqual([]);
+    expect(small.stale).toEqual([]);
   });
 });
 
@@ -366,18 +364,19 @@ const SLOP_WITH_A_REASON: Record<string, string> = {
 };
 
 describe('every hitSlop is argued for', () => {
-  it('acquires no new one', () => {
-    const arrivals = app.slops
-      .filter((slop) => !SLOP_WITH_A_REASON[slop.where])
-      .map((slop) => `${slop.where} → <${slop.tag}> hitSlop, with no entry saying what it is for`);
+  const { arrivals, stale } = ratchet(
+    app.slops.map((slop) => ({
+      key: slop.where,
+      as: `<${slop.tag}> hitSlop, with no entry saying what it is for`,
+    })),
+    SLOP_WITH_A_REASON,
+  );
 
-    expect(arrivals.sort()).toEqual([]);
+  it('acquires no new one', () => {
+    expect(arrivals).toEqual([]);
   });
 
   it('excuses nothing that no longer has one', () => {
-    const found = new Set(app.slops.map((slop) => slop.where));
-    const stale = Object.keys(SLOP_WITH_A_REASON).filter((where) => !found.has(where));
-
-    expect(stale.sort()).toEqual([]);
+    expect(stale).toEqual([]);
   });
 });

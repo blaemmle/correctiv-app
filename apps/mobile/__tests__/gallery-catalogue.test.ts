@@ -8,7 +8,7 @@ import {
   nestedComponentFiles,
   render,
 } from '../scripts/generate-component-ids.mjs';
-import { withoutComments } from './support/source';
+import { excusesWithoutReason, floorFaults, withoutComments } from '@correctiv/prose-and-code';
 
 /**
  * What is left of "nothing gets forgotten" once a TYPE carries most of it.
@@ -70,8 +70,8 @@ import { withoutComments } from './support/source';
  * `apps/workbench/test/direct.test.ts` makes: importing it pulls in every
  * component in the app and the `.tsx` transform for all of them, to answer a
  * question about a list of names. The `//`-inside-a-string limit every check
- * built on `support/source.ts` inherits applies here too; it is written down
- * beside the helper.
+ * built on `@correctiv/prose-and-code`'s `withoutComments` inherits applies here
+ * too; it is written down beside the helper.
  */
 const APP = resolve(__dirname, '..');
 const COMPONENTS = resolve(APP, 'src/components');
@@ -147,7 +147,9 @@ describe('the component walk the generated union is built from', () => {
     // empty — and an empty union satisfies every type-level check the catalogue
     // makes of it, because `Exclude<never, …>` is `never`. The generator refuses
     // to emit nothing at all; this is the floor under that.
-    expect(declared.length).toBeGreaterThan(40);
+    expect(
+      floorFaults({ 'components the walk declared': { found: declared.length, atLeast: 40 } }),
+    ).toEqual([]);
   });
 
   it('keeps the generated union current (no drift against src/components)', () => {
@@ -239,8 +241,15 @@ describe('the catalogue as written', () => {
     // The parse is over text, so a rename of `folder:` or `name:` in the
     // catalogue's own shape would empty this list rather than break it — and an
     // empty list makes the duplicate check below pass with nothing to say.
-    expect(catalogued.length).toBeGreaterThan(40);
-    expect(new Set(catalogued.map((id) => id.split('/')[0])).size).toBeGreaterThan(5);
+    expect(
+      floorFaults({
+        'entries read out of the catalogue': { found: catalogued.length, atLeast: 40 },
+        'folders they are filed under': {
+          found: new Set(catalogued.map((id) => id.split('/')[0])).size,
+          atLeast: 5,
+        },
+      }),
+    ).toEqual([]);
   });
 
   it('lists no component twice', () => {
@@ -271,7 +280,9 @@ describe('the components with no entry of their own', () => {
     // Read as text, so renaming `NoEntryOfItsOwn` empties this list rather than
     // breaking it, and both assertions below would then pass on nothing. One
     // today; the number is not the point, the presence is.
-    expect(excused.length).toBeGreaterThan(0);
+    expect(floorFaults({ 'excused components': { found: excused.length, atLeast: 1 } })).toEqual(
+      [],
+    );
   });
 
   it('gives every exception a reason rather than a path', () => {
@@ -279,9 +290,15 @@ describe('the components with no entry of their own', () => {
     // paths says nothing about which is a debt and which is a fact, so the next
     // person adds one more. A doc comment is invisible to the compiler, which is
     // why this assertion survived the move up the ladder.
-    const silent = excused.filter(({ why }) => why.length < 20).map(({ id }) => id);
-
-    expect(silent.sort()).toEqual([]);
+    expect(
+      excusesWithoutReason(
+        Object.fromEntries(excused.map(({ id, why }) => [id, why])),
+        // Twenty rather than forty: the argument here is a doc comment above the
+        // alias and is usually a paragraph, so the floor is only catching the entry
+        // that carries a word.
+        20,
+      ),
+    ).toEqual([]);
   });
 
   it('keeps every excused component drawn somewhere in the catalogue', () => {

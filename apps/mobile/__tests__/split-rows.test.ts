@@ -1,7 +1,14 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-import { withoutComments } from './support/source';
+import {
+  excusesWithoutReason,
+  filesUnder,
+  floorFaults,
+  ratchet,
+  under,
+  withoutComments,
+} from '@correctiv/prose-and-code';
 
 /**
  * A two-sided row is written once, in `ui/SplitRow`, and not again.
@@ -38,17 +45,6 @@ const THE_PRIMITIVE = 'components/ui/SplitRow.tsx';
  */
 const DEVELOPER_ONLY = /^gallery\//;
 
-/** Path under `src/`, with `/` on every OS. */
-const under = (path: string) => relative(SRC, path).split(sep).join('/');
-
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) return sourceFiles(path);
-    return /\.tsx?$/.test(entry) ? [path] : [];
-  });
-}
-
 /**
  * The places that spell `justify-between` themselves, and why each one is not a
  * two-sided row.
@@ -68,42 +64,43 @@ const NOT_A_TWO_SIDED_ROW: Record<string, string> = {
     'A column, not a row: `flex-1 justify-between` pushes the meta line to the bottom of a tile of fixed height. The defect this check is about is horizontal, and there is no second side here to collide with.',
 };
 
-const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
+const FILES = filesUnder(SRC, /\.tsx?$/).filter((path) => !DEVELOPER_ONLY.test(under(SRC, path)));
 
 /** Every file under `src/` that spells the class, comments stripped. */
 const users = FILES.filter((path) =>
   withoutComments(readFileSync(path, 'utf8')).includes('justify-between'),
-).map(under);
+).map((path) => under(SRC, path));
+
+/**
+ * The primitive is not an offender, so it is taken out before the ratchet rather
+ * than excused in it: an entry in `NOT_A_TWO_SIDED_ROW` is a place the rule is
+ * broken and tolerated, and this is the place the rule is kept.
+ */
+const byHand = users.filter((file) => file !== THE_PRIMITIVE);
 
 describe('a two-sided row goes through SplitRow', () => {
+  const { arrivals, stale } = ratchet(byHand, NOT_A_TWO_SIDED_ROW);
+
   it('reads the app it is checking (guards against a silently empty walk)', () => {
     // A moved directory or a comment stripper that ate the file would otherwise
     // make every assertion below pass by having nothing to read.
-    expect(FILES.length).toBeGreaterThan(50);
+    expect(floorFaults({ 'files under src/': { found: FILES.length, atLeast: 50 } })).toEqual([]);
     expect(users).toContain(THE_PRIMITIVE);
   });
 
   it('builds the row in one place', () => {
-    const byHand = users.filter((file) => file !== THE_PRIMITIVE && !NOT_A_TWO_SIDED_ROW[file]);
-
-    expect(byHand.sort()).toEqual([]);
+    expect(arrivals).toEqual([]);
   });
 
   it('excuses nothing that no longer spells the class', () => {
     // The direction a one-sided list cannot do. When the reader's header is
     // rebuilt or the media tile stops distributing, its entry goes with it rather
     // than standing as permission for whatever lands in that file next.
-    const stale = Object.keys(NOT_A_TWO_SIDED_ROW).filter((file) => !users.includes(file));
-
-    expect(stale.sort()).toEqual([]);
+    expect(stale).toEqual([]);
   });
 
   it('gives every exception a reason rather than a path', () => {
-    const unexplained = Object.entries(NOT_A_TWO_SIDED_ROW)
-      .filter(([, why]) => why.trim().length < 40)
-      .map(([file]) => file);
-
-    expect(unexplained.sort()).toEqual([]);
+    expect(excusesWithoutReason(NOT_A_TWO_SIDED_ROW)).toEqual([]);
   });
 });
 

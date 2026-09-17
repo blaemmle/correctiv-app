@@ -4,20 +4,14 @@ import { join } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
+import { numberInProse } from '@correctiv/prose-and-code';
+
 import { collectDocs, ROOT } from '../plugin/collect.ts';
 import { strikeEdges, type DecisionRecord, type Strike } from '../plugin/decisions.ts';
 import { DIAGRAMS as META } from '../src/diagrams';
 import { ADVANCE, chainLayout } from '../src/diagrams/layout';
 
-import {
-  CORE,
-  DIAGRAMS,
-  diagramSources,
-  drawn,
-  drawnText,
-  NUMBER_WORDS,
-  spelledNumber,
-} from './drawn.ts';
+import { CORE, DIAGRAMS, diagramSources, drawn, drawnText, NUMBER_WORDS } from './drawn.ts';
 import { code } from './source.ts';
 
 const PORTS_FILE = join(CORE, 'ports/index.ts');
@@ -210,39 +204,31 @@ describe('the drawings, against what they draw', () => {
    * them" — and the sentence is as clear while this check still means something.
    */
   it('says how many ports there are, and the number is the number', () => {
-    const total = ports().length;
-    const expected = spelledNumber(total);
-
-    const wrong: string[] = [];
-    let found = 0;
-    for (const { name, text } of diagramSources()) {
-      for (const match of text.matchAll(PORT_COUNT_CLAIMS)) {
-        found += 1;
-        if (match[1].toLowerCase() !== expected) {
-          wrong.push(`${name} says "${match[0]}" and the core declares ${total}`);
-        }
-      }
-    }
-
-    expect(found).toBeGreaterThan(0);
-    expect(wrong).toEqual([]);
+    // `spelling: 'word'` is the drawings' rule rather than a general one: a picture
+    // writes "five ports", so a numeral of the right value fails here and says to
+    // spell it. The other half — a caption pattern that has stopped matching
+    // anything — is a fault the helper returns rather than a second assertion this
+    // file has to remember, which is what it was.
+    expect(
+      numberInProse({
+        documents: diagramSources(),
+        pattern: PORT_COUNT_CLAIMS,
+        value: ports().length,
+        what: 'the core declares',
+        spelling: 'word',
+      }),
+    ).toEqual([]);
   });
 
   it("counts the core's files the way the fourth drawing says it does", () => {
-    const actual = countSources(CORE);
-    const wrong: string[] = [];
-    let found = 0;
-    for (const { name, text } of diagramSources()) {
-      for (const match of text.matchAll(/(\d+)\s+TypeScript files/g)) {
-        found += 1;
-        if (Number(match[1]) !== actual) {
-          wrong.push(`${name} says "${match[0]}" and packages/app-core/src holds ${actual}`);
-        }
-      }
-    }
-
-    expect(found).toBeGreaterThan(0);
-    expect(wrong).toEqual([]);
+    expect(
+      numberInProse({
+        documents: diagramSources(),
+        pattern: /(\d+)\s+TypeScript files/,
+        value: countSources(CORE),
+        what: 'packages/app-core/src holds',
+      }),
+    ).toEqual([]);
   });
 });
 

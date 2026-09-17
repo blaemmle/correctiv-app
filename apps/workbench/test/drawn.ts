@@ -64,25 +64,11 @@ export function drawnText(name: string): string {
  * checks that read it read it in opposite directions: one asks what a count should
  * look like, the other what a word the drawing wrote is worth. Both directions off
  * one array, because two arrays that disagree would make a drawing right and wrong
- * at once.
+ * at once. The array is `@correctiv/prose-and-code`'s now, where the check that
+ * compares a spelled figure with a counted one also lives, and it is re-exported
+ * here so that the drawings' own vocabulary stays one import.
  */
-export const NUMBER_WORDS = [
-  'no',
-  'one',
-  'two',
-  'three',
-  'four',
-  'five',
-  'six',
-  'seven',
-  'eight',
-  'nine',
-];
-
-/** What a drawing should write for `n`: the word where there is one, the digits otherwise. */
-export function spelledNumber(n: number): string {
-  return NUMBER_WORDS[n] ?? String(n);
-}
+export { NUMBER_WORDS, spelledNumber } from '@correctiv/prose-and-code';
 
 export function drawn(text: string, word: string): boolean {
   return new RegExp(`\\b${word}\\b`).test(text);

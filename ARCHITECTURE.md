@@ -327,5 +327,14 @@ Linter and formatter are [oxlint](https://oxc.rs) and oxfmt rather than
 ESLint/Prettier, so there is no plugin or parser config to maintain. Markdown and
 `.github/` are deliberately excluded from formatting, see `.oxfmtrc.json`.
 
+The checks that read this repository as text — the colour tiers, the localisation
+seams, the fixed heights, the tap targets, the drawings' figures — are written with
+[`packages/prose-and-code`](packages/prose-and-code): the walk, the floor under it,
+the two-sided excuse list, the drift check and the number read out of a sentence.
+Its README says what each one catches and is the only place that says it; a check
+here carries the argument for the rule it is about, not the argument for the
+mechanism. The package is Apache-2.0 inside an AGPL repository, so nothing in it may
+import anything else in here ([ADR 0043](adr/0043-two-concepts-become-packages-and-the-shell-stays.md) §3).
+
 **A green check is not evidence.** Read the first section of
 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) before trusting one.
