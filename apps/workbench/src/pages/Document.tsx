@@ -94,9 +94,9 @@ export function Document({ doc }: Props) {
           )}
 
           {/*
-          The document, in as many pieces as it has drawings in it, with the
-          drawings between them.
-          
+          The document, in as many pieces as it has drawings and tables in it,
+          with the drawings and tables between the prose.
+
           Not a portal into the rendered HTML. That was the first attempt and it
           rendered nothing: the node a portal is given has to be the one React is
           still holding, and the node this component captures lives inside a
@@ -115,7 +115,18 @@ export function Document({ doc }: Props) {
             ) : (
               <div
                 key={`h${i}`}
-                className="prose prose-sm max-w-content prose-headings:scroll-mt-8 prose-pre:border prose-pre:border-stroke"
+                className={cn(
+                  'prose prose-sm prose-headings:scroll-mt-8 prose-pre:border prose-pre:border-stroke',
+                  // A table is data, not sentences, so it is cut out of the
+                  // surrounding prose (`split` below) and given `max-w-wide`
+                  // instead of `max-w-content` — the one width a page body
+                  // reaches for whenever a block is tabular, so it does not
+                  // widen the sentences on either side of it. Its own margin,
+                  // for the reason the figure above carries one: it is both the
+                  // first and the last child of a fresh `.prose` container, so
+                  // the typography plugin's sibling spacing gives it none.
+                  part.wide ? 'my-m max-w-wide' : 'max-w-content',
+                )}
                 dangerouslySetInnerHTML={{ __html: part.html }}
               />
             ),
@@ -207,18 +218,39 @@ function Neighbour({ doc, where }: { doc: RenderedDoc; where: 'before' | 'after'
 /** The slot `plugin/markdown.ts` leaves where a document names a drawing. */
 const SLOT = /<div data-diagram="([\w-]+)"><\/div>/;
 
+/**
+ * The box `plugin/markdown.ts` wraps every table in.
+ *
+ * That box already exists for the phone-width scroll (`.prose .table-scroll` in
+ * `styles/app.css`); this is the same string read a second time, as the mark that
+ * says "this block is tabular" rather than sentences. Matched, not reconstructed,
+ * so the two places cannot describe two different wrappers.
+ */
+const TABLE = /<div class="table-scroll"><table>[\s\S]*?<\/table><\/div>/;
+
 interface Part {
   html: string;
   diagram?: string;
+  /** A table, cut out of the reading measure into its own `max-w-wide` box. */
+  wide?: boolean;
 }
 
-/** The rendered document, cut at each slot, so React can own both halves. */
+/**
+ * The rendered document, cut at each slot and each table, so React owns every
+ * piece and sizes it on its own terms: a drawing, a table and a sentence are
+ * three different widths, and only the third is the reading measure.
+ */
 function split(html: string): Part[] {
   const parts: Part[] = [];
   let rest = html;
-  for (let hit = SLOT.exec(rest); hit; hit = SLOT.exec(rest)) {
+  for (;;) {
+    const diagramHit = SLOT.exec(rest);
+    const tableHit = TABLE.exec(rest);
+    const hit =
+      diagramHit && (!tableHit || diagramHit.index <= tableHit.index) ? diagramHit : tableHit;
+    if (!hit) break;
     if (hit.index > 0) parts.push({ html: rest.slice(0, hit.index) });
-    parts.push({ html: '', diagram: hit[1] });
+    parts.push(hit === diagramHit ? { html: '', diagram: hit[1] } : { html: hit[0], wide: true });
     rest = rest.slice(hit.index + hit[0].length);
   }
   if (rest) parts.push({ html: rest });
