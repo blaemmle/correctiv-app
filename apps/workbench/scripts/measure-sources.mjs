@@ -155,7 +155,7 @@ async function get(url, { accept } = {}) {
           // Named, so a 403 from a bot filter is a fact about this script rather
           // than a mystery. correctiv.org serves the feeds to anything today.
           'user-agent':
-            'correctiv-app-sources-measure/1 (+https://github.com/faktenforum/correctiv-app)',
+            'correctiv-app-sources-measure/1 (+https://github.com/correctiv/correctiv-app)',
           ...(accept ? { accept } : {}),
         },
       });

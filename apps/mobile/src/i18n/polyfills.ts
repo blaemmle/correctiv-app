@@ -21,7 +21,7 @@
  * before any provider mounts. Nothing else should import it.
  *
  * **The workbench does not compile this file at all**, and that is the fix for
- * [#160](https://github.com/faktenforum/correctiv-app/issues/160) rather than a
+ * [#160](https://github.com/correctiv/correctiv-app/issues/160) rather than a
  * convenience. A bundler that is not Metro hoists the three `require` calls out of
  * the condition and into imports, and the two halves of the workbench's toolchain
  * disagree about which kind: the production build read `(ns.default || ns)` and

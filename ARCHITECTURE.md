@@ -69,7 +69,7 @@ nowhere, and choosing a provider is a change to
 a domain and whatever context the caller already held, never a sentence; two places
 report, the host's error boundary and the core, and a screen is deliberately not one
 of them. [ADR 0032](adr/0032-a-port-for-the-error-report-before-a-provider-for-it.md)
-argues all of it, and [#95](https://github.com/faktenforum/correctiv-app/issues/95)
+argues all of it, and [#95](https://github.com/correctiv/correctiv-app/issues/95)
 still holds the question it does not answer.
 
 **Two stores, not one, and that is the eviction policy's fence.** The cache has a
@@ -287,7 +287,7 @@ or if the dark palette silently becomes the light one again.
 
 `apps/mobile` exports to static HTML, and that export is the published demo, best
 opened through the device frame at
-<https://faktenforum.github.io/correctiv-app/preview>. Same routes, screens and
+<https://correctiv.github.io/correctiv-app/preview>. Same routes, screens and
 core as the native builds, with two host-level differences.
 
 - **The three platform splits.** `ReaderView` and `VideoFrame` each have a `.web.tsx`

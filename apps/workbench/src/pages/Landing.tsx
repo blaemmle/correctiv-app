@@ -239,7 +239,7 @@ export function Landing() {
               rel="noreferrer noopener"
               className="text-on-canvas underline decoration-accent underline-offset-2"
             >
-              faktenforum/correctiv-app
+              correctiv/correctiv-app
             </a>{' '}
             · built from{' '}
             <a

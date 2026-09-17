@@ -5,7 +5,7 @@ GitHub Actions workflows live in `.github/workflows/`:
 | Workflow | File | Trigger | What it does |
 | --- | --- | --- | --- |
 | **CI** | `ci.yml` | every PR, push to `main` | Checks and the web export, always. An Android release APK as a compile check, only when the change could reach it: the first job reads the changed files, and a change confined to the workbench, `tools/`, the ADRs, the screenshots or a root `.md` skips a quarter of an hour. No secrets needed. |
-| **Pages** | `pages.yml` | push to `main` (or manual) | Builds the workbench and the Expo web export, assembles them into one artifact, and publishes it to <https://faktenforum.github.io/correctiv-app/>. The workbench is the root; the app is at `/app/`. No secrets needed. |
+| **Pages** | `pages.yml` | push to `main` (or manual) | Builds the workbench and the Expo web export, assembles them into one artifact, and publishes it to <https://correctiv.github.io/correctiv-app/>. The workbench is the root; the app is at `/app/`. No secrets needed. |
 | **Release Android** | `release-android.yml` | push of a `v*` tag (or manual) | Builds the APK and signs it, with your upload key when the secrets are set and otherwise with the bundled **test key**. Attaches it to the GitHub Release. |
 
 ## The web preview
@@ -20,7 +20,7 @@ fine. `pages.yml` now fails the deploy if the bundle carries the handle, because
 is the tell. The published preview has no store handle and says so on the panels
 that need one; see TROUBLESHOOTING.md, "The web target".
 
-A web version of the app at <https://faktenforum.github.io/correctiv-app/preview>,
+A web version of the app at <https://correctiv.github.io/correctiv-app/preview>,
 for clicking through without an install. Every push to `main` republishes it; there is
 nothing to tag and nothing to commit. Three things are worth knowing before pointing
 anyone at the URL:
@@ -56,7 +56,7 @@ instead is a **repository setting**, made once and not by the workflow itself.
 `actions/configure-pages` reads an existing site but never changes its build type:
 
 ```bash
-gh api -X POST repos/faktenforum/correctiv-app/pages -f build_type=workflow
+gh api -X POST repos/correctiv/correctiv-app/pages -f build_type=workflow
 # or: Settings → Pages → Build and deployment → Source: GitHub Actions
 ```
 
@@ -146,7 +146,7 @@ Run the **Release Android** workflow manually (Actions tab → Run workflow, or
 as an artifact, without creating a release. No secrets required, because it uses the test key.
 
 Done once on 2026-08-06 from `9842b27`
-([run 31105467974](https://github.com/faktenforum/correctiv-app/actions/runs/31105467974)).
+([run 31105467974](https://github.com/correctiv/correctiv-app/actions/runs/31105467974)).
 The build job green, the artifact on the run, the test-key fallback taken because no
 `ANDROID_KEYSTORE_*` secrets are set (a workflow warning, an APK, no AAB), and the
 attach job correctly skipped without a tag. The APK carries
@@ -168,9 +168,9 @@ artifact. It cannot reach a GitHub Release, because that step globs `*.apk` and
 
 ## What the first real tag proved
 
-[`v0.0.3`](https://github.com/faktenforum/correctiv-app/releases/tag/v0.0.3), tagged on
+[`v0.0.3`](https://github.com/correctiv/correctiv-app/releases/tag/v0.0.3), tagged on
 2026-08-12 from `0d97483`
-([run 31569569194](https://github.com/faktenforum/correctiv-app/actions/runs/31569569194)),
+([run 31569569194](https://github.com/correctiv/correctiv-app/actions/runs/31569569194)),
 closes both gaps.
 
 The tag drove the version, read off the downloaded asset rather than the run log:

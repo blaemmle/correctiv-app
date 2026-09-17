@@ -35,7 +35,7 @@ export type OverlineProps = {
  *
  * `flexShrink: 0` does not save it: that `Spotlight` sits in a two-sided row beside a
  * link and is still the label that gives. (That row is a `SplitRow` since
- * [#158](https://github.com/faktenforum/correctiv-app/issues/158), so on this host the
+ * [#158](https://github.com/correctiv/correctiv-app/issues/158), so on this host the
  * link now takes a second line rather than squeezing the mark — which removes the
  * squeeze and not the shortfall, because the shortfall is what the mark measures at
  * its own natural width.) The real remedy is the pixel the

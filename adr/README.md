@@ -45,12 +45,12 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0038](0038-one-tool-at-a-time-in-a-rail.md) | One tool at a time, in a rail | accepted and carried out the same day; six decisions, retires four of 0028's claims and names one it read and left standing, two open items named |
 | [0039](0039-the-home-screen-is-a-day-not-a-timetable.md) | The home screen is a day, not a timetable | accepted and carried out the same day; eleven decisions, replaces the dayparts with a sequence of moments and deletes `lib/daypart.ts`, retires five of 0036's claims and names three it read and left standing, three open items named |
 
-Nine notes for readers of the older ones:
+Ten notes for readers of the older ones:
 
 - ADR 0026's "What this has not delivered" section is two thirds out of date, and the
   strikes there say so rather than the section being rewritten. Its storage half was
-  built in [#136](https://github.com/faktenforum/correctiv-app/pull/136) and its
-  Rozenite half in [#149](https://github.com/faktenforum/correctiv-app/pull/149).
+  built in [#136](https://github.com/correctiv/correctiv-app/pull/136) and its
+  Rozenite half in [#149](https://github.com/correctiv/correctiv-app/pull/149).
   Running Rozenite also falsified a measured claim in §1 — that guarding the require
   inside a function keeps the package out of a release bundle, which keeps the
   implementation out but not the export NAMES — so read §1's requires as module-scope
@@ -85,6 +85,15 @@ Nine notes for readers of the older ones:
   frame*, which is `/preview` today, and not the site that now carries the name; the
   titles of 0024, 0027 and 0029 call the whole site "the handbook", which is today's
   workbench and not today's `/handbook`, which is the documents area inside it.
+- The repository moved from the GitHub organisation `faktenforum` to `correctiv` on
+  2026-09-17; the repository name and the Pages base path `/correctiv-app/` did not
+  change. `https://faktenforum.github.io/correctiv-app/` now answers 404 and every
+  address built on it is dead — read it as
+  `https://correctiv.github.io/correctiv-app/` wherever an older record names it.
+  `https://github.com/faktenforum/correctiv-app`, and every issue and pull request
+  link built on it, still redirects to `https://github.com/correctiv/correctiv-app`,
+  so those addresses in older records keep working and, same as the paths above, are
+  left as written rather than edited to look right in hindsight.
 - ADRs 0002 and 0006 describe a NativeScript app that is no longer in the tree. They
   are records, not descriptions: neither has been rewritten, and 0007 says which of
   their statements have expired.

@@ -327,7 +327,7 @@ is still on the door or if moving a block does not change what it draws.
   GitHub Pages does.
 - **A default export writes URLs absolute from the domain root** (`/_expo/…`,
   `/assets/…`), and a GitHub Pages *project* site is served from
-  `faktenforum.github.io/correctiv-app/`. Every asset then resolves one directory
+  `correctiv.github.io/correctiv-app/`. Every asset then resolves one directory
   too high and 404s: a blank page from a build that exported cleanly, passed every
   assertion in `ci.yml` and looks perfect on `localhost:8099/`. → `experiments.baseUrl`,
   set from `EXPO_BASE_URL` in `apps/mobile/app.config.js` so only the Pages build
@@ -368,7 +368,7 @@ is still on the door or if moving a block does not change what it draws.
 - **`correctiv.org`'s RSS feeds send no `Access-Control-Allow-Origin`,** so a browser
   blocks every RSS request. **The header is a property of the format, not of the
   server**, which took until 2026-09-01 to notice: `wp/v2/posts` reflects whatever
-  `Origin` it is given (`localhost:8081`, `localhost:8099`, `faktenforum.github.io`,
+  `Origin` it is given (`localhost:8081`, `localhost:8099`, `correctiv.github.io`,
   an arbitrary host, even `null`) and answers the `OPTIONS` preflight, while the feeds
   under `/feed/` send nothing. This entry read "no feed is ever live on web" for
   months on the strength of testing one of the two.

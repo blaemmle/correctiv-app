@@ -275,7 +275,7 @@ Referencing one from a body needs the raw address, since GitHub renders no repos
 path:
 
 ```
-https://raw.githubusercontent.com/faktenforum/correctiv-app/<commit>/screens/evidence/<name>.webp
+https://raw.githubusercontent.com/correctiv/correctiv-app/<commit>/screens/evidence/<name>.webp
 ```
 
 Pin the **commit**, not `main`. A branch address shows whatever that file became; the
@@ -291,8 +291,8 @@ removed on 2026-08-12
 ([ADR 0007](../adr/0007-removing-the-nativescript-host.md)).
 
 What the rounds found is fixed and shipped, in
-[#30](https://github.com/faktenforum/correctiv-app/pull/30),
-[#31](https://github.com/faktenforum/correctiv-app/pull/31) and
-[#32](https://github.com/faktenforum/correctiv-app/pull/32). The lessons that outlived
+[#30](https://github.com/correctiv/correctiv-app/pull/30),
+[#31](https://github.com/correctiv/correctiv-app/pull/31) and
+[#32](https://github.com/correctiv/correctiv-app/pull/32). The lessons that outlived
 the findings are the rules above. The tables themselves are in the git history of this
 file, which is where a record of a deleted app belongs.

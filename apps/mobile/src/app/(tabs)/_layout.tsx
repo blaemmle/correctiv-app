@@ -68,7 +68,7 @@ const IS_IOS = Platform.OS === 'ios';
  *  - **1.5** — `EntdeckenMediathekMitmach…`. Two labels touching and a third
  *    truncated into the fourth. Nothing says where one ends.
  *  - **2.0** — `Entde…Media…Mitm…`, which is the picture in
- *    [#158](https://github.com/faktenforum/correctiv-app/issues/158).
+ *    [#158](https://github.com/correctiv/correctiv-app/issues/158).
  *
  * Re-measure it rather than trust it: it is a property of these five German words
  * at this screen width, and renaming a tab or shipping a second language moves it.
@@ -112,7 +112,7 @@ const LABELS_FIT_UP_TO = 1.3;
  * does, because the selected item keeps its own label and the bar is as tall as its
  * tallest item. That is the font-scale half of the warning above with a number on it:
  * it was true before this constant met a large font and is not made worse by the
- * change, and it is [#158](https://github.com/faktenforum/correctiv-app/issues/158)'s
+ * change, and it is [#158](https://github.com/correctiv/correctiv-app/issues/158)'s
  * nearest neighbour rather than part of it.
  */
 const ANDROID_TAB_BAR_HEIGHT = 80;
