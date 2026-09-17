@@ -102,6 +102,38 @@ rather than two is that a reader should not have to learn a second arrangement. 
 timeline joins the page's half of that layout, so it changes where a thing is and not what
 order things come in.
 
+### 5. `full` keeps the timeline above 1024 and gives it up below, on the line that already exists
+
+`full` puts the shell's chrome away so that the app has the screen. The timeline is the one
+thing it keeps, and it keeps it only on a wide window.
+
+**Why there is an exception at all.** `full` exists so that somebody can *look at the app*,
+and the timeline is the control for looking — which is §1 above, the whole of it: the hour
+is a setting of what you are looking at, like the device and the orientation. The device
+selector is chrome because it is how the view gets set up; the playhead is used while
+looking at the view that was set up. Taking it away in the mode that exists for looking
+would remove it from the one place somebody wanted it.
+
+**Why the exception stops at the breakpoint.** Because below it the arithmetic beats the
+argument, and it is arithmetic somebody has already done. A wide window can spend a line
+and still show the app. A narrow one cannot: at 420 × 860 with a tool open, the framed
+device had 227px of height, and
+[#185](https://github.com/correctiv/correctiv-app/pull/185) recovered it to about 409px by
+compressing the toolbar and capping the tool panel. Spending a line there again hands back
+part of what that change won, to a control the reader in `full` did not ask for.
+
+**And it is the line that is already there.** `WIDE` in `apps/workbench/src/lib/useMedia.ts`
+is `(min-width: 64rem)`, `HOST_BELOW` in `preview/devices.ts` is 1024, and the two are the
+same number on purpose — `useMedia.ts` says so where it defines the query, and `Preview.tsx`
+already puts the whole chrome away on arrival below it. The timeline uses that line and does
+not get one of its own. A second threshold would be a third copy of one editorial judgement
+about how small a screen has to be before the app is all there is room for, and the copy
+that goes wrong is whichever one nobody edits.
+
+So: `full` gives the app the screen. Above 64rem it keeps the timeline, because that is the
+control `full` is for. Below it, the timeline goes away with the rest of the chrome and
+comes back with it.
+
 ## Why not the alternatives
 
 **Leave it in the tool and widen the panel.** ADR 0038 measured this: 55% is the most the
@@ -142,6 +174,14 @@ already lives, in the frame's state and in the address, and both drawings read i
 that is the address: `tm=` travels in a link, so the way somebody meets this feature is
 usually somebody else's link, and that is also how the device and the appearance are met.
 
+**`full` stops meaning "everything away".** §5 above is one exception to one word, and a
+rule with an exception has to be read twice. The alternative is a `full` that is simple to
+describe and takes away the control it exists to leave you with, and this record would
+rather owe a sentence of explanation than a state nobody wants to be in. The exception is
+worth its explanation because it is the same argument as §1 arriving a second time; if it
+ever needs a second, unrelated reason, that is the point at which it has stopped being an
+exception and become a mess.
+
 ## What is still open
 
 **Which routes the document governs, beyond the home screen.** One today. When a second
@@ -150,13 +190,13 @@ document rather than by a list in the shell, or the list is a third copy of a fa
 [ADR 0036](0036-the-home-screen-becomes-data.md) §14 spent a decision making singular. Not
 designed here because there is no second screen.
 
-**Whether the timeline survives `full`.** Below 1024 `/preview` arrives with the chrome out
-of the way, because the app is what the link was for (ADR 0038 §4, `fullWhenNarrow`). §1
-above says the timeline is a setting of what you are looking at, like the device — and the
-device controls are chrome and do go away. So the honest position is that this record does
-not say whether the timeline is chrome, and somebody building it has to choose. The
-question has a right answer and it depends on what a `full` link is for, which nobody has
-written down.
+**How the timeline is put away in `full`, where the switch for it is not on screen.** §2
+above puts that switch in the toolbar, and the toolbar is chrome, so `full` takes it with
+everything else while §5 above keeps the timeline. The consequence is that on a wide window
+in `full` the timeline is there and cannot be dismissed without leaving `full`. Whether that
+wants a second switch, a keystroke, or nothing at all is a question about how often somebody
+in `full` wants the track gone, and nobody has that answer. Named because it follows from
+§5 rather than being noticed later.
 
 ## What this retires
 
@@ -169,10 +209,13 @@ for it.** Three of its decisions were candidates and all three stand.
   nothing; it is a control on the page, the way the device selector above the frame is.
   Struck, it would read as though the rail had stopped being the only way into the panel,
   which is not what changed.
-- **ADR 0038 §4, the one narrow layout.** Narrower than it was, not false. Page above,
-  panel, rail along the bottom is exactly what it says and exactly what remains; the
-  timeline joins the page's half. Its own observation — there is no width to divide at
-  390px — is what §4 above starts from.
+- **ADR 0038 §4, the one narrow layout, and its `fullWhenNarrow` paragraph with it.**
+  Narrower than it was, not false, and the paragraph is what §5 above is built on rather
+  than against: `/preview` still arrives below 1024 with the chrome out of the way because
+  the app is what the link was for, and the timeline is now one more thing that goes with
+  it at that width. Page above, panel, rail along the bottom is exactly what §4 says and
+  exactly what remains; the timeline joins the page's half. Its own observation — there is
+  no width to divide at 390px — is what §4 above starts from.
 - **ADR 0038 §2, "Nothing is open by default, on any view."** Untouched. The timeline is
   not a tool and drawing it is not a panel opening. If anything this record leans on it:
   the hour had to leave the panel *because* nothing in the panel opens by itself.
