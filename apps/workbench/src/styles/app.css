@@ -226,7 +226,13 @@
 /* A table in a record is wider than a phone, so the BOX around it scrolls. It
    used to be the table itself, with `display: block`, which stops a browser that
    takes the role from the display type announcing it as a table at all. The
-   plugin wraps every table in this box. */
+   plugin wraps every table in this box.
+
+   This box is also the mark `pages/Document.tsx` reads to decide a block is
+   tabular rather than prose, so it gives that block `max-w-wide` instead of the
+   `max-w-content` every paragraph around it keeps — see `ui/Page.tsx` for the
+   argument. `max-width: 100%` here is what keeps the table inside that wider box
+   rather than escaping it a second time. */
 .prose .table-scroll {
   overflow-x: auto;
   max-width: 100%;
