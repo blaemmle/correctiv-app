@@ -147,7 +147,7 @@ the repo, and a rename would be churn for nothing.
 
 The one worth tracing, because it crosses every layer.
 
-```
+```text diagram=article-path
 a tap on a card
   → loadArticle(url)                    articles/load.ts
       1. platform().content.article()    the host's bundle, no network

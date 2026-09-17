@@ -16,6 +16,7 @@ import {
   NODE_INTACT,
   NODE_MOOT,
   NODE_STRUCK,
+  ON_ALTERNATIVE,
   PROSE_CODE,
   RULE,
   SCROLL_BOX,
@@ -85,7 +86,10 @@ export function ServicesDrawing() {
         who is this, and may they be here
       </text>
       <rect x="612" y="150" width="150" height="22" rx="11" className={NODE_STRUCK} />
-      <text x="628" y="162" fontSize="11">
+      {/* Club yellow is the same colour in both schemes, so the label over it
+          cannot inherit `fill-on-canvas`: in dark that is near-white on yellow.
+          See `ON_ALTERNATIVE` in `shared.ts` for the whole of it. */}
+      <text x="628" y="162" className={ON_ALTERNATIVE} fontSize="11">
         simulated today
       </text>
       <text x="774" y="162" className={MUTED} fontSize="11">

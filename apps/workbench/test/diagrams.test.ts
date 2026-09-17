@@ -9,8 +9,8 @@ import { strikeEdges, type DecisionRecord, type Strike } from '../plugin/decisio
 import { DIAGRAMS as META } from '../src/diagrams';
 import { ADVANCE, chainLayout } from '../src/diagrams/layout';
 
-const DIAGRAMS = join(ROOT, 'apps/workbench/src/diagrams');
-const CORE = join(ROOT, 'packages/app-core/src');
+import { CORE, DIAGRAMS, diagramSources, drawn, drawnText } from './drawn.ts';
+
 const PORTS_FILE = join(CORE, 'ports/index.ts');
 const MANIFEST_FILE = join(ROOT, 'apps/workbench/content/sources.manifest.ts');
 
@@ -33,13 +33,6 @@ const PORT_DRAWINGS = ['CoreAndHost.tsx', 'InsideCore.tsx'];
  * all three have to say the same thing. So the rule is not "write it once"; it is
  * "write it wherever it belongs, and let this file fail when two of them part".
  */
-
-/** Every source of the drawings, so a new one is checked without being listed. */
-function diagramSources(): { name: string; text: string }[] {
-  return readdirSync(DIAGRAMS)
-    .filter((name) => /\.tsx?$/.test(name))
-    .map((name) => ({ name, text: readFileSync(join(DIAGRAMS, name), 'utf8') }));
-}
 
 /** Every `.ts`/`.tsx` under a directory, counted the way the drawings count them. */
 function countSources(dir: string): number {
@@ -112,31 +105,6 @@ function declaredInterfaces(): string[] {
       ts.isInterfaceDeclaration(statement),
     )
     .map((statement) => statement.name.text);
-}
-
-/**
- * What a drawing DRAWS, which is the text inside its `<svg>` and nothing else.
- *
- * This used to be `text.includes(name)` over the whole file, and that is a weaker
- * claim than the test's name makes: every one of these files carries a caption and
- * a description list naming each port in prose, so a port could be written into
- * the list beneath a drawing that still drew four, and the check would pass on the
- * strength of the sentence describing the picture rather than the picture. Only
- * the `<svg>` is the drawing, and inside it only the text nodes: an id, a class or
- * a path is not something a reader sees.
- *
- * `{…}` is excluded along with `<…>` so that a JSX expression, and with it every
- * `{/* … *\/}` comment inside the drawing, is not read as drawn text.
- */
-function drawnText(name: string): string {
-  const source = readFileSync(join(DIAGRAMS, name), 'utf8');
-  const svg = [...source.matchAll(/<svg\b[\s\S]*?<\/svg>/g)].map((match) => match[0]).join('\n');
-  if (svg === '') throw new Error(`${name} holds no <svg>, so nothing in it is a drawing`);
-  return [...svg.matchAll(/>([^<>{}]+)</g)].map((match) => match[1]).join(' / ');
-}
-
-function drawn(text: string, word: string): boolean {
-  return new RegExp(`\\b${word}\\b`).test(text);
 }
 
 const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
