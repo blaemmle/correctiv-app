@@ -7,19 +7,23 @@ both halves, and the two questions this record leaves open about how are answere
 The configuration half is `apps/mobile/__tests__/no-workbench-dependency.test.ts`, in the
 suite and therefore in `npm run check`, because it is a source read that costs under a
 second and the mistake it catches is written at a desk. The build half is ci.yml's
-`independence` job, beside `web`, because it costs an install and two web exports and
-because **the deletion is real**: `apps/workbench` is moved out of the checkout, `npm ci`
+`independence` job, beside `web`, because it costs two installs and three web exports, two
+of them from a cache of their own so that neither can replay the other, and because **the
+deletion is real**: `apps/workbench` is moved out of the checkout, `npm ci`
 runs again so the tree is the one npm would have installed had the directory never been
-there, and the app's export is compared with the earlier one byte for byte. A runner's
-checkout can be destroyed and a working tree cannot, which is the whole of why that half
-is not in the suite. Simulating the deletion was rejected for the reason §2 gives for the
-configuration half existing at all: an exclusion list is a list, and a stale list is the
-failure being tested.
+there, and the app's export is compared with the earlier one. A runner's checkout can be
+destroyed and a working tree cannot, which is the whole of why that half is not in the
+suite. That comparison is the bundle's module list plus the shape of everything else, and
+not its bytes; §2's sentence about the bundle is struck where it stands and
+`scripts/export-shape.mjs` holds the measurement that struck it. Simulating the deletion
+was rejected for the reason §2 gives for the configuration half existing at all: an
+exclusion list is a list, and a stale list is the failure being tested.
 
-Two of the three questions under "What is still open" are answered by that paragraph. The
-third, where the home document is served from, is untouched, and §4 stays a decision with
-a record rather than a check: nothing in either half can tell a URL the workbench operates
-from correctiv.org's REST API, and a check that cannot fail is not written.
+Two of the three questions under "What is still open" are answered by that paragraph, and
+both are struck where they stand. The third, where the home document is served from, is
+untouched, and §4 stays a decision with a record rather than a check: nothing in either
+half can tell a URL the workbench operates from correctiv.org's REST API, and a check that
+cannot fail is not written.
 
 ## Context
 
@@ -86,10 +90,18 @@ and nobody noticed until a specimen threw.
 ### 2. What the check has to assert, and why building without the directory is not the whole of it
 
 The obvious phrasing is right and it is the backstop: **with `apps/workbench` deleted, the
-app still typechecks, its suite still passes, and `npm run build:web` still produces the
-bundle it produces now.** That is the strongest half, because it asks the real toolchain
-rather than a regular expression, and because it catches the couplings nobody thought to
-list.
+app still typechecks, its suite still passes, and `npm run build:web` still produces ~~the
+bundle it produces now~~ the same app.** Struck on 2026-09-17, the day it was built, as
+wrong when it was written and not overtaken: **`expo export` does not emit the same bytes
+twice.** Given a cache of its own, twenty exports of one unchanged tree produced twenty
+different bundle hashes, and two of the twenty a different bundle LENGTH as well. The
+check's first version took this sentence literally, passed only when the second export
+replayed the first out of a warm transform cache, and went red on a pull request that
+changed nothing but Markdown. What IS invariant across those twenty is the module list,
+the stylesheets and the assets, and that is what "the same app" means here;
+`scripts/export-shape.mjs` carries the measurement and names what the comparison cannot
+see. That is the strongest half, because it asks the real toolchain rather than a regular
+expression, and because it catches the couplings nobody thought to list.
 
 It is not sufficient, and the reason is that several ways of depending on the workbench go
 **green** when the directory is gone rather than red:
@@ -214,13 +226,19 @@ that half runs is named below as open.
 
 **Where the two halves of the check run.** The configuration half is a source read and
 belongs in the suite. The build half costs an export and probably belongs in
-`.github/workflows/ci.yml` beside the `web` job, which already builds the app once. Not
-decided, and it decides whether the rule fails at the desk or fails in CI.
+`.github/workflows/ci.yml` beside the `web` job, which already builds the app once. ~~Not
+decided, and it decides whether the rule fails at the desk or fails in CI.~~ Decided on
+2026-09-17, the day this was written, and the status line at the top says which way and
+why: the configuration half in `npm run check`, the build half as ci.yml's `independence`
+job. The paragraph above it is what the decision was made from and is left standing.
 
 **Whether the deletion is simulated or real.** Removing the directory in a working tree is
 the honest version and is destructive; an alternative is a build with the workspace
-excluded, which is cheaper and tests something slightly different. The difference matters
-and this record does not settle it.
+excluded, which is cheaper and tests something slightly different. ~~The difference matters
+and this record does not settle it.~~ Settled the same day, in favour of the real
+deletion, for the reason this section is about to give itself: an exclusion list is
+another configuration list, and a stale one is the failure the other half exists to catch.
+The status line carries it.
 
 **Where the home document is served from in production.** ADR 0036's open question,
 untouched. §4 above says only that answering it with a server is a decision of its own.
