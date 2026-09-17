@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { withoutComments } from '@correctiv/prose-and-code';
+
 import { adrFiles, collectDocs, ROOT } from '../plugin/collect.ts';
 import { CAVEAT_MARKERS } from '../plugin/decisions.ts';
 
@@ -252,6 +254,21 @@ describe('the board page', () => {
    * about: a figure typed on a page, a figure derived from the sources, and the
    * page being the confident one. A record number in this file would be the first
    * step of it.
+   *
+   * **The comments go first, so prose may cite a record and code may not.** Both
+   * forms, because a page written in JSX has both: a block around markup and a `//`
+   * beside a line. An early version read line by line and looked for a leading `*`,
+   * which passes a JSDoc block and fails the second line of a JSX comment, so it
+   * reported a record cited inside an explanation of why a key is what it is.
+   *
+   * The stripper is `@correctiv/prose-and-code`'s. It was a fourth hand-written
+   * copy in this file and the weakest of the four: it opened a block on a
+   * slash-star anywhere, which is the failure #202 measured, and it took a `//`
+   * after a colon, so it ate every URL in the page from the scheme onwards.
+   * A record number typed into a link was therefore invisible to the assertion
+   * below — measured, with a `https://correctiv.org/adr/0034` added to
+   * `Decisions.tsx`, which left this suite green. The package's rule leaves
+   * `https://` alone and the same line fails.
    */
   it('names no record of its own', () => {
     const cited = [...withoutComments(page).matchAll(/(?<![\w-])0\d{3}(?![\w-])/g)].map(
@@ -265,16 +282,3 @@ describe('the board page', () => {
     expect(page).toContain('docsModule.decisions');
   });
 });
-
-/**
- * The source with every comment removed, so prose may cite a record and code may not.
- *
- * Both forms, because a page written in JSX has both: `{/* … *\/}` around markup and
- * `//` beside a line. The first version of this test read line by line and looked for
- * a leading `*`, which passes a JSDoc block and fails the second line of a JSX
- * comment — it reported a record cited inside an explanation of why a key is what it
- * is.
- */
-function withoutComments(text: string): string {
-  return text.replaceAll(/\/\*[\s\S]*?\*\//g, ' ').replaceAll(/\/\/[^\n]*/g, ' ');
-}

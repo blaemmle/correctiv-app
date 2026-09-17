@@ -11,6 +11,20 @@
  * It lives in the CORE's test directory and the app re-exports it
  * (`apps/mobile/__tests__/support/source.ts`), which is the only direction that
  * works: the app depends on the core and the core must not depend on the app.
+ *
+ * **Why each of these is one copy rather than one per workspace**, which is the
+ * argument that came with `withEscapesDecoded` and did not travel with it: both
+ * localisation seams need an escaped letter written back before they read a string,
+ * and a hole closed in one workspace and not the other is a hole. That is still the
+ * rule; only the shelf has moved. `IMPORT_RE` obeys it from here, and the two
+ * readers obey it from the package, which is the better shelf for them because
+ * nothing in either of them is about us.
+ *
+ * **Where the blank-file guard is**, since the strippers no longer sit beside it:
+ * `apps/mobile/__tests__/no-workbench-dependency.test.ts` holds it, and it is the
+ * thing that makes the stripper's worst failure loud rather than quiet. Every JSON
+ * it reads still has to parse once the comments are out. The shape of that guard is
+ * the package's `eatenByStripping`; read its docblock for what it does not see.
  */
 
 /**

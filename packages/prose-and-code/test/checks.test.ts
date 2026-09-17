@@ -212,6 +212,23 @@ describe('numberInProse', () => {
     expect(faults[0]).toContain('spell it "five"');
   });
 
+  it('reads a pattern some other reader has already walked', () => {
+    // A pattern declared at the top of a file is shared, and `lastIndex` is state.
+    // Handed the object through, the sweep starts where the last `test` stopped,
+    // finds no sentence, and returns the empty list the caller is asserting against
+    // — green over a claim nothing compared. The one global pattern that reaches
+    // here today is read with `matchAll` elsewhere, which clones; the next one will
+    // not be.
+    const shared = /all (\d+) existing call sites/g;
+    shared.test('all 45 existing call sites, and then some');
+    expect(shared.lastIndex).toBeGreaterThan(0);
+    const left = shared.lastIndex;
+
+    expect(numberInProse({ documents, pattern: shared, value: 49 })).toEqual([]);
+    expect(numberInProse({ documents, pattern: shared, value: 45 }).length).toBe(1);
+    expect(shared.lastIndex).toBe(left);
+  });
+
   it('says so when what it captured is not a number at all', () => {
     const faults = numberInProse({
       documents: [{ name: 'a.tsx', text: 'the several ports' }],

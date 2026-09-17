@@ -22,9 +22,11 @@
  *
  * Run: npm run component-ids
  */
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { filesUnder, withoutComments } from '@correctiv/prose-and-code';
 
 /** How the emitted file names itself, so a reader of the artefact lands here. */
 const SCRIPT = 'scripts/generate-component-ids.mjs';
@@ -117,7 +119,9 @@ const OUT = resolve(APP, 'src/gallery/components.generated.ts');
  *    not matched: it is what a barrel does, and matching it would list the same
  *    component once per barrel that mentions it.
  *  - **Anything after a `//` inside a string literal**, which is the limit the
- *    comment stripper below carries and explains.
+ *    comment stripper carries. It is `@correctiv/prose-and-code`'s, its docblock
+ *    is where the limit is written down, and `componentFiles` below says why this
+ *    file no longer keeps a copy of it.
  */
 const PASCAL_CASE = /^[A-Z][A-Za-z0-9]*$/;
 const DECLARED_KEYWORD = String.raw`(?:function|const|let|var|class)`;
@@ -136,44 +140,39 @@ const EXPORTED_DEFAULT_NAME = /^export default (\w+);?[ \t]*$/gm;
 const EXPORTED_LIST = /^export \{([^}]*)\};?[ \t]*$/gm;
 
 /**
- * A source file with its comments taken out, and its line numbering intact.
- *
- * The same two expressions as `packages/app-core/test/support/source.ts`, which
- * this cannot import: that file is TypeScript and this is a `.mjs` the app's
- * Metro build never sees. The limit written down there is inherited here — a pair
- * of regular expressions cannot tell a `//` inside a string literal from one that
- * opens a comment, so an `export const Name` written after one on the same line
- * is invisible to this walk and therefore absent from the union.
- *
- * @param {string} source
- * @returns {string}
- */
-function withoutComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ''))
-    .replace(/(^|\s)\/\/[^\n]*/g, '$1');
-}
-
-/**
- * Every file under a directory, at any depth.
- *
- * @param {string} dir
- * @returns {string[]}
- */
-function filesUnder(dir) {
-  return readdirSync(dir).flatMap((entry) => {
-    const full = join(dir, entry);
-    return statSync(full).isDirectory() ? filesUnder(full) : [full];
-  });
-}
-
-/**
  * Every file under `src/components`, as a path with `/` on every OS.
+ *
+ * Both halves come from `@correctiv/prose-and-code`, and the reason is what a copy
+ * of a stripper cost here. This file used to carry its own pair of expressions,
+ * over a comment claiming they were "the same two as
+ * `packages/app-core/test/support/source.ts`" and that importing that file was
+ * impossible — three claims and all of them wrong by now. That file holds no
+ * strippers at all any more, the expressions had stopped being the same, and Node
+ * reads the package's TypeScript without a build step, so the import this script
+ * could not have is one line.
+ *
+ * **What the stale copy actually did**, because a comment being wrong is the
+ * smaller half: it opened a block comment on a slash-star ANYWHERE, so a component
+ * file holding a path alias in a literal opened one that the next recursive glob
+ * closed — a star slash, which is what one of those carries — and every export
+ * between them was gone. A component the walk cannot see is absent from the union,
+ * an absence makes nothing fail, and `src/gallery/catalogue.tsx` is then typed
+ * against a union with a hole in it. Measured on this file, with a component
+ * holding the alias and the glob: the export between them left the union and
+ * nothing went red. The package's opener cannot be a path alias.
+ *
+ * The limit that remains is the package's and is written down beside it: a pair of
+ * regular expressions cannot tell a `//` inside a string literal from one that
+ * opens a comment, so an `export const Name` written after one on the same line is
+ * invisible to this walk and therefore absent from the union.
+ *
+ * `/./` is every name, because this walk wants the `.ts` files too — the test reads
+ * them to assert that nothing is hiding in one.
  *
  * @returns {string[]}
  */
 export function componentFiles() {
-  return filesUnder(COMPONENTS).map((path) => relative(COMPONENTS, path).split(sep).join('/'));
+  return filesUnder(COMPONENTS, /./).map((path) => relative(COMPONENTS, path).split(sep).join('/'));
 }
 
 /**

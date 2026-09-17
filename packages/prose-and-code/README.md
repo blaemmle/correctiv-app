@@ -31,7 +31,12 @@ build with a page that is confidently wrong.
 Node and TypeScript. No framework, no build step, no compiler flag: one module of
 source that a bundler, a test runner's transform, or Node itself can read.
 
-## The five patterns, and the failure each one catches
+## The patterns, and the failure each one catches
+
+The numbers below are addresses, so `§4` still points at comment-stripping in a
+year. They are deliberately not totalled anywhere: a count of them would be a figure
+in prose with nothing under it, in the package whose last section is about exactly
+that.
 
 **1. The guard against a silently empty walk.** `filesUnder`, `under`, `floorFaults`.
 A source-reading check that matches nothing passes: every assertion in it says "the
@@ -66,13 +71,21 @@ forbids, so the check reports the file that documents it. `withoutComments` empt
 block comment into the newlines it occupied rather than deleting it, because deleting
 it moves every line after it up and the report then points at innocent code with a
 number that looks right. `withoutCommentLines` is the narrower rule for checks that
-read string literals. Both are regular expressions rather than parsers, so both can
-remove something that was not a comment — a path alias written `"@` slash star `"`
-opened a block comment that the next recursive glob closed, and a whole
-configuration file's middle came back blank behind a green check. `eatenByStripping`
-is the guard for that: hand it your documents and what "still reads" means for them
-(`JSON.parse`, by default) and it names the file the stripper ate. A stripper that
-can produce nonsense should be able to say so.
+read string literals. Beyond that they behave alike, and the opener is the part to
+know about: **both** open a block comment only where one plausibly can — a line
+start, whitespace, or one of `;{}(),=:[`. Opening on a slash-star anywhere, a path
+alias written `"@` slash star `"` opens a comment that the next recursive glob
+closes, and a whole configuration file's middle comes back blank behind a green
+check. That is measured, not hypothetical, and it is the reason the clause exists.
+
+Both are still regular expressions rather than parsers, so both can remove something
+that was not a comment: a slash-star written after a space inside a string literal
+opens a block in either of them. `eatenByStripping` is the guard for that — hand it
+your documents and what "still reads" means for them (`JSON.parse`, by default) and
+it names the file the stripper ate. A stripper that can produce nonsense should be
+able to say so. Read its docblock before trusting a green run of it: it asks whether
+the stripped text still reads, not whether it still says what it said, so wreckage
+that stays on one line goes past it.
 
 **5. Proportional floors.** `floorFaults`, again. "At least one" is not a guard
 against a set where most members qualify: a collector degraded to finding a single
