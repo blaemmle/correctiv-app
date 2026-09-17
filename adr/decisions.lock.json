@@ -272,5 +272,16 @@
       "3": ["Both moved addresses are answered by the site, and by no stub file"],
       "4": ["The ADRs keep the names they were written with"]
     }
+  },
+  "0038": {
+    "slugs": ["one-tool-at-a-time-in-a-rail"],
+    "decisions": {
+      "1": ["One tool at a time, opened from a rail on the right edge"],
+      "2": ["The rail is the only switch, and nothing is open by default"],
+      "3": ["`tool=` in the address, and what an old `open=` link does"],
+      "4": ["Below 1024 the rail lies along the bottom, and the panel stands on it"],
+      "5": ["A badge only where it reports a number to act on"],
+      "6": ["Every view with a panel gets the rail, and a table of contents is not a tool"]
+    }
   }
 }

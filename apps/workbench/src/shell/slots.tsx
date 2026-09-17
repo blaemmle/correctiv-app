@@ -15,13 +15,19 @@ import type { SectionId } from './views';
 /**
  * Where a page may put something the shell draws.
  *
- * A section's body is its own id; `<id>:tags` is the row of badges beside the
- * section's title, which stays visible while the section is shut and is the
- * reason it is a slot of its own rather than the first line of the body. The
- * other three are the header's context bar, the strip above the panel's
- * sections, and the status line.
+ * A section's body is its own id. `<id>:mark` is the one thing that may sit on
+ * that section's icon in the rail while the panel is shut, and it is deliberately
+ * the narrowest of the three slots: **a number the reader would act on, or
+ * nothing.** It was `<id>:tags`, a row of badges beside a section title, and it
+ * filled with `untouched`, `inert here`, `combination unknown` and
+ * `findings, not run` — four ways of saying that nothing has happened, taking up
+ * room on a permanent rail. Two survive the rename, the console's warnings and
+ * errors and the measure run's findings, and both draw nothing at zero.
+ * ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
+ *
+ * The other two are the header's context bar and the status line.
  */
-export type SlotId = SectionId | `${SectionId}:tags` | 'context-bar' | 'panel-head' | 'status';
+export type SlotId = SectionId | `${SectionId}:mark` | 'context-bar' | 'status';
 
 interface Slots {
   targets: Partial<Record<SlotId, HTMLElement>>;
@@ -78,14 +84,14 @@ export function SlotProvider({
 /**
  * Rendered by the shell, where the slot's content belongs.
  *
- * `as="span"` for the one target that sits inside a button: a section's tags are
- * in the collapsible's trigger, and a `div` inside a `button` is content a
- * browser is allowed to reparent.
+ * `as="span"` for the one target that sits inside a button: a section's mark is
+ * on its icon in the rail, and a `div` inside a `button` is content a browser is
+ * allowed to reparent.
  *
  * `data-slot` names it in the rendered document. A slot target is empty in the
  * markup — its content arrives from somewhere else in the tree — so without the
  * attribute it is an anonymous div, and both devtools and
- * `test/shell/section.test.tsx` would have to identify it by its class list.
+ * `test/shell/tool-panel.test.tsx` would have to identify it by its class list.
  */
 export function SlotTarget({
   id,
@@ -132,13 +138,11 @@ export function Slot({ id, children }: { id: SlotId; children: ReactNode }) {
 export function slotsOf(view: {
   sections: readonly SectionId[];
   contextBar: boolean;
-  panelHead: boolean;
   statusBar: boolean;
 }): ReadonlySet<SlotId> {
   const ids: SlotId[] = [];
-  for (const section of view.sections) ids.push(section, `${section}:tags`);
+  for (const section of view.sections) ids.push(section, `${section}:mark`);
   if (view.contextBar) ids.push('context-bar');
-  if (view.panelHead) ids.push('panel-head');
   if (view.statusBar) ids.push('status');
   return new Set(ids);
 }

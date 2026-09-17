@@ -60,12 +60,18 @@ export function Readout({
       </span>
 
       {/*
-        Said in words, not by greying something out. Half the panels in the tools
-        sidebar cannot work in the static export, and a reader who never opens
-        them still deserves to know which build they are looking at.
+        Said in words, not by greying something out. Two of the six tools cannot
+        work in the static export, and a reader who never opens them still
+        deserves to know which build they are looking at.
+
+        This is the whole of that fact on screen now, beside the two tools that
+        say it for themselves. The tools panel used to open with a `Build` badge
+        and a paragraph under it, above six tools of which it concerned two
+        (ADR 0038). `lg` rather than `xl` because of that: with the paragraph
+        gone, a laptop is not a screen this should be missing from.
       */}
       {!status.handle && (
-        <span className="hidden shrink-0 text-on-canvas-accent xl:inline">
+        <span className="hidden shrink-0 text-on-canvas-accent lg:inline">
           Published build, no dev handle
         </span>
       )}

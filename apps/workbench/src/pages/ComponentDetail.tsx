@@ -262,9 +262,6 @@ export function ComponentDetail({
           </p>
         )}
       </Slot>
-      <Slot id="rendering:tags">
-        <Badge variant="outline">{rendering === 'direct' ? 'this site' : "app's bundle"}</Badge>
-      </Slot>
 
       <Slot id="device">
         <label className="flex flex-col gap-2xs">
@@ -291,21 +288,14 @@ export function ComponentDetail({
               : `Column capped at ${size.w} px. The height is the component's own.`}
         </p>
       </Slot>
-      <Slot id="device:tags">
-        <Badge variant="outline" className="font-mono tabular-nums">
-          {size.w === 0 ? 'host' : `${size.w}×${size.h}`}
-        </Badge>
-      </Slot>
 
+      {/* No mark on any of these four. The rail carries a number only where it
+          reports something to act on, and "this site", "390×844" and "6 props"
+          are each said by the tool one press behind the icon. */}
       <Slot id="props">
         {rows.map((row) => (
           <Props key={row.platform ?? 'shared'} row={row} split={rows.length > 1} />
         ))}
-      </Slot>
-      <Slot id="props:tags">
-        <Badge variant="outline" className="tabular-nums">
-          {first.props.length === 1 ? '1 prop' : `${first.props.length} props`}
-        </Badge>
       </Slot>
 
       <Slot id="source">

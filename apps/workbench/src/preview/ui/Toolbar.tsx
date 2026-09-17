@@ -37,20 +37,30 @@ const ZOOMS: { value: string; label: string }[] = [
  * What the app view puts in the header's context bar: device, size, zoom, route.
  *
  * These four are the demo's own controls, and `README.md` hands out the address
- * that carries them. Everything added since is in the right sidebar, which opens
- * shut on this view, because a debug surface is not what somebody following a
- * link to see the app came for.
+ * that carries them. Everything added since is behind the rail on the right edge,
+ * which opens nothing until it is asked, because a debug surface is not what
+ * somebody following a link to see the app came for. They stay here rather than
+ * moving onto the rail: a device and a route are what the frame IS, not a tool
+ * for looking at it.
  *
  * One row, no labels above the fields. The bar is 2.75rem tall on every view and
  * has to stay that way, so each control names itself through its own value or an
  * `aria-label`, and the tooltip carries the rest.
  *
- * `status` is still handed over because the contract with `Preview.tsx` says
- * so, and it is deliberately not read here: the warning and error counts belong
- * to the inspector, and a count of errors on the demo bar is the first crack in
- * the two-audience rule above.
+ * `status` is read for one thing only, and never for a count: the warning and
+ * error counts belong to the tools, and a count of errors on the demo bar is the
+ * first crack in the two-audience rule above. What it is read for is the last
+ * button, whose behaviour differs between the two builds — see there.
  */
-export function Toolbar({ state, routeField, onRouteField, onChange, onReload, onRaw }: Props) {
+export function Toolbar({
+  state,
+  status,
+  routeField,
+  onRouteField,
+  onChange,
+  onReload,
+  onRaw,
+}: Props) {
   const size = frameSize(state);
   /*
    * At the host's own size there is no frame to turn or to scale: the app has
@@ -213,6 +223,16 @@ export function Toolbar({ state, routeField, onRouteField, onChange, onReload, o
         <TooltipContent side="bottom">Reload the frame</TooltipContent>
       </Tooltip>
 
+      {/*
+        Said on this button because this button is where it bites, which is the
+        rule that took it off a paragraph at the top of the tools panel. Expo
+        Router applies its base path when the export is built and not in the dev
+        server, so an address under the base is not a route the app can match. The
+        field beside this works anyway, by driving the app's own router over the
+        dev handle (`frame/handle.ts`, `driveRoute`); this button has no such way
+        in and lands on the app's 404. The published build has neither limit.
+        `TROUBLESHOOTING.md` has the measurement.
+      */}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -224,7 +244,11 @@ export function Toolbar({ state, routeField, onRouteField, onChange, onReload, o
             <ExternalLink aria-hidden="true" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Open the app without the frame</TooltipContent>
+        <TooltipContent side="bottom">
+          {status.handle
+            ? 'Open the app without the frame · a dev server applies no base path, so this lands on the app’s 404'
+            : 'Open the app without the frame'}
+        </TooltipContent>
       </Tooltip>
     </div>
   );

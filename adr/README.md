@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Thirty-seven records shaped this repo. Read them when you want to know *why* something
+Thirty-eight records shaped this repo. Read them when you want to know *why* something
 is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it is.
 
 | | Decision | Status |
@@ -42,6 +42,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0035](0035-a-check-that-opens-the-page.md) | A check that opens the page, because nobody forgot anything | accepted, built; retires nothing, and argues why 0031's four mechanisms could not have caught a page that mounted nothing |
 | [0036](0036-the-home-screen-becomes-data.md) | The home screen becomes data, and the app survives what it does not know | accepted, **not built**; sixteen decisions from a product interview, retires nothing, narrows #163 to its last question and leaves that one to the source decision |
 | [0037](0037-the-whole-site-is-the-workbench.md) | The whole site is the workbench, and the device frame is `/preview` | accepted and carried out the same day; retires two of 0024's, renames nothing in here, and is why the note below exists |
+| [0038](0038-one-tool-at-a-time-in-a-rail.md) | One tool at a time, in a rail | accepted and carried out the same day; six decisions, retires four of 0028's claims and names one it read and left standing, two open items named |
 
 Nine notes for readers of the older ones:
 

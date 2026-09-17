@@ -2,26 +2,20 @@ import { useEffect, useRef } from 'react';
 
 import { Slot } from '../shell/slots';
 import { writeAddress, type ShellProps } from '../shell/address';
-import { VIEWS, type SectionId } from '../shell/views';
+import { VIEWS } from '../shell/views';
 import { defaultFull } from '../preview/devices';
 import { toAddress } from '../preview/state';
 import { namesFrame } from '../preview/store';
 import { usePreview } from '../preview/Preview';
 import {
   Appearance,
-  AppearanceTags,
-  BuildLine,
   Console,
-  ConsoleTags,
-  Counts,
+  ConsoleMark,
   Inspect,
-  InspectTags,
   Measure,
-  MeasureTags,
+  MeasureMark,
   State,
-  StateTags,
   Tokens,
-  TokensTags,
 } from '../preview/ui/Panels';
 import { Readout } from '../preview/ui/Readout';
 import { Stage } from '../preview/ui/Stage';
@@ -34,15 +28,15 @@ const VIEW = VIEWS.preview;
  * its own.
  *
  * This is the route that used to be seven `isApp` branches in `App.tsx`. Its
- * body is the stage; everything else it has — the frame controls, the counts,
- * the six inspector sections, the readout and the link — goes into the places
+ * body is the stage; everything else it has — the frame controls, the six tools,
+ * the two numbers on the rail, the readout and the link — goes into the places
  * the declaration in `shell/views.ts` keeps for it.
  *
  * **The two halves of the address meet here and nowhere else.** The shell owns
- * `tools`, `open` and `full`; the frame owns `d`, `o`, `z`, `w`, `h`, `t`, `s`,
- * `check`, `kl` and `kd`, which travel in `rest` untouched. `preview/store.ts`
- * no longer writes history at all, so a link written before any of this still
- * resolves and writes back byte for byte.
+ * `tool` and `full`; the frame owns `d`, `o`, `z`, `w`, `h`, `t`, `s`, `check`,
+ * `kl` and `kd`, which travel in `rest` untouched. `preview/store.ts` no longer
+ * writes history at all, so a link written before any of this still resolves and
+ * writes back byte for byte.
  */
 export function Preview({ address, onAddress, wide, full }: ShellProps) {
   const preview = usePreview();
@@ -78,8 +72,6 @@ export function Preview({ address, onAddress, wide, full }: ShellProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const reveal = (section: SectionId) => onAddress({ open: new Set([...address.open, section]) });
-
   const panels = {
     state,
     status: preview.status,
@@ -99,7 +91,7 @@ export function Preview({ address, onAddress, wide, full }: ShellProps) {
         frameRef={preview.frameRef}
         onResize={preview.onResize}
         onLoad={preview.onLoad}
-        hint={!address.tools && !full && wide}
+        hint={address.tool === null && !full && wide}
       />
 
       <Slot id="context-bar">
@@ -114,49 +106,34 @@ export function Preview({ address, onAddress, wide, full }: ShellProps) {
         />
       </Slot>
 
-      <Slot id="panel-head">
-        <Counts status={preview.status} tools={preview.tools} onReveal={reveal} />
-        <BuildLine status={preview.status} />
-      </Slot>
-
-      <Slot id="appearance:tags">
-        <AppearanceTags {...panels} />
-      </Slot>
       <Slot id="appearance">
         <Appearance {...panels} />
       </Slot>
 
-      <Slot id="state:tags">
-        <StateTags {...panels} />
-      </Slot>
       <Slot id="state">
         <State {...panels} />
       </Slot>
 
-      <Slot id="console:tags">
-        <ConsoleTags {...panels} />
+      {/* Two marks on the rail, and nothing on the other four. A tool whose
+          number is zero, or which has no number, says nothing there. */}
+      <Slot id="console:mark">
+        <ConsoleMark {...panels} />
       </Slot>
       <Slot id="console">
         <Console {...panels} />
       </Slot>
 
-      <Slot id="tokens:tags">
-        <TokensTags {...panels} />
-      </Slot>
       <Slot id="tokens">
         <Tokens {...panels} />
       </Slot>
 
-      <Slot id="measure:tags">
-        <MeasureTags {...panels} />
+      <Slot id="measure:mark">
+        <MeasureMark {...panels} />
       </Slot>
       <Slot id="measure">
         <Measure {...panels} />
       </Slot>
 
-      <Slot id="inspect:tags">
-        <InspectTags {...panels} />
-      </Slot>
       <Slot id="inspect">
         <Inspect {...panels} />
       </Slot>

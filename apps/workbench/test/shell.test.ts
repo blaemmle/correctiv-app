@@ -10,7 +10,6 @@ import {
   resolveView,
   SECTION_TITLES,
   VIEWS,
-  type SectionId,
   type ViewDeclaration,
   type ViewKind,
 } from '../src/shell/views.ts';
@@ -46,15 +45,14 @@ const SERVES: Record<string, ViewKind[]> = {
   'Preview.tsx': ['preview'],
 };
 
-/** Every slot a declaration offers: the bodies, their optional tags, the three others. */
+/** Every slot a declaration offers: the bodies, their optional marks, the two others. */
 function allowed(view: ViewDeclaration): Set<string> {
   const ids = new Set<string>();
   for (const section of view.sections) {
     ids.add(section);
-    ids.add(`${section}:tags`);
+    ids.add(`${section}:mark`);
   }
   if (view.contextBar) ids.add('context-bar');
-  if (view.panelHead) ids.add('panel-head');
   if (view.statusBar) ids.add('status');
   return ids;
 }
@@ -151,9 +149,6 @@ describe('the shell’s contract with its pages', () => {
         if (view.contextBar && !filled.has('context-bar')) {
           wrong.push(`${file} declares a context bar on ${kind} and fills none`);
         }
-        if (view.panelHead && !filled.has('panel-head')) {
-          wrong.push(`${file} declares a panel head on ${kind} and fills none`);
-        }
         if (view.statusBar && !filled.has('status')) {
           wrong.push(`${file} owns the status line on ${kind} and fills none`);
         }
@@ -170,18 +165,16 @@ describe('the shell’s contract with its pages', () => {
     expect(kinds.filter((kind) => kind !== 'not-found' && !served.has(kind))).toEqual([]);
   });
 
-  it('opens by default only what it declares, and names a panel only when it has one', () => {
+  it('names a panel exactly when it has one, and lists each tool once', () => {
     const wrong: string[] = [];
     for (const view of Object.values(VIEWS)) {
-      const sections = new Set<SectionId>(view.sections);
-      for (const id of view.openByDefault) {
-        if (!sections.has(id)) wrong.push(`${view.kind} opens "${id}", which it does not declare`);
-      }
       if ((view.panelTitle === null) !== (view.sections.length === 0)) {
         wrong.push(`${view.kind}: a panel title and a panel have to arrive together`);
       }
-      if (view.panelOpenByDefault && view.sections.length === 0) {
-        wrong.push(`${view.kind} opens a panel it has not got`);
+      // The rail draws one button per entry and the address names one of them,
+      // so a repeat would be two buttons that cannot be told apart in a link.
+      if (new Set(view.sections).size !== view.sections.length) {
+        wrong.push(`${view.kind} lists a tool twice`);
       }
       if (view.fullWhenNarrow && !view.canGoFull) {
         wrong.push(`${view.kind} arrives full on a small screen and cannot go full`);

@@ -1,26 +1,14 @@
-import {
-  Maximize2,
-  PanelRight,
-  PanelRightClose,
-  Search as SearchIcon,
-  Settings as SettingsIcon,
-} from 'lucide-react';
+import { Maximize2, Search as SearchIcon, Settings as SettingsIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import docsModule from 'virtual:docs';
 import { Button } from './kit/button';
-import { Separator } from './kit/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from './kit/tooltip';
-import { cn } from '../lib/cn';
 import { href } from '../router';
 
 interface Props {
   onSearch: () => void;
   onSettings: () => void;
-  toolsOpen: boolean;
-  /** Absent where the open view has nothing to put in the right sidebar. */
-  onToggleTools?: () => void;
-  toolsLabel?: string;
   /** Present only where there is something worth having the screen to itself. */
   onFull?: () => void;
   /** The context bar: whatever the open view needs across the top. */
@@ -30,25 +18,14 @@ interface Props {
 /**
  * The bar across the top, and the only place the application names itself.
  *
- * The right sidebar's control sits on the right sidebar's side, at the end of the
- * bar, with everything that belongs to no side in between. A control for the
- * right-hand panel sitting to the left of the search was a control pointing at
- * nothing.
- *
- * It changes its icon as well as its ground. `PanelRight` says "there is a panel
- * here" and `PanelRightClose` says "and it is open, this shuts it", which is a
- * difference a reader who cannot tell the two grounds apart can still see.
+ * What is not here any more is the right panel's switch. It sat at the end of
+ * this bar, it showed `PanelRight` or `PanelRightClose`, and the panel it opened
+ * carried a second button with nearly the same icon that shut the same panel —
+ * two controls, one job, and neither of them said which of six tools was about to
+ * appear. `ui/ToolRail.tsx` is the one switch now, on the edge the panel opens
+ * from. ([ADR 0038](../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
  */
-export function Header({
-  onSearch,
-  onSettings,
-  toolsOpen,
-  onToggleTools,
-  toolsLabel,
-  onFull,
-  children,
-}: Props) {
-  const ToolsIcon = toolsOpen ? PanelRightClose : PanelRight;
+export function Header({ onSearch, onSettings, onFull, children }: Props) {
   return (
     <header className="flex min-h-[2.75rem] shrink-0 flex-wrap items-center gap-xs border-b border-stroke bg-canvas py-4xs pl-3xs pr-s">
       <a
@@ -68,12 +45,12 @@ export function Header({
           than the room left for them, and a control pushed off the end of a bar
           is a control nobody knows is missing.
 
-          Below 640 it takes a row of its own instead, and takes it last. A view
-          that keeps its bar in the header at that width — `narrow: 'page'`, the
-          design and preview views — otherwise pushes the mark and the icons
-          into a second row in whatever order they happen to fall: measured at
-          390px on `/design`, the mark ended up under the "Open in Figma" button,
-          which reads as a broken header rather than as a wrap. */}
+          Below 640 it takes a row of its own instead, and takes it last. Every
+          view keeps its bar here at that width, so without this the mark and the
+          icons are pushed into a second row in whatever order they happen to
+          fall: measured at 390px on `/design`, the mark ended up under the "Open
+          in Figma" button, which reads as a broken header rather than as a
+          wrap. */}
       <div className="flex min-w-0 flex-1 flex-wrap items-center max-sm:order-last max-sm:basis-full max-sm:pt-4xs">
         {children}
       </div>
@@ -144,27 +121,6 @@ export function Header({
         </TooltipTrigger>
         <TooltipContent side="bottom">Settings</TooltipContent>
       </Tooltip>
-
-      {onToggleTools && (
-        <>
-          <Separator orientation="vertical" className="mx-3xs h-[1.5rem]" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleTools}
-                aria-expanded={toolsOpen}
-                aria-label={toolsOpen ? `Hide ${toolsLabel}` : `Show ${toolsLabel}`}
-                className={cn('size-[2rem]', toolsOpen && 'bg-surface text-on-canvas')}
-              >
-                <ToolsIcon aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{toolsLabel} · ⌘J</TooltipContent>
-          </Tooltip>
-        </>
-      )}
     </header>
   );
 }

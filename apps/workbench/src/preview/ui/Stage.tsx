@@ -23,7 +23,8 @@ interface Props {
    *
    * The demo audience's, and not the inspector audience's. It used to be read off
    * `state.tools` and `state.full`, which are the shell's now and not the frame's,
-   * so the page that knows both decides and this one draws.
+   * so the page that knows both decides and this one draws. Off whenever a tool
+   * is open, because the sentence points at a rail the reader has evidently found.
    */
   hint: boolean;
 }
@@ -195,8 +196,8 @@ export function Stage({ state, size, scale, stageRef, frameRef, onResize, onLoad
       {hint && (
         <p className="mx-auto hidden max-w-[42rem] shrink-0 px-m pb-m text-center text-m text-on-canvas-muted lg:block">
           This is the app at device size. Pick a device or a route in the bar above; the address in
-          the status line reproduces exactly what you see. Open the Tools sidebar, ⌘J, for the
-          console, the colour tokens and the element picker.
+          the status line reproduces exactly what you see. The rail on the right has the console,
+          the colour tokens and the element picker.
         </p>
       )}
     </div>
