@@ -553,10 +553,18 @@ describe('the services drawing, against the sources manifest', () => {
   /**
    * The caption's two spelled figures, against the rows underneath them.
    *
-   * The phrasing is load-bearing and deliberately so: both patterns have to match
-   * or this fails, so rewording the sentence out from under the check turns the
-   * suite red rather than quiet. A count in front of the word is read as a claim
-   * about the total, which is the rule the port counts above are held to as well.
+   * The phrasing is load-bearing and deliberately so: a pattern that stops matching
+   * is a fault rather than a silence, so rewording the sentence out from under the
+   * check turns the suite red. That half is `numberInProse`'s, along with the word
+   * and the numeral counting as the same number and the report that quotes the
+   * sentence. What stays here is the two patterns and the two counts, because the
+   * sentence is this drawing's and nothing general can guess it.
+   *
+   * It had been written out by hand here — the same word map, the same throw, and
+   * a paragraph arguing for the throw that the package now carries. Converting it
+   * also widened it: `exec` read the first match in the file and stopped, so a
+   * second statement of the figure in the alt list would not have been compared
+   * with anything, and the sweep reads every one of them.
    *
    * Whitespace is collapsed first, because the wrapping is the formatter's and not
    * the sentence's. A newline inside a JSX text node renders as one space, so
@@ -565,24 +573,30 @@ describe('the services drawing, against the sources manifest', () => {
    * The phrasing stays load-bearing; only the line breaks stop counting.
    */
   it('says how many sources are live and how many are files, and both are the number', () => {
-    const caption = readFileSync(join(DIAGRAMS, 'Services.tsx'), 'utf8').replace(/\s+/g, ' ');
-    const spelled = (pattern: RegExp): number => {
-      const hit = pattern.exec(caption);
-      // A throw rather than an expectation, because a caption that no longer says
-      // this has not failed a comparison — there is nothing left to compare, and
-      // the check would otherwise go quiet exactly when the sentence was reworded.
-      if (!hit) throw new Error(`the Services caption no longer says ${pattern}`);
-      const word = hit[1].toLowerCase();
-      const index = NUMBER_WORDS.indexOf(word);
-      return index >= 0 ? index : Number(word);
-    };
+    // A drawing spells its figures, so a numeral of the right value is a fault here
+    // and says to spell it — the rule the port count above is held to as well.
+    const text = readFileSync(join(DIAGRAMS, 'Services.tsx'), 'utf8').replace(/\s+/g, ' ');
+    const caption = [{ name: 'Services.tsx', text }];
 
-    expect(spelled(/\b(\w+) content sources are live\b/i)).toBe(
-      ROWS.filter((row) => row.state === 'live').length,
-    );
-    expect(spelled(/\b(\w+) are files\b/i)).toBe(
-      ROWS.filter((row) => row.state === 'sample').length,
-    );
+    expect(
+      numberInProse({
+        documents: caption,
+        pattern: /\b(\w+) content sources are live\b/i,
+        value: ROWS.filter((row) => row.state === 'live').length,
+        what: 'the drawing draws live',
+        spelling: 'word',
+      }),
+    ).toEqual([]);
+
+    expect(
+      numberInProse({
+        documents: caption,
+        pattern: /\b(\w+) are files\b/i,
+        value: ROWS.filter((row) => row.state === 'sample').length,
+        what: 'the drawing draws as files',
+        spelling: 'word',
+      }),
+    ).toEqual([]);
   });
 
   it('draws as a file exactly what the manifest still stands in for', () => {

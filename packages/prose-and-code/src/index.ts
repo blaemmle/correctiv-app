@@ -4,9 +4,15 @@ import { join, relative, resolve, sep } from 'node:path';
 /**
  * Helpers for the checks a repository makes about itself.
  *
- * Five patterns, taken out of roughly forty check files in CORRECTIV's app after
- * each of them had been written two or three times. The README beside this file has
- * them one by one, with the failure each one catches.
+ * The patterns, taken out of CORRECTIV's app after each of them had been written
+ * two or three times across its check files. The README beside this file has them
+ * one by one, with the failure each one catches.
+ *
+ * No count of them, here or there, and that is this package's own rule applied to
+ * itself. "Five patterns" stood in this sentence while the README numbered five and
+ * then added a sixth beside them — an unchecked figure in prose, inside the package
+ * that exists to check figures in prose. A number belongs in a sentence only where
+ * the count IS the claim; the claim here is the list, and the list is underneath.
  *
  * **Nothing here is a test.** Every function returns what it found — a list of
  * faults, or a pair of lists — and the project's own runner is what turns a finding
@@ -22,8 +28,8 @@ import { join, relative, resolve, sep } from 'node:path';
  * that and makes every TypeScript consumer turn on `allowImportingTsExtensions`,
  * because tsc pulls this source into its own program. A package with no internal
  * imports has neither problem, and a consumer needs neither a build step nor a
- * compiler flag to use it. Six sections with a banner each is the price, and the
- * README is the map.
+ * compiler flag to use it. A banner over every section is the price, and the README
+ * is the map.
  */
 
 /* ========================================================================== *
@@ -177,9 +183,34 @@ export function withoutComments(source: string): string {
  * `JSON.parse` is the default because a configuration file is the case this was
  * written for, it is where the damage was measured, and it needs no dependency. For
  * TypeScript, hand it a parser you already have; for anything else, hand it whatever
- * throws on nonsense. A whole-file oracle is what works: a check cannot ask "is this
- * still the same file" without keeping a copy of the file, which is the thing it was
- * trying to avoid.
+ * throws on nonsense.
+ *
+ * **What the default does to a document that is not JSON**, because nobody should
+ * have to run it to find out: it reports that document, every time, whether or not
+ * the stripper touched a character of it. `JSON.parse` throws on the first token of
+ * a `.ts` file. So the default is a false positive over a mixed walk — and a LOUD
+ * one, which is the safe direction for a guard: whoever pointed it at a walk of
+ * `.ts` and `.json` together finds out on the first run rather than never. Give a
+ * mixed walk a `reads` that knows which document is which.
+ *
+ * **The oracle is weaker than "the file survived", and there are two gaps worth
+ * naming.** It asks whether the stripped text still READS, never whether it still
+ * says what it said, so wreckage that leaves something readable behind is invisible:
+ *
+ *  - **Damage that stays on one line.** A block comment's two halves written inside
+ *    one JSON string take the middle of that string with them, and what is left is
+ *    a shorter string in a document that still parses. The measured failure was the
+ *    catastrophic shape — a file's whole middle — and that is the one this is for.
+ *    A truncated literal is not, and `withoutComments`'s known limit produces
+ *    exactly that. `test/source.test.ts` asserts both, so the hole is a claim rather
+ *    than a caveat.
+ *  - **A stripped text that is a bare scalar.** `JSON.parse` accepts `5`, `"x"` and
+ *    `null`, so a document eaten down to one of those passes in silence. The gap
+ *    widens as the wreckage does, which is the wrong way round.
+ *
+ * A whole-file oracle is the strongest one available to a check that does not keep
+ * a copy of the file, and keeping one is the thing it was trying to avoid. It is
+ * not a proof that nothing was eaten.
  */
 export function eatenByStripping({
   documents,
@@ -223,10 +254,27 @@ export function eatenByStripping({
  * eventually wants both, and the pair is the knowledge: a project that has only the
  * first will write the second by hand the day a check punishes a comment, and it
  * will write it without the line-number argument above.
+ *
+ * **Where a block comment may OPEN is not one of those differences**, though it
+ * was for as long as this package had existed. The rule above narrowed its opener
+ * and this one kept opening on a slash-star anywhere — the exact defect the package
+ * was extracted after fixing, and the one `test/source.test.ts` introduces as "the
+ * stripper that was fixed". What triggers it is a path alias and a recursive glob,
+ * which is to say JSON with comments, a manifest, anything full of globs: the shape
+ * of file the first bullet above sends HERE. Recommended for the case it damaged,
+ * in other words. Both now open a block only at a line start or after whitespace or
+ * one of `;{}(),=:[`.
+ *
+ * **The KNOWN LIMIT on `withoutComments` is inherited**, less the half that clause
+ * closes. A slash-star written after a space inside a literal still opens a block
+ * here, exactly as it does there; what can no longer happen is a literal opening
+ * one at a character no comment could follow. `eatenByStripping` above is how a
+ * caller makes the rest of it loud, and a check that reads configuration wants it
+ * whichever of the two it took.
  */
 export function withoutCommentLines(source: string): string {
   return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[\s;{}(),=:[])\/\*[\s\S]*?\*\//g, '$1')
     .split('\n')
     .filter((line) => !/^\s*(\/\/|\*)/.test(line))
     .join('\n');
@@ -261,7 +309,19 @@ export function withEscapesDecoded(source: string): string {
  * What a check counted, and the least it may count before the check has stopped
  * meaning anything.
  *
- * `atLeast` is inclusive: `found === atLeast` passes.
+ * **`atLeast` is inclusive**: `found === atLeast` passes, `found === atLeast - 1`
+ * does not. Spelled out because the matcher most of these replace is not.
+ * `expect(n).toBeGreaterThan(50)` is exclusive, so `atLeast: 50` relaxes that floor
+ * by one. That is what happened to every floor CORRECTIV converted whose figure was
+ * above zero, and it is written here rather than nowhere. The `toBeGreaterThan(0)`
+ * conversions are exact, because `> 0` and `atLeast: 1` are the same rule.
+ *
+ * They were left at the round number rather than raised by one, and the reason is
+ * what a floor is for: a number chosen far enough below the real figure that it
+ * never needs touching, and far enough above zero that an empty walk cannot pass
+ * it. Fifty is that; fifty-one is fifty wearing a measurement it never took. A
+ * floor within one of the figure it guards was the wrong shape before the
+ * conversion and the conversion is not what to fix about it.
  */
 export interface Floor {
   found: number;
@@ -673,10 +733,22 @@ export function numberInProse({
 }
 
 /**
+ * A copy of the caller's pattern with `g` on it, and a copy EVERY time.
+ *
  * `matchAll` throws on a pattern without `g`, and a caller writing one sentence has
- * no reason to think about the flag. Copied rather than mutated, because a regular
- * expression declared at the top of a file is shared with whatever else reads it.
+ * no reason to think about the flag. The copy is the part worth arguing for: a
+ * global regular expression carries a `lastIndex`, that `lastIndex` is state, and a
+ * pattern declared at the top of a file is shared with whatever else in the file
+ * reads it. Hand the shared object through and this sweep starts wherever the
+ * previous reader's `test` or `exec` stopped — so it finds no sentence, returns no
+ * faults, and the caller asserts the empty list and goes green over a claim nothing
+ * compared. The empty-walk failure again, one layer in: the flag is one character,
+ * the caller cannot see it from here, and the cost of copying is nothing.
+ *
+ * `filesUnder` takes `g` OFF for the mirror-image reason and argues it at length.
+ * Between them they are this package's rule about a pattern it did not declare:
+ * never read one as it was handed over.
  */
 function withGlobalFlag(pattern: RegExp): RegExp {
-  return pattern.global ? pattern : new RegExp(pattern.source, `${pattern.flags}g`);
+  return new RegExp(pattern.source, pattern.global ? pattern.flags : `${pattern.flags}g`);
 }
