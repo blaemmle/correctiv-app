@@ -190,11 +190,16 @@ export function HomeDocument({
           Live
         </Button>
 
+        {/*
+          Both the test and the write are against the SNAPPED minute, because that is
+          where the point would land. Against the raw one, a playhead typed to 11:02
+          offers a button that then makes nothing, since 11:00 already has a moment.
+        */}
         <Button
           variant="outline"
           size="sm"
           className="ml-auto"
-          disabled={momentAt(layout, minute) !== null}
+          disabled={momentAt(layout, snap(minute)) !== null}
           onClick={() => {
             edit(withMoment(layout, snap(minute)));
             goTo(snap(minute));
