@@ -1,5 +1,14 @@
 import { Fragment, useEffect, useState } from 'react';
-import { Check, Copy, ExternalLink, RotateCw } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  MoreHorizontal,
+  RectangleHorizontal,
+  RectangleVertical,
+  RotateCw,
+  X,
+} from 'lucide-react';
 
 import { cn } from '../../lib/cn';
 import { Button } from '../../ui/kit/button';
@@ -51,6 +60,22 @@ const ZOOMS: { value: string; label: string }[] = [
  * error counts belong to the tools, and a count of errors on the demo bar is the
  * first crack in the two-audience rule above. What it is read for is the last
  * button, whose behaviour differs between the two builds — see there.
+ *
+ * **Below `sm` (640px) three things change shape or fold away.** Measured at
+ * 420px: device and orientation alone filled one row, and zoom, the route
+ * list button, the route field, a separator, reload and "open without the
+ * frame" filled most of a second — three rows in all once the header's own
+ * logo-and-icons row is counted, on top of a panel beneath that used to claim
+ * half the window regardless of what was in it (`App.tsx` has that half).
+ * Below `sm`: the device select's own width narrows (the dropdown's options
+ * are unaffected — only the closed control shows less of the chosen name),
+ * orientation is a single icon toggle rather than a labelled two-segment
+ * control, and zoom, reload and "open without the frame" fold behind one
+ * `MoreHorizontal` button — `moreOpen` picks between that button and the
+ * group it stands for, never both. Nothing here is deleted: a press reaches
+ * everything the wider bar shows inline, one press further in. `sm:` and up
+ * is unchanged, because a tablet or a desktop window already had the room
+ * these controls asked for.
  */
 export function Toolbar({
   state,
@@ -62,6 +87,9 @@ export function Toolbar({
   onRaw,
 }: Props) {
   const size = frameSize(state);
+  // Left shut until asked, and not reset when the frame's own state changes —
+  // it is a fact about what this bar is showing, not about the frame.
+  const [moreOpen, setMoreOpen] = useState(false);
   /*
    * At the host's own size there is no frame to turn or to scale: the app has
    * the screen. Both controls are written out rather than disabled, because a
@@ -86,7 +114,7 @@ export function Toolbar({
       aria-label="Frame"
     >
       <select
-        className={cn(FIELD, 'shrink-0 max-w-[13rem]')}
+        className={cn(FIELD, 'shrink-0 max-w-[7rem] sm:max-w-[13rem]')}
         aria-label="Device"
         value={state.device}
         onChange={(e) =>
@@ -156,10 +184,33 @@ export function Toolbar({
       )}
 
       {!host && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 sm:hidden"
+              aria-label={landscape ? 'Switch to portrait' : 'Switch to landscape'}
+              onClick={() => onChange({ landscape: !state.landscape })}
+            >
+              {landscape ? (
+                <RectangleHorizontal aria-hidden="true" />
+              ) : (
+                <RectangleVertical aria-hidden="true" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {landscape ? 'Landscape' : 'Portrait'} · press to rotate
+          </TooltipContent>
+        </Tooltip>
+      )}
+
+      {!host && (
         <Segmented
           name="orientation"
           legend="Orientation"
-          className="shrink-0"
+          className="hidden shrink-0 sm:block"
           value={landscape ? 'landscape' : 'portrait'}
           options={[
             { value: 'portrait', label: 'Portrait' },
@@ -171,9 +222,36 @@ export function Toolbar({
         />
       )}
 
+      {/*
+        Below `sm`, one button that opens and shuts the group beneath it —
+        itself never hidden there, so folding the group away always leaves a
+        way back. `moreOpen` picks exactly one of `max-sm:hidden` (on each of
+        the four items past this one) and no override at all, never both, so
+        there is nothing for an importance modifier to win against. `sm` and up
+        ignores the state, always shows the group and never shows this button,
+        which is its own `sm:hidden`.
+      */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-pressed={moreOpen}
+            className="shrink-0 sm:hidden"
+            aria-label="More frame controls: zoom, reload, open without the frame"
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            {moreOpen ? <X aria-hidden="true" /> : <MoreHorizontal aria-hidden="true" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {moreOpen ? 'Fold away' : 'Zoom, reload, open without the frame'}
+        </TooltipContent>
+      </Tooltip>
+
       {!host && (
         <select
-          className={cn(FIELD, 'shrink-0')}
+          className={cn(FIELD, 'shrink-0', !moreOpen && 'max-sm:hidden')}
           aria-label="Zoom"
           value={String(state.zoom)}
           onChange={(e) =>
@@ -191,7 +269,7 @@ export function Toolbar({
       <Pages onPick={(route) => onChange({ route })} />
 
       <input
-        className={cn(FIELD, 'min-w-[8rem] flex-1 font-mono')}
+        className={cn(FIELD, 'min-w-[5.5rem] flex-1 font-mono sm:min-w-[8rem]')}
         type="text"
         list="routes"
         aria-label="Route"
@@ -212,11 +290,20 @@ export function Toolbar({
         ))}
       </datalist>
 
-      <Separator orientation="vertical" className="h-[1.5rem]" />
+      <Separator
+        orientation="vertical"
+        className={cn('h-[1.5rem]', !moreOpen && 'max-sm:hidden')}
+      />
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Reload the frame" onClick={onReload}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(!moreOpen && 'max-sm:hidden')}
+            aria-label="Reload the frame"
+            onClick={onReload}
+          >
             <RotateCw aria-hidden="true" />
           </Button>
         </TooltipTrigger>
@@ -238,6 +325,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
+            className={cn(!moreOpen && 'max-sm:hidden')}
             aria-label="Open the app on its own, without the frame"
             onClick={onRaw}
           >

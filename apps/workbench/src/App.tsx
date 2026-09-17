@@ -261,7 +261,21 @@ export function App() {
             </Header>
           )}
 
-          <div className="relative flex min-h-0 flex-1">
+          <div
+            className={cn(
+              'relative flex flex-1',
+              // A floor rather than a share: the frame's row asks for every pixel
+              // the column has left and gives none of it up to `flex-shrink` on
+              // its own, because `min-h-0` alone lets a sibling's `max-height`
+              // decide how much this row gets. Below `wide`, the panel beneath it
+              // is capped and content-sized (see the panel wrapper below), not
+              // fixed, so without a floor a short window could still squeeze the
+              // frame to a sliver while the panel sat at its cap. 16rem keeps the
+              // frame the majority partner even then; the panel gives way first,
+              // because it alone carries `min-h-0` down to zero.
+              !wide && !full && hasPanel ? 'min-h-[16rem]' : 'min-h-0',
+            )}
+          >
             {!full && <ActivityBar route={route} />}
 
             <ResizablePanelGroup className={cn('min-w-0 flex-1', !dragging && 'panels-animate')}>
@@ -342,11 +356,26 @@ export function App() {
                   reasons the docked panel collapses instead of unmounting: the
                   tools keep what is inside them, and the rail's `aria-controls`
                   keeps something to point at. The class is `hidden` and nothing
-                  else on that branch, because a `display` beside it would win. */}
+                  else on that branch, because a `display` beside it would win.
+
+                  Capped and content-sized, not a fixed half of the window. An
+                  empty Console used to claim the same `50dvh` as a Console full
+                  of lines, because the height was the window's rather than the
+                  tool's. `flex flex-col` here is what lets `ToolPanel`'s own
+                  `h-full` resolve against this box rather than against `auto`:
+                  a percentage height on a child of an `auto`-height box computes
+                  to `auto` and the child would simply be its own content size,
+                  but a percentage height on a child of a FLEX box clamped by
+                  `max-height` resolves against that clamped, now-definite size —
+                  which is what turns "grown past the cap" into "capped, with the
+                  tool's own internal scrollbar taking the rest" instead of the
+                  box merely being clipped with no way to reach what overflowed.
+                  `min-h-0` lets it give way entirely to the frame's floor above
+                  in a short window, rather than holding out for its cap. */}
               <div
                 className={cn(
-                  'shrink-0 border-t border-stroke',
-                  panelOpen ? 'h-[50dvh]' : 'hidden',
+                  'flex shrink-0 flex-col border-t border-stroke',
+                  panelOpen ? 'min-h-0 max-h-[min(34dvh,20rem)]' : 'hidden',
                 )}
               >
                 <ToolPanel view={view} tool={tool} />
