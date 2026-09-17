@@ -13,19 +13,29 @@ The ask was for a home screen that changes several times a day, arranged by the 
 which article leads, which podcast, which video.
 
 **Half of that mechanism is already in the tree, hard-coded, for one place.**
-[`packages/app-core/src/lib/daypart.ts`](../packages/app-core/src/lib/daypart.ts) lifts
+~~[`packages/app-core/src/lib/daypart.ts`](../packages/app-core/src/lib/daypart.ts) lifts
 the participation callout above the hero between 11 and 14, and `(tabs)/index.tsx`
 renders the callout in one of two positions depending on the answer. Reading that file is
-most of this decision:
+most of this decision:~~ The file is deleted by
+[ADR 0039](0039-the-home-screen-is-a-day-not-a-timetable.md) §5; what is left of it is
+the clock, in `lib/home-layout.ts`. The two positions in the screen are unchanged, and
+what chooses between them is two moments in the document.
 
-- `DAYPART_HOURS` is a table of **editorial numbers**, and its own comment says why it is
+- ~~`DAYPART_HOURS` is a table of **editorial numbers**, and its own comment says why it is
   a table: *"so moving them is an edit and not a rewrite, and so a reviewer can argue with
-  the numbers without reading the code."* That is a configuration. It is compiled in.
+  the numbers without reading the code."* That is a configuration. It is compiled in.~~
+  The table is gone with the file, voided by
+  [ADR 0039](0039-the-home-screen-is-a-day-not-a-timetable.md) §5 — which keeps the
+  argument inside it word for word and says so: moving those numbers is now a drag on a
+  timeline and a line in a JSON file.
 - ~~`WANTED` is a `Record<Daypart, TimedModule | null>` — a closed set the compiler checks,
   which is mechanism 1 of [ADR 0031](0031-four-mechanisms-for-this-must-not-be-forgotten.md)
   already in place for this exact question.~~ Moved to `home.layout.json` and
-  `lib/home-layout.ts` by [#177](https://github.com/faktenforum/correctiv-app/pull/177); the
-  closed set is `HomeSection['dayparts']` against the `Daypart` union now, and `daypart.ts`
+  `lib/home-layout.ts` by [#177](https://github.com/faktenforum/correctiv-app/pull/177); ~~the
+  closed set is `HomeSection['dayparts']` against the `Daypart` union now~~ — there is no
+  `dayparts` key and no `Daypart` type since
+  [ADR 0039](0039-the-home-screen-is-a-day-not-a-timetable.md) §5, and the mechanism-1
+  shape is `MODULE_SETTINGS` in `lib/home-settings.ts` instead — and `daypart.ts`
   no longer declares `WANTED` at all.
 - ~~`timedModuleAt` returns `null` for a module the app cannot render, rather than lifting
   an empty slot.~~ Renamed `sectionsAt`, in the same move, in the same file. The app
@@ -120,12 +130,19 @@ still undecided.
 A minimum interval between fetches keeps a reader who switches apps constantly from
 hammering the source.
 
-### 6. No version number in the document
+### 6. ~~No version number in the document~~, voided by [ADR 0039](0039-the-home-screen-is-a-day-not-a-timetable.md) §1
 
-Skipping what it does not recognise (§7) already solves what a version number would solve,
+~~Skipping what it does not recognise (§7) already solves what a version number would solve,
 and it solves the mixed case too — an app that knows every place but one. A version
 field would be a second mechanism answering the same question, and a second mechanism for
-one question is the one nobody keeps current.
+one question is the one nobody keeps current.~~ The document has carried a `version`
+since [#177](https://github.com/faktenforum/correctiv-app/pull/177) built it, against
+this clause and with `lib/home-layout.ts` saying so in a comment; what was missing was
+any reason for it to be there, and
+[ADR 0039](0039-the-home-screen-is-a-day-not-a-timetable.md) supplies one by being the
+first change to move the number. It is still not a gate — a document numbered for a later
+app is reported and then read, section by section — so §7 is unaffected and remains the
+mechanism.
 
 ### 7. An unknown place is drawn past, and reported
 
@@ -200,7 +217,10 @@ error** — mechanism 1 in ADR 0031, a `Record<PlaceId, …>` over a closed unio
 ~~`WANTED` is already exactly this shape for the daypart table.~~ `WANTED` was already
 exactly this shape for the daypart table, before
 [#177](https://github.com/faktenforum/correctiv-app/pull/177) carried this section out and
-gave the shape to `HomeSection['dayparts']` instead. The gallery catalogue is the
+~~gave the shape to `HomeSection['dayparts']` instead~~ — which
+[ADR 0039](0039-the-home-screen-is-a-day-not-a-timetable.md) §5 then deleted with the
+dayparts themselves; the shape is `MODULE_SETTINGS` and the three key tables in the
+parser now, and this decision is what they follow. The gallery catalogue is the
 same move one rung further along the same ladder: `components.generated.ts` reads the
 component folder into a union, which is mechanism 2, and `gallery/catalogue.tsx` is held
 against that union, so a component with no entry does not compile. Both are chosen for the
