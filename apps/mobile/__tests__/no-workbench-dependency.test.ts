@@ -57,10 +57,18 @@ import { IMPORT_RE, specifier } from './support/source';
  *    invisible until somebody adds a line. Again: the build half.
  *  - **A server.** ADR 0040 §4 records "no app server unless agreed otherwise" as
  *    the one way to invert the direction without writing an import: the app fetching
- *    a document the workbench operates is a dependency with no import, no path and
- *    no manifest entry to read. Nothing here or in the build half can see it, and
- *    inventing a check that could not tell that URL from correctiv.org's REST API
- *    would be a check that cannot fail. It stays a decision with a record.
+ *    a document the workbench operates is a dependency that no pattern here can see,
+ *    because the reach is a URL and a URL is a string. One mechanism does stand in
+ *    front of part of it, and saying there is none would be an overstatement:
+ *    `apps/workbench/test/sources.test.ts` fails on a FILE in
+ *    `packages/app-core/src/data` that has no row in the sources manifest, with a
+ *    status and a reason, so a new source added to the core as a file of its own has
+ *    to be named by a human in a diff. Its gaps are worth as much as its cover: it
+ *    counts files rather than endpoints, so a URL added to a data file that already
+ *    has a row passes, and it reads only the core, so a fetch written in
+ *    `apps/mobile` is outside it altogether. What nothing here can do is tell a URL
+ *    the workbench operates from correctiv.org's REST API, and a check that could
+ *    not fail is not written. It stays a decision with a record.
  *  - **`tools/`.** Out of scope on purpose: ADR 0040 §2 names `apps/mobile` and
  *    `packages/`, and `tools/figma-plugin` ships with neither.
  */

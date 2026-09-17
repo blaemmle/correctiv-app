@@ -8,9 +8,9 @@
 #                   root; pages.yml rebuilds the same export under the Pages base
 #                   path and publishes it.
 #   independence  — the same export again with apps/workbench REALLY GONE, and the
-#                   two compared byte for byte (ADR 0040). Runs beside `web` rather
-#                   than inside it, because it is the one job that destroys its own
-#                   checkout and nothing after it could be trusted.
+#                   two compared by module list and shape (ADR 0040). Runs beside
+#                   `web` rather than inside it, because it is the one job that
+#                   destroys its own checkout and nothing after it could be trusted.
 #   android       — Android APK of the app, and only when the change could reach it.
 #                   It costs a quarter of an hour against the other two together
 #                   costing two minutes, and the workbench, the ADRs and the
@@ -289,9 +289,10 @@ jobs:
   # enumerated are the set that matters most. This job asks the real toolchain
   # instead.
   #
-  # WHY IT IS HERE AND NOT IN `npm run check`. It costs an install and two web
-  # exports, which is minutes against a check that ARCHITECTURE.md measures because
-  # it is short enough to run constantly. And the honest version DELETES A DIRECTORY,
+  # WHY IT IS HERE AND NOT IN `npm run check`. It costs two installs and three
+  # exports, two of them from a cold cache because neither may replay the other,
+  # which is minutes against a check that ARCHITECTURE.md measures because it is
+  # short enough to run constantly. And the honest version DELETES A DIRECTORY,
   # which is fine in a runner's checkout and is not fine in somebody's working tree.
   #
   # WHY THE DELETION IS REAL. The alternative is a build with the workspace excluded
@@ -306,12 +307,21 @@ jobs:
   # depending on that tool, and no source read can see it.
   #
   # WHY IT COMPARES THE EXPORT RATHER THAN JUST BUILDING IT. "It still builds" cannot
-  # see the silent-contribution shapes above at all. Every bundle `expo export`
-  # writes carries a content hash in its own filename, so a stylesheet that lost half
-  # its utilities changes the manifest twice over. Measured on 2026-09-17: two
-  # exports of the same tree are byte-identical, and so is an export with
-  # apps/workbench removed — this comparison is a property of the output, not a
-  # coin toss.
+  # see the silent-contribution shapes above at all. So the two exports are compared
+  # — but NOT byte for byte, and that is a correction rather than a preference. See
+  # scripts/export-shape.mjs, which holds the measurement: `expo export` does not
+  # emit the same bytes twice, this job asserted that it did, and it went red on a
+  # pull request that changed nothing but Markdown (#204, run 35233971746). A check
+  # that fails when nothing is wrong is the twin of the one AGENTS.md warns about,
+  # and it is worse than nothing because people learn to merge past it.
+  #
+  # What is compared instead is the bundle's MODULE LIST and the shape of everything
+  # else: the file paths with their content hashes normalised away, the prerendered
+  # HTML with the same normalisation, and every other file — the stylesheets above
+  # all — byte for byte. A module that disappears with the workbench is named. What
+  # this no longer sees is a change in module ids, in ordering or in minifier output,
+  # and that is said here and in the job's own output rather than left to be
+  # rediscovered.
   independence:
     name: The app builds without the workbench
     runs-on: ubuntu-latest
@@ -328,18 +338,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Export the web bundle with the workbench present
+      # COLD AND PRIVATE, and that is the load-bearing part of this step.
+      #
+      # Metro's transform cache lives under `os.tmpdir()`, and `npm ci` does not
+      # touch it. The first version of this job therefore had its second export
+      # REPLAY the first's bytes out of a warm cache — 53.8 s cold, then 2.7 s — so
+      # every green it printed was a cache hit rather than a measurement, and the
+      # reds were the runs where the cache missed. A fresh `TMPDIR` per side gives
+      # each export its own cache, `--clear` says so twice, and the price is that
+      # both exports are cold: about a minute each.
+      #
+      # `--source-maps` because the module list comes out of them and the app's own
+      # `build:web` does not ask for them. Both sides are exported by the same
+      # command into the same shape, so the comparison is like for like; the app's
+      # own script is run further down, without the workbench, to prove the release
+      # path still works.
+      - name: Export the app with the workbench present
         working-directory: apps/mobile
-        run: npm run build:web
-
-      # Content hashes and all. `sha256sum` over a sorted file list is the whole
-      # comparison; nothing about it needs to know what expo emits.
-      - name: Record what that export is
+        env:
+          TMPDIR: ${{ runner.temp }}/cache-with
         run: |
           set -euo pipefail
-          ( cd apps/mobile/dist && find . -type f -print0 | sort -z | xargs -0 sha256sum ) \
-            > "$RUNNER_TEMP/with-workbench.txt"
-          echo "$(wc -l < "$RUNNER_TEMP/with-workbench.txt") files"
+          mkdir -p "$TMPDIR"
+          npx expo export --platform web --source-maps --clear --output-dir "$RUNNER_TEMP/export-with"
+          node "$GITHUB_WORKSPACE/scripts/export-shape.mjs" "$RUNNER_TEMP/export-with" "$RUNNER_TEMP/with"
 
       # `test -d` first, and it is not belt-and-braces: `mv` on a directory that is
       # not there would fail the step with a message about mv, and a rename upstream
@@ -373,20 +395,82 @@ jobs:
           npm run test -w @correctiv/app-core
           npm run test -w @correctiv/design-tokens
 
-      - name: Export the web bundle again, without it
+      # The same command, and a cache of its own again, so that neither export can
+      # replay the other.
+      - name: Export the app again, without it
         working-directory: apps/mobile
-        run: npm run build:web
-
-      - name: Assert it is the same bundle
+        env:
+          TMPDIR: ${{ runner.temp }}/cache-without
         run: |
           set -euo pipefail
-          ( cd apps/mobile/dist && find . -type f -print0 | sort -z | xargs -0 sha256sum ) \
-            > "$RUNNER_TEMP/without-workbench.txt"
-          if ! diff -u "$RUNNER_TEMP/with-workbench.txt" "$RUNNER_TEMP/without-workbench.txt"; then
-            echo "::error::the app's web export changes when apps/workbench is removed, so something in the app is reading it. A path into the workbench in a Tailwind @source, a jest moduleNameMapper, a Metro watchFolder or a tsconfig paths alias matches nothing when the directory is gone and builds a smaller bundle — apps/mobile/__tests__/no-workbench-dependency.test.ts is the check that names the file."
+          mkdir -p "$TMPDIR"
+          npx expo export --platform web --source-maps --clear --output-dir "$RUNNER_TEMP/export-without"
+          node "$GITHUB_WORKSPACE/scripts/export-shape.mjs" "$RUNNER_TEMP/export-without" "$RUNNER_TEMP/without"
+
+      # And the app's own release script, which is what ADR 0040 names. It is not
+      # compared — it is the same bundler over the same tree — but it is the command
+      # a release runs, and running it here says that it still runs at all with the
+      # directory gone. Warm, off the export above, which is seconds.
+      - name: Run the app's own release script without the workbench
+        working-directory: apps/mobile
+        env:
+          TMPDIR: ${{ runner.temp }}/cache-without
+        run: npm run build:web
+
+      - name: Assert it is the same app
+        run: |
+          set -euo pipefail
+
+          # The guard against a comparison of two nothings, which every diff below
+          # would call success. A floor rather than a reading: it was 1949 modules
+          # and 143 files on 2026-09-17, and the numbers here are only low enough to
+          # catch a source map that stopped being emitted or a dist that came back
+          # empty. scripts/export-shape.mjs fails on an empty directory of its own.
+          for side in with without; do
+            test -s "$RUNNER_TEMP/$side.modules.txt" || {
+              echo "::error::$side.modules.txt is missing or empty. The module list comes from the export's source maps; if --source-maps stopped emitting them, this job would compare nothing, so it fails instead of passing."
+              exit 1
+            }
+            modules=$(wc -l < "$RUNNER_TEMP/$side.modules.txt")
+            test "$modules" -gt 1000 || {
+              echo "::error::$side.modules.txt holds only $modules modules. That is not a bundle of this app, so the comparison below would be meaningless."
+              exit 1
+            }
+            files=$(wc -l < "$RUNNER_TEMP/$side.shape.txt")
+            test "$files" -gt 100 || {
+              echo "::error::the $side export has $files files in it, which is not this app."
+              exit 1
+            }
+            grep -q '^_expo/static/css/global-HASH\.css' "$RUNNER_TEMP/$side.shape.txt" || {
+              echo "::error::the $side export emitted no app stylesheet, so the one artefact this repository has actually seen go silently wrong is not in the comparison at all."
+              exit 1
+            }
+          done
+
+          # Both messages below say WHAT differs and stop there. The first version
+          # of this job said "so something in the app is reading it", which was
+          # untrue on #204 and is the sentence that taught people to merge past the
+          # job. A difference here has two possible causes and this job cannot tell
+          # them apart; naming both is the honest report.
+          CAUSES="Two things can cause this and this job cannot tell them apart: the app really reads apps/workbench, or the export has a nondeterminism that reaches this comparison. Take the second seriously — the bytes of the bundle already have one (scripts/export-shape.mjs), which is why they are not compared. For the first, apps/mobile/__tests__/no-workbench-dependency.test.ts names the file when it is an import, a path or a manifest entry."
+
+          if ! diff -u "$RUNNER_TEMP/with.modules.txt" "$RUNNER_TEMP/without.modules.txt"; then
+            echo "::error::the app's bundle holds different modules with apps/workbench removed. The lines above name each one that came or went. $CAUSES"
             exit 1
           fi
-          echo "identical — $(wc -l < "$RUNNER_TEMP/without-workbench.txt") files, with the workbench and without it"
+
+          if ! diff -u "$RUNNER_TEMP/with.shape.txt" "$RUNNER_TEMP/without.shape.txt"; then
+            echo "::error::the app's export changes shape with apps/workbench removed — a file, a prerendered page or a stylesheet. The stylesheet is the one to look at first: apps/mobile/src/global.css records the app once shipping a sheet dozens of its own utilities were missing from, and a Tailwind @source into a directory that is gone matches nothing and builds. $CAUSES"
+            exit 1
+          fi
+
+          echo "the same app — $(wc -l < "$RUNNER_TEMP/without.modules.txt") modules and $(wc -l < "$RUNNER_TEMP/without.shape.txt") files, with the workbench and without it."
+          echo "Not compared, and this job does not pretend otherwise: the JS bundle. Cold exports of one unchanged tree give a different hash every time and occasionally a different length, so neither can be asserted (scripts/export-shape.mjs has the measurement). What that leaves outside this check is the same modules with less code inside them; what stays inside it is a module, a page, a stylesheet or an asset arriving or leaving."
+          echo "For the record, the two bundles this run produced:"
+          for side in with without; do
+            bundle=$(find "$RUNNER_TEMP/export-$side/_expo/static/js/web" -name '*.js' | head -1)
+            echo "  $side: $(stat -c %s "$bundle") bytes, $(sha256sum "$bundle" | cut -c1-16)"
+          done
 
   android:
     name: Android build
