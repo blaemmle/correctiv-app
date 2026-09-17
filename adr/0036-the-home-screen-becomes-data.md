@@ -13,7 +13,7 @@ The ask was for a home screen that changes several times a day, arranged by the 
 which article leads, which podcast, which video.
 
 **Half of that mechanism is already in the tree, hard-coded, for one place.**
-~~[`packages/app-core/src/lib/daypart.ts`](../packages/app-core/src/lib/daypart.ts) lifts
+~~`packages/app-core/src/lib/daypart.ts` lifts
 the participation callout above the hero between 11 and 14, and `(tabs)/index.tsx`
 renders the callout in one of two positions depending on the answer. Reading that file is
 most of this decision:~~ The file is deleted by
