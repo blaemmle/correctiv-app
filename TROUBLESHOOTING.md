@@ -26,6 +26,14 @@ you judge, and on a route whose content is an `<iframe>` (the reader on web) scr
 **the frame**. Scrolling the page moves nothing and every shot comes out identical,
 which reads as "checked" and is not.
 
+A shot can also be of the wrong screen altogether, and look like a defect.
+`npm run dev -w @correctiv/workbench -- --port 5180` passes the number to Vite as its
+**root directory**, not as its port: the server starts, says nothing, and answers every
+address with a bodyless 404. Headless Chrome then saves Chrome's own error page, which
+is a picture of a working tool that appears to be broken. Write `--port 5180
+--strictPort`, and open the shot before you report anything from it. Nothing in this
+repository can tell the two pictures apart; only looking can.
+
 Extracting text is the weak version of this. `uiautomator dump` and
 `document.body.innerText` prove the right words are on screen and nothing about how
 it looks. Nine further defects hid behind exactly that, among them a video card
