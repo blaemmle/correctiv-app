@@ -224,6 +224,28 @@ is still on the door or if moving a block does not change what it draws.
 
 ## The web target
 
+- **A link into `/preview` loses its frame parameters on the DEV SERVER, and only
+  there.** Open `#/?d=iphone-15-pro&s=onboarded&tm=18:30` cold on `npm run workbench`
+  and the address comes back as `#/?d=iphone-15-pro`: the fixture and the simulated
+  clock are gone, `d` survives only because the default happens to agree, and nothing
+  reports anything. It reads exactly like a broken link, and the conclusion to avoid is
+  "the parameter is not implemented".
+
+  It is React's StrictMode, which `src/main.tsx` turns on and which mounts every
+  component twice in development. The first mount's `start()` reads the hash correctly;
+  the passive effect in `pages/Preview.tsx` then writes the state it read during
+  *render*, which is still the defaults, over the hash; the strict remount's `start()`
+  reads what is left. Measured on 2026-09-17 by wrapping `history.replaceState`: one
+  write, from `shell/address.ts` under `pages/Preview.tsx`, and it lands between the two
+  mounts.
+
+  → **Check a link against the built site, not the dev server.** `npm run
+  build:workbench` and then `node screens/tools/serve-clean.mjs apps/workbench/dist
+  <port>`; StrictMode is inert in a production React build and every parameter
+  survives, which is what the same URL measured that day. Inside the page nothing is
+  affected: a control that writes the address writes it correctly on both, so only the
+  cold load of a link is worth checking this way.
+
 - **A development bundle ignores the base path when it matches routes, and the
   door hides it.** The workbench publishes the app one directory below itself, at
   `/app/`, and `experiments.baseUrl` is what tells Expo Router to strip that

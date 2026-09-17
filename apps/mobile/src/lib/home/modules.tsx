@@ -4,7 +4,15 @@ import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, View } from 'react-native';
 
 import type { HomeSection } from '@correctiv/app-core/lib/home-layout';
+import {
+  FACT_CHECK_COUNT,
+  HERO_PIN,
+  itemCount,
+  pinnedItem,
+  RESEARCH_COUNT,
+} from '@correctiv/app-core/lib/home-settings';
 import { callouts } from '@correctiv/app-core/data/callouts';
+import { pinnedArticle } from '@correctiv/app-core/data/home-pins';
 
 import { ArticleHero } from '@/components/feed/ArticleHero';
 import { ArticleRow } from '@/components/feed/ArticleRow';
@@ -77,6 +85,15 @@ export const LIFTED_CALLOUT = 'callout-lifted';
 
 /** The address a section gets in the rendered tree, for tests and for the workbench. */
 export const placeTestID = (id: string): string => `home-section-${id}`;
+
+/*
+ * The settings below come from `@correctiv/app-core/lib/home-settings` by name, and the
+ * default each one carries comes with it. ADR 0039 §4 puts that table in the core
+ * because the parser has to refuse a key a module does not understand, and refusing
+ * means knowing; what it buys HERE is that "five investigations under the lead" is not a
+ * number in this file AND a number the editor has to repeat to show what happens when
+ * nobody has chosen.
+ */
 
 export interface HomeModuleProps {
   readonly section: HomeSection;
@@ -153,8 +170,23 @@ const FeedStatusModule: HomeModule = ({ section }) => {
   );
 };
 
+/**
+ * The lead article: the one that is pinned, or the newest, in that order.
+ *
+ * Three rungs and each one is a decision that has already been recorded. The live feed
+ * first, because a pinned article the feed carries should be drawn with what the feed
+ * knows about it today rather than with a copy that ages. Then `data/home-pins.ts`, the
+ * sample list an editor picked from, so a pin outside today's feed page still draws.
+ * Then the rule — ADR 0036 §8's "a pinned item that has vanished falls back to the
+ * place's rule", which is what stops an unpublished article leaving a hole where the
+ * lead belongs.
+ */
 const ArticleHeroModule: HomeModule = ({ section }) => {
-  const hero = useFeed('recherchen').data?.[0];
+  const newest = useFeed('recherchen').data;
+  const pin = pinnedItem(section.settings, HERO_PIN);
+  const hero =
+    (pin === null ? null : (newest?.find((item) => item.url === pin) ?? pinnedArticle(pin))) ??
+    newest?.[0];
   if (!hero) return null;
   return (
     <Place section={section}>
@@ -177,7 +209,8 @@ const EarlyAccessModule: HomeModule = ({ section }) => (
 
 const LatestResearchModule: HomeModule = ({ section }) => {
   const intl = useIntl();
-  const neueste = useFeed('recherchen').data?.slice(1, 6) ?? [];
+  const under = itemCount(section.settings, RESEARCH_COUNT);
+  const neueste = useFeed('recherchen').data?.slice(1, 1 + under) ?? [];
   if (neueste.length === 0) return null;
   return (
     <Place section={section} className="mt-l">
@@ -207,7 +240,10 @@ const FaktencheckRailModule: HomeModule = ({ section }) => {
         actionLabel={intl.formatMessage(COPY.viewAll)}
         onAction={() => router.push('/(tabs)/entdecken')}
       />
-      <FaktencheckRail items={items.slice(0, 8)} onPress={openArticle} />
+      <FaktencheckRail
+        items={items.slice(0, itemCount(section.settings, FACT_CHECK_COUNT))}
+        onPress={openArticle}
+      />
     </Place>
   );
 };

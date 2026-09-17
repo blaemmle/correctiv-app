@@ -1,3 +1,5 @@
+import { parseTimeOfDay } from '@correctiv/app-core/lib/home-layout';
+
 import type { ShellAddress } from '../shell/address';
 import { DEFAULT_DEVICE, DEVICES, HOST_DEVICE, preset } from './devices';
 import { TOKENS, type Overrides, type Scheme } from './frame/tokens';
@@ -23,6 +25,16 @@ export interface PreviewState {
   theme: ThemeSetting | null;
   /** A storage fixture applied before the frame boots; see `frame/seed.ts`. */
   seed: string | null;
+  /**
+   * `HH:MM`: what time the framed app is told it is, or `null` for its own clock.
+   *
+   * Here rather than inside the home tool because it is a way of looking at the app, the
+   * way the device and the appearance are, and a link to the home screen at half past six
+   * is the thing the whole timeline exists to produce. It is also what keeps a simulated
+   * clock from becoming durable state nobody can see: an address that names no time
+   * clears the key the app reads. `preview/home/clock.ts` is the writer.
+   */
+  time: string | null;
   /** Colour tokens overridden in the frame, per scheme. */
   overrides: Overrides;
   /** Run the measure checks as soon as the frame settles. */
@@ -38,6 +50,7 @@ export const INITIAL: PreviewState = {
   h: preset(DEFAULT_DEVICE).h,
   theme: null,
   seed: null,
+  time: null,
   overrides: {},
   check: false,
 };
@@ -82,6 +95,8 @@ export function fromAddress(address: ShellAddress): PreviewState {
     h: Number(p.get('h')) || size.h || INITIAL.h,
     theme: isTheme(theme) ? theme : null,
     seed: p.get('s'),
+    // Junk is no time at all rather than an error: a stale link should still open.
+    time: parseTimeOfDay(p.get('tm')) === null ? null : p.get('tm'),
     overrides: parseOverrides(p.get('kl'), p.get('kd')),
     check: p.has('check'),
   };
@@ -129,6 +144,7 @@ export function toAddress(state: PreviewState): { head: string; rest: URLSearchP
   }
   if (state.theme) p.set('t', state.theme);
   if (state.seed) p.set('s', state.seed);
+  if (state.time) p.set('tm', state.time);
   if (state.check) p.set('check', '1');
   const light = writeOverrides(state.overrides, 'light');
   const dark = writeOverrides(state.overrides, 'dark');

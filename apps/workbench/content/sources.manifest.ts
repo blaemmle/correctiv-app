@@ -454,6 +454,17 @@ export const SOURCES: SourceEntry[] = [
     note: 'Ordered per the concept.',
     questions: [1],
   },
+  {
+    id: 'home-pins',
+    label: 'What a home block can be pinned to',
+    kind: 'articles',
+    status: 'sample',
+    module: 'packages/app-core/src/data/home-pins.ts',
+    standsIn:
+      'the WordPress query behind what may lead the app today, in the shape wp/v2/posts answers in',
+    note: 'The home document lets a place be pinned to one article (ADR 0039 §4), so an editor picking one has to pick it from something. This is that something: six real articles out of the bundled snapshot, typed as FeedItem, which is what wp.service.ts maps a post into. The editor reads this row to mark the picker, so the marking goes when the query exists.',
+    questions: [1],
+  },
 
   {
     id: 'daily-podcast',
@@ -465,13 +476,13 @@ export const SOURCES: SourceEntry[] = [
     questions: [5, 6],
   },
   {
-    id: 'dayparts',
+    id: 'timed-modules',
     label: 'Time-based modules',
     kind: 'audio',
     status: 'no-source',
     mvp: true,
-    module: 'packages/app-core/src/lib/daypart.ts',
-    note: 'The mechanism exists: a section of the home layout document restricts itself to a daypart, and this file is the clock under it (ADR 0036). Both MVP slots, the morning podcast and the evening Spotlight, have no section at all because of the row above.',
+    module: 'packages/app-core/src/lib/home-layout.ts',
+    note: 'The mechanism exists and grew: the home document is a day, a list of moments each carrying what changes at it, and this file folds it up to a minute (ADR 0036, ADR 0039). Both MVP slots, the morning podcast and the evening Spotlight, still have no section at all because of the row above.',
     questions: [6, 7],
   },
   {
