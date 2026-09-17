@@ -13,12 +13,13 @@
 
 /** Two places this app holds a renderer for, and one it has never heard of. */
 jest.mock('@correctiv/app-core/data/home.layout.json', () => ({
-  version: 1,
+  version: 2,
   sections: [
     { id: 'header', module: 'home-header' },
     { id: 'quiz', module: 'quiz-of-the-day' },
     { id: 'impact', module: 'impact-footer' },
   ],
+  moments: [{ at: '11:00', changes: [{ id: 'quiz', hidden: true }] }],
 }));
 
 jest.mock('expo-router', () => ({
@@ -88,11 +89,22 @@ describe('a module the app does not know', () => {
     render(<HomeScreen />);
     render(<HomeScreen />);
 
+    /*
+     * Two problems from one document, and the second is the point of the moment above:
+     * a change about a section the parser has already dropped changes nothing, and
+     * changing nothing silently is how an edit is lost. So the unrecognised module is
+     * reported, and so is the instruction that was about it.
+     */
     expect(reports).toEqual([
       {
         domain: 'layout',
         code: 'module-unrecognised',
         context: { id: 'quiz', module: 'quiz-of-the-day' },
+      },
+      {
+        domain: 'layout',
+        code: 'change-id-unknown',
+        context: { at: '11:00', id: 'quiz' },
       },
     ]);
   });

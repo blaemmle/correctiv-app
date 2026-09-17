@@ -3,7 +3,8 @@ import { join } from 'node:path';
 
 /**
  * Home is a document now, and this is the pair of facts that keeps the document and the
- * app from parting ([ADR 0036](../../../adr/0036-the-home-screen-becomes-data.md)).
+ * app from parting ([ADR 0036](../../../adr/0036-the-home-screen-becomes-data.md),
+ * [ADR 0039](../../../adr/0039-the-home-screen-is-a-day-not-a-timetable.md)).
  *
  * **Both directions, and the second one is the one a type cannot see.** A module in the
  * document with no renderer is caught at runtime — the parser drops the section and
@@ -60,8 +61,13 @@ jest.mock('@/lib/store/core', () => ({
 
 import { act } from 'react-test-renderer';
 
-import { parseHomeLayout, sectionsAt, type HomeLayout } from '@correctiv/app-core/lib/home-layout';
-import { DAYPARTS, daypartAt } from '@correctiv/app-core/lib/daypart';
+import {
+  MINUTES_IN_DAY,
+  parseHomeLayout,
+  sectionsAt,
+  type HomeLayout,
+} from '@correctiv/app-core/lib/home-layout';
+import { MODULE_SETTINGS } from '@correctiv/app-core/lib/home-settings';
 import { resetStore } from '@correctiv/app-core/stores/store';
 
 import { render, walkHostNodes } from './support/rendering';
@@ -121,23 +127,42 @@ describe('the shipped home document', () => {
 
   /**
    * The property the two callout sections exist to hold, and the one a document cannot
-   * express: their daypart lists must partition the day. Two mutually exclusive
-   * conditions over the same card is exactly the shape that produces a duplicate when
-   * one of them is later edited, and a duplicated teaser on Home is not something a type
-   * checks.
+   * express: at no minute of the day are both of them shown, and at none are neither.
+   * Two moments switching the same card between two places is exactly the shape that
+   * produces a duplicate when one of them is later moved, and a duplicated teaser on
+   * Home is not something a type checks.
    */
-  it('shows the callout exactly once in every part of the day', () => {
-    for (const daypart of DAYPARTS) {
-      const shown = sectionsAt(layout, daypart).filter(
+  it('shows the callout exactly once at every minute of the day', () => {
+    for (let minute = 0; minute < MINUTES_IN_DAY; minute += 7) {
+      const shown = sectionsAt(layout, minute).filter(
         (section) => section.module === 'callout-teaser',
       );
-      expect(shown.map((section) => section.id)).toHaveLength(1);
+      expect({ minute, count: shown.length }).toEqual({ minute, count: 1 });
     }
+  });
+
+  /**
+   * The settings table is in the core and the renderers are here, so nothing but this
+   * holds them together: a module the core declares settings for and this app cannot
+   * draw is a configuration surface for a block that does not exist.
+   */
+  it('can draw every module the core declares a setting for', () => {
+    expect(Object.keys(MODULE_SETTINGS).filter((module) => !(module in HOME_MODULES))).toEqual([]);
   });
 });
 
-/** Local time, as `daypartAt` reads it. */
+/** Local time, which is the only clock `minuteOfDay` reads. */
 const at = (hour: number) => new Date(2026, 8, 3, hour, 0, 0, 0);
+
+/**
+ * The hours worth drawing at, and why each one.
+ *
+ * Not "every daypart" any more, because there are no dayparts: what the document has is
+ * two moments, so the interesting hours are one before the first, one between them and
+ * one after the last. The fourth is the small hours, which used to be a named daypart
+ * and is now simply the same state as the evening — asserted rather than assumed.
+ */
+const HOURS = [3, 7, 12, 19];
 
 /** Taken from the renderer's own helper, so a change to the addressing is one edit. */
 const PLACE_PREFIX = placeTestID('');
@@ -169,13 +194,10 @@ describe('what Home draws', () => {
    * assertion is "a subsequence, in order" rather than "equal", and the count below is
    * what stops that weaker claim passing on an empty screen.
    */
-  it.each(DAYPARTS.map((daypart) => [daypart]))(
-    'draws the %s sections in the document order',
-    (daypart) => {
-      const hour = { morning: 7, midday: 12, evening: 19, 'off-hours': 3 }[daypart];
-      expect(daypartAt(at(hour))).toBe(daypart);
-
-      const wanted = sectionsAt(layout, daypart).map((section) => section.id);
+  it.each(HOURS.map((hour) => [hour]))(
+    'draws the sections of %i:00 in the document order',
+    (hour) => {
+      const wanted = sectionsAt(layout, hour * 60).map((section) => section.id);
       const drawn = renderedPlaces(renderAt(hour));
 
       expect(drawn).toEqual(wanted.filter((id) => drawn.includes(id)));

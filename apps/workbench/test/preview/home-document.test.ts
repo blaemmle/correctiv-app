@@ -4,27 +4,38 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseHomeLayout, type HomeLayout } from '@correctiv/app-core/lib/home-layout';
+import { parseHomeLayout, stateAt, type HomeLayout } from '@correctiv/app-core/lib/home-layout';
+import { MODULE_SETTINGS } from '@correctiv/app-core/lib/home-settings';
 
 import { ROOT } from '../../plugin/collect.ts';
+import { SOURCES } from '../../content/sources.manifest.ts';
 import {
-  changed,
-  DAYPARTS,
-  daypartLabel,
-  daypartsOf,
+  changedAt,
+  differs,
+  effectiveAt,
   formatLayoutDocument,
   HOME_LAYOUT_ENDPOINT,
   HOME_LAYOUT_KEY,
+  HOME_TIME_KEY,
+  inheritedAt,
   moduleLabel,
   MODULE_LABELS,
+  momentAt,
   moved,
+  movedMoment,
+  pointAt,
+  SETTING_LABELS,
+  settingLabel,
   SHIPPED,
-  toggledHidden,
-  withDayparts,
+  spanOf,
+  withHidden,
+  withMoment,
+  withoutMoment,
+  withSetting,
 } from '../../src/preview/home/document';
 
 /**
- * The home-layout editor, held to the three things it cannot check itself.
+ * The home-layout editor, held to what it cannot check itself.
  *
  * **It prints the file the way the repository does.** Save is only worth having if the
  * diff it leaves says what was changed and nothing else, and a printer that puts every
@@ -32,12 +43,18 @@ import {
  * that printer, which is why there is one here, and why it is measured against the
  * repository's own oxfmt rather than against a description of what oxfmt does.
  *
- * **It names the modules in words.** The labels are a second copy of the app's module
- * map, and the direction a type cannot see is an entry here that no module answers to.
+ * **It never writes a change that changes nothing.** That is the model's own promise and
+ * the editor is the half that can keep it: the parser will happily read a moment that
+ * restates what it inherits, and a document full of them is a day nobody can read.
  *
- * **Both halves spell the storage key the same way.** That one is silent in exactly the
- * way ADR 0014 warns about: every edit would still "succeed", the app would go on
- * drawing the compiled-in document, and nothing anywhere would say why.
+ * **It names the modules and the settings in words.** Both label tables are a second
+ * copy of something in the app or the core, and the direction a type cannot see is an
+ * entry here that nothing answers to.
+ *
+ * **All three keys are spelled the same way at both ends.** That one is silent in
+ * exactly the way ADR 0014 warns about: every edit would still "succeed", the app would
+ * go on drawing the compiled-in document at the hour it actually is, and nothing
+ * anywhere would say why.
  */
 
 const FILE = 'packages/app-core/src/data/home.layout.json';
@@ -80,35 +97,43 @@ function oxfmt(text: string): string {
   );
 }
 
+const AT = (hours: number, minutes = 0) => hours * 60 + minutes;
+
 describe('the document the editor writes', () => {
   it('prints the shipped file byte for byte', () => {
     expect(formatLayoutDocument(SHIPPED)).toBe(source(FILE));
   });
 
   it('prints what oxfmt would print, for an edit of every kind', () => {
+    const lifted = withMoment(SHIPPED, AT(6, 30));
     const cases: HomeLayout[] = [
       SHIPPED,
       moved(SHIPPED, 'hero', -1),
       moved(SHIPPED, 'impact', -1),
-      toggledHidden(SHIPPED, 'early-access'),
-      withDayparts(SHIPPED, 'mediathek', new Set(['morning', 'evening'])),
-      withDayparts(toggledHidden(SHIPPED, 'callout'), 'callout', new Set(['morning'])),
+      withHidden(SHIPPED, null, 'early-access', true),
+      withHidden(SHIPPED, AT(11), 'mediathek', true),
+      withSetting(SHIPPED, null, 'hero', 'pin', 'https://correctiv.org/x/'),
+      withSetting(SHIPPED, AT(14), 'fact-checks', 'count', 3),
+      lifted,
+      withHidden(lifted, AT(6, 30), 'briefing', true),
+      withoutMoment(withoutMoment(SHIPPED, AT(11)), AT(14)),
       // The edges: nothing left, a section carrying both optional fields, and the two
       // widths either side of the break. The longest line in the shipped document is
       // exactly `printWidth` without its trailing comma and breaks with it, so a printer
       // that forgets the comma is right on every document but this one.
-      { version: 1, sections: [] },
-      { version: 1, sections: [{ id: 'a', module: 'b', dayparts: ['midday'], hidden: true }] },
+      { version: 2, sections: [], moments: [] },
       {
-        version: 1,
+        version: 2,
+        sections: [{ id: 'a', module: 'article-hero', hidden: true, settings: { pin: null } }],
+        moments: [],
+      },
+      {
+        version: 2,
         sections: [
-          { id: 'callout-lifted', module: 'callout-teaser', dayparts: ['morning', 'midday'] },
-          {
-            id: 'callout',
-            module: 'callout-teaser',
-            dayparts: ['morning', 'evening', 'off-hours'],
-          },
+          { id: 'callout-lifted', module: 'callout-teaser', hidden: true },
+          { id: 'callout', module: 'callout-teaser' },
         ],
+        moments: [{ at: '11:00', minute: 660, changes: [{ id: 'callout-lifted', hidden: false }] }],
       },
     ];
 
@@ -119,26 +144,50 @@ describe('the document the editor writes', () => {
   });
 
   it('writes a document the core takes back without a problem', () => {
-    const edited = withDayparts(
-      toggledHidden(moved(SHIPPED, 'briefing', 1), 'backstage'),
-      'mediathek',
-      new Set(['evening']),
+    const edited = withSetting(
+      withHidden(moved(SHIPPED, 'briefing', 1), AT(11), 'backstage', true),
+      AT(14),
+      'fact-checks',
+      'count',
+      4,
     );
     const { layout, problems } = parseHomeLayout(JSON.parse(formatLayoutDocument(edited)));
     expect(problems).toEqual([]);
     expect(layout).toEqual(edited);
   });
 
-  it('leaves the two optional fields out when they say nothing', () => {
-    // Every daypart chosen is the same rule as no `dayparts` key, and the short one is
-    // what a person reads. Switching a section off and on again has to leave the line it
-    // started as, or "off and on again" is a diff.
-    const all = withDayparts(SHIPPED, 'callout', new Set(DAYPARTS));
-    expect(formatLayoutDocument(all)).toContain('{ "id": "callout", "module": "callout-teaser" }');
-    expect(formatLayoutDocument(toggledHidden(toggledHidden(SHIPPED, 'hero'), 'hero'))).toBe(
-      source(FILE),
-    );
-    expect(formatLayoutDocument(withDayparts(SHIPPED, 'hero', new Set()))).toBe(source(FILE));
+  it('leaves the optional fields out when they say nothing', () => {
+    // Switching a section off and on again has to leave the line it started as, or "off
+    // and on again" is a diff. The same of a setting written and taken away.
+    expect(
+      formatLayoutDocument(
+        withHidden(withHidden(SHIPPED, null, 'hero', true), null, 'hero', false),
+      ),
+    ).toBe(source(FILE));
+    expect(
+      formatLayoutDocument(
+        withSetting(
+          withSetting(SHIPPED, null, 'hero', 'pin', 'https://x/'),
+          null,
+          'hero',
+          'pin',
+          undefined,
+        ),
+      ),
+    ).toBe(source(FILE));
+  });
+
+  /** A moment nobody has put anything on yet is a point somebody has just put down. */
+  it('writes a moment with no changes, and the core reads it back as one', () => {
+    const printed = formatLayoutDocument(withMoment(SHIPPED, AT(6, 30)));
+    expect(printed).toContain('"at": "06:30"');
+    const { problems } = parseHomeLayout(JSON.parse(printed));
+    expect(problems).toEqual([]);
+  });
+
+  it('writes no moments field at all when the day does not change', () => {
+    const flat = withoutMoment(withoutMoment(SHIPPED, AT(11)), AT(14));
+    expect(formatLayoutDocument(flat)).not.toContain('moments');
   });
 });
 
@@ -158,32 +207,100 @@ describe('the vocabulary the editor offers', () => {
     ]);
   });
 
+  /**
+   * The rule that makes a day readable, and the one the parser cannot enforce: a change
+   * equal to what the point already inherits is not written, it is taken out.
+   */
+  it('writes no change that restates what the moment already inherits', () => {
+    // `callout-lifted` is hidden at the start of the day and shown by the 11:00 moment.
+    // Setting it hidden at 11:00 removes that change rather than writing `hidden: true`.
+    const back = withHidden(SHIPPED, AT(11), 'callout-lifted', true);
+    const at11 = back.moments.find((moment) => moment.minute === AT(11))!;
+    expect(at11.changes.map((change) => change.id)).toEqual(['callout']);
+
+    // And the other direction: a value that differs IS written, `false` included, which
+    // is the asymmetry the model turns on — `hidden: false` says nothing in a section
+    // and is the instruction that brings a place back at a moment.
+    const early = withHidden(withMoment(SHIPPED, AT(9)), AT(9), 'callout-lifted', false);
+    expect(momentAt(early, AT(9))!.changes).toEqual([{ id: 'callout-lifted', hidden: false }]);
+  });
+
+  it('takes a change out of the document when its last field goes', () => {
+    const pinned = withSetting(SHIPPED, AT(14), 'hero', 'pin', 'https://x/');
+    expect(pinned.moments.find((m) => m.minute === AT(14))!.changes).toContainEqual({
+      id: 'hero',
+      settings: { pin: 'https://x/' },
+    });
+
+    const cleared = withSetting(pinned, AT(14), 'hero', 'pin', undefined);
+    expect(cleared.moments.find((m) => m.minute === AT(14))!.changes.map((c) => c.id)).toEqual([
+      'callout-lifted',
+      'callout',
+    ]);
+  });
+
+  it('adds a point, moves it with what it carries, and takes it away again', () => {
+    const added = withHidden(withMoment(SHIPPED, AT(6, 30)), AT(6, 30), 'briefing', true);
+    expect(added.moments.map((moment) => moment.at)).toEqual(['06:30', '11:00', '14:00']);
+
+    const later = movedMoment(added, AT(6, 30), AT(7, 45));
+    expect(later.moments.map((moment) => moment.at)).toEqual(['07:45', '11:00', '14:00']);
+    expect(momentAt(later, AT(7, 45))?.changes).toEqual([{ id: 'briefing', hidden: true }]);
+
+    expect(withoutMoment(later, AT(7, 45)).moments.map((m) => m.at)).toEqual(['11:00', '14:00']);
+  });
+
+  /** Two moments at one time is the one thing the parser refuses, so the editor cannot make one. */
+  it('refuses to move a point onto another point', () => {
+    expect(movedMoment(SHIPPED, AT(11), AT(14))).toBe(SHIPPED);
+    expect(withMoment(SHIPPED, AT(11))).toBe(SHIPPED);
+  });
+
+  it('says which point a minute is in, and how long it lasts', () => {
+    expect(pointAt(SHIPPED, AT(9))).toBeNull();
+    expect(pointAt(SHIPPED, AT(11))).toBe(AT(11));
+    expect(pointAt(SHIPPED, AT(13, 59))).toBe(AT(11));
+    expect(pointAt(SHIPPED, AT(14))).toBe(AT(14));
+
+    expect(spanOf(SHIPPED, null)).toEqual({ from: 0, to: AT(11) });
+    expect(spanOf(SHIPPED, AT(11))).toEqual({ from: AT(11), to: AT(14) });
+    expect(spanOf(SHIPPED, AT(14))).toEqual({ from: AT(14), to: 24 * 60 });
+  });
+
+  /** What a point inherits is everything strictly before it; what it produces includes it. */
+  it('tells what a point inherits from what it produces', () => {
+    const lifted = (sections: readonly { id: string; hidden?: boolean }[]) =>
+      Boolean(sections.find((s) => s.id === 'callout-lifted')?.hidden);
+
+    expect(lifted(inheritedAt(SHIPPED, AT(11)))).toBe(true);
+    expect(lifted(effectiveAt(SHIPPED, AT(11)))).toBe(false);
+    expect(inheritedAt(SHIPPED, null)).toEqual(SHIPPED.sections);
+  });
+
+  it('is unchanged until something changes, and says so as the file would', () => {
+    expect(differs(SHIPPED)).toBe(false);
+    expect(differs(moved(SHIPPED, 'hero', -1))).toBe(true);
+    expect(differs(withHidden(withHidden(SHIPPED, null, 'hero', true), null, 'hero', false))).toBe(
+      false,
+    );
+  });
+
+  /**
+   * The badge is about the minute being looked at, which is the only honest comparison
+   * once the document is a day.
+   */
+  it('counts a change at the minute it happens and not at the others', () => {
+    const edited = withHidden(SHIPPED, AT(11), 'mediathek', true);
+    expect(changedAt(edited, AT(9))).toEqual([]);
+    expect(changedAt(edited, AT(12))).toEqual(['mediathek']);
+    expect(changedAt(edited, AT(15))).toEqual(['mediathek']);
+  });
+
   it('counts a move as one change and not as two', () => {
     // A section that moved makes its neighbour move too, and an editor who lifted one
     // block should not be told they changed four.
-    expect(changed(SHIPPED)).toEqual([]);
-    expect(changed(moved(SHIPPED, 'hero', -1))).toEqual(['hero', 'callout-lifted']);
-    expect(changed(toggledHidden(SHIPPED, 'impact'))).toEqual(['impact']);
-    expect(changed(withDayparts(SHIPPED, 'impact', new Set(['morning'])))).toEqual(['impact']);
-    expect(changed(withDayparts(SHIPPED, 'impact', new Set(DAYPARTS)))).toEqual([]);
-  });
-
-  it('reads an absent daypart list as every daypart, not as none', () => {
-    const hero = SHIPPED.sections.find((section) => section.id === 'hero')!;
-    expect(hero.dayparts).toBeUndefined();
-    expect([...daypartsOf(hero)]).toEqual([...DAYPARTS]);
-  });
-
-  it('names the hours out of the core rather than out of a sentence', () => {
-    // The numbers are editorial and somebody is expected to argue with them, so a copy
-    // typed here would be the place the argument went wrong.
-    const hours = source('packages/app-core/src/lib/daypart.ts');
-    for (const part of DAYPARTS) {
-      const label = daypartLabel(part);
-      if (part === 'off-hours') continue;
-      const [, from, to] = /(\d+)–(\d+)$/.exec(label)!;
-      expect(hours).toMatch(new RegExp(`${part}:\\s*\\[${from},\\s*${to}\\]`));
-    }
+    expect(changedAt(SHIPPED, AT(9))).toEqual([]);
+    expect(changedAt(moved(SHIPPED, 'hero', -1), AT(9))).toEqual(['hero', 'callout-lifted']);
   });
 });
 
@@ -221,15 +338,83 @@ describe('the words an editor reads', () => {
   });
 
   it('still draws a row for a module it has never heard of', () => {
-    // §7's rule, in the editor: a document ahead of this tool still has to be editable.
+    // ADR 0036 §7's rule, in the editor: a document ahead of this tool stays editable.
     expect(moduleLabel('something-new').name).toBe('something-new');
+  });
+
+  /**
+   * And the same, one rung down, for the settings.
+   *
+   * The core owns which keys exist; this owns the question a person is asked about one.
+   * A setting added there with no words here would be a control labelled `count`.
+   */
+  it('asks a question for every setting the core declares, and invents none', () => {
+    const declared = Object.entries(MODULE_SETTINGS).flatMap(([module, specs]) =>
+      specs.map((spec) => `${module}.${spec.key}`),
+    );
+    expect(declared.filter((key) => !Object.hasOwn(SETTING_LABELS, key))).toEqual([]);
+    expect(Object.keys(SETTING_LABELS).filter((key) => !declared.includes(key))).toEqual([]);
+    for (const [key, label] of Object.entries(SETTING_LABELS)) {
+      expect(label.name).not.toBe(key.split('.')[1]);
+      expect(label.what.length).toBeGreaterThan(10);
+    }
+  });
+
+  it('falls back to the key for a setting it has no words for', () => {
+    expect(
+      settingLabel('quiz', { key: 'answers', kind: 'count', min: 1, max: 4, fallback: 2 }).name,
+    ).toBe('answers');
   });
 });
 
-describe('the two ends of the seam', () => {
-  it('spells the storage key the way the app reads it', () => {
-    const app = source('apps/mobile/src/lib/home/layout.ts');
-    expect(app).toContain(`export const HOME_LAYOUT_OVERRIDE_KEY = '${HOME_LAYOUT_KEY}';`);
+/**
+ * The article picker says it is sample data, and it says it from the inventory.
+ *
+ * `SOURCES.md` and `content/sources.manifest.ts` are how this repository already tells a
+ * live source from a stand-in; the picker reads the row rather than carrying a sentence
+ * of its own, so the marking goes by itself on the day the row turns live. What this
+ * holds is the join: a row with that id, marked sample, naming what it stands in for.
+ */
+describe('the sample data behind the article picker', () => {
+  const row = SOURCES.find((entry) => entry.id === 'home-pins');
+
+  it('has a row in the inventory, marked as a stand-in', () => {
+    expect(row?.status).toBe('sample');
+    expect(row?.standsIn).toBeTruthy();
+    expect(row?.module).toBe('packages/app-core/src/data/home-pins.ts');
+  });
+
+  it('is what the panel reads, rather than a sentence typed beside the control', () => {
+    const panel = source('apps/workbench/src/preview/home/HomeDocument.tsx');
+    expect(panel).toContain("SOURCES.find((entry) => entry.id === 'home-pins')");
+    expect(panel).toContain("PIN_SOURCE?.status === 'sample'");
+  });
+});
+
+describe('the three ends of the seam', () => {
+  it('spells the storage keys the way the app reads them', () => {
+    const layout = source('apps/mobile/src/lib/home/layout.ts');
+    expect(layout).toContain(`export const HOME_LAYOUT_OVERRIDE_KEY = '${HOME_LAYOUT_KEY}';`);
+
+    const clock = source('apps/mobile/src/lib/home/clock.ts');
+    expect(clock).toContain(`export const HOME_TIME_OVERRIDE_KEY = '${HOME_TIME_KEY}';`);
+  });
+
+  /**
+   * The simulated clock is in the address, which is what stops it becoming durable state
+   * nobody can see: shut the tab on a simulated evening and every later visit would open
+   * on it. The panel writes the key from `state.time` on every render, so an address
+   * that names no time takes the key away.
+   */
+  it('takes the simulated time from the address and writes it on every render', () => {
+    const state = source('apps/workbench/src/preview/state.ts');
+    expect(state).toContain("p.set('tm', state.time)");
+
+    const panel = source('apps/workbench/src/preview/home/HomeDocument.tsx');
+    expect(panel).toContain('useEffect(() => apply(simulated), [simulated])');
+
+    const clock = source('apps/workbench/src/preview/home/clock.ts');
+    expect(clock).toContain('window.localStorage.removeItem(HOME_TIME_KEY)');
   });
 
   it('answers on the address the dev server listens on', () => {
@@ -269,5 +454,20 @@ describe('the two ends of the seam', () => {
     const plugin = source('apps/workbench/plugin/home-layout.ts');
     expect(plugin).toContain("server.ssrLoadModule(\n      '@correctiv/app-core/lib/home-layout',");
     expect(plugin).not.toMatch(/^import .*@correctiv\/app-core/m);
+  });
+});
+
+/**
+ * The editor and the app agree about what a day looks like.
+ *
+ * `effectiveAt` is what the panel draws and `stateAt` is what the app draws, and they are
+ * the same function reached two ways — this is what says the tool is showing the thing
+ * the frame beside it is showing, rather than a second opinion about it.
+ */
+describe('the panel and the frame', () => {
+  it('draws the state the app would draw, at every point of the shipped day', () => {
+    for (const point of [null, AT(11), AT(14)]) {
+      expect(effectiveAt(SHIPPED, point)).toEqual(stateAt(SHIPPED, point ?? 0));
+    }
   });
 });

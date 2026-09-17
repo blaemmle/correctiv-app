@@ -344,17 +344,28 @@ function withChange(
   id: string,
   next: (change: HomeChange) => HomeChange,
 ): HomeLayout {
+  /*
+   * In the document's section order, which is the order the printer writes them in.
+   * Keeping the two the same is what makes the editor's document and the file's own
+   * parse of itself equal values — otherwise a change appended here and printed in
+   * section order comes back in a different place, and every comparison of "what I have"
+   * against "what I would save" has to know about it.
+   */
+  const rank = new Map(layout.sections.map((section, index) => [section.id, index]));
+
   return {
     ...layout,
     moments: layout.moments.map((moment) => {
       if (moment.minute !== minute) return moment;
       const held = moment.changes.find((change) => change.id === id) ?? { id };
       const edited = next(held);
-      const empty = Object.keys(edited).length <= 1;
       const rest = moment.changes.filter((change) => change.id !== id);
+      // One key left is the id alone: a change entry naming a section and changing
+      // nothing about it.
+      const changes = Object.keys(edited).length <= 1 ? rest : [...rest, edited];
       return {
         ...moment,
-        changes: empty ? rest : [...rest.filter((c) => c.id !== id), edited],
+        changes: [...changes].sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0)),
       };
     }),
   };
