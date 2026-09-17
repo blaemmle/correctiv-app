@@ -1,15 +1,13 @@
 import { cn } from '../lib/cn';
 import { chainLayout, standingWord, type ChainArc, type ChainNode } from './layout';
 import {
-  ALT,
   ARC,
+  ArrowMarker,
   AXIS,
   BOLD,
-  CAPTION,
+  DiagramFigure,
   DRAWING,
-  FIGURE,
   HALO,
-  MARKER,
   MONO,
   MUTED,
   NODE_INTACT,
@@ -17,7 +15,6 @@ import {
   NODE_QUIET,
   NODE_STRUCK,
   RULE,
-  SCROLL_BOX,
   STRIKE,
   T11,
   T12,
@@ -44,7 +41,7 @@ import type { Standing } from '../../plugin/decisions.ts';
  * comment explaining that the two disagreed on purpose. Both halves read one array
  * now, so there is no second place for that to happen.
  */
-const LAYOUT = chainLayout(docs.decisions, docs.strikes);
+export const LAYOUT = chainLayout(docs.decisions, docs.strikes);
 const SUMMARY = LAYOUT.summary;
 
 /** The ring that says how a record stands. Four marks, each named in the legend. */
@@ -92,17 +89,7 @@ export function DecisionsChainDrawing({ alt = false }: { alt?: boolean } = {}) {
         earlier record whose claim it struck
       </title>
       <defs>
-        <marker
-          id="d2-arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto"
-        >
-          <path d="M0 0 L10 5 L0 10 z" className={MARKER} />
-        </marker>
+        <ArrowMarker id="d2-arrow" />
       </defs>
 
       <text x={LAYOUT.arcX} y={LAYOUT.headerY} textAnchor="end" className={cn(T11, MUTED)}>
@@ -246,80 +233,79 @@ export function DecisionsChain({ alt = true }: { alt?: boolean }) {
   const loud = LAYOUT.nodes.filter((node) => !node.quiet);
 
   return (
-    <figure className={FIGURE}>
-      <section className={SCROLL_BOX} aria-label="Diagram 2, scrollable" tabIndex={0}>
-        <DecisionsChainDrawing alt={alt} />
-      </section>
-      <figcaption className={CAPTION}>
-        <strong>A record is amended, never rewritten, so its history is a set of arcs.</strong>{' '}
-        {SUMMARY.records} records on the axis and {SUMMARY.arcs} arcs between them: {SUMMARY.stands}{' '}
-        stand with nothing in them made false, {SUMMARY.partlyStruck} are accepted with claims
-        struck in place, and {SUMMARY.withdrawn} no longer stands. Every arc comes from a
-        record&apos;s own clause naming the record that struck it, so the drawing states nothing the
-        records do not.{' '}
-        {SUMMARY.busiest && (
-          <>
-            {SUMMARY.busiest.number} strikes the most, {SUMMARY.busiest.count} records.{' '}
-          </>
+    <DiagramFigure
+      number={2}
+      altId="d2-alt"
+      alt={alt}
+      drawing={<DecisionsChainDrawing alt={alt} />}
+      caption={
+        <>
+          <strong>A record is amended, never rewritten, so its history is a set of arcs.</strong>{' '}
+          {SUMMARY.records} records on the axis and {SUMMARY.arcs} arcs between them:{' '}
+          {SUMMARY.stands} stand with nothing in them made false, {SUMMARY.partlyStruck} are
+          accepted with claims struck in place, and {SUMMARY.withdrawn} no longer stands. Every arc
+          comes from a record&apos;s own clause naming the record that struck it, so the drawing
+          states nothing the records do not.{' '}
+          {SUMMARY.busiest && (
+            <>
+              {SUMMARY.busiest.number} strikes the most, {SUMMARY.busiest.count} records.{' '}
+            </>
+          )}
+          {SUMMARY.mostAmended && (
+            <>
+              {SUMMARY.mostAmended.number} is the most amended, struck by{' '}
+              {SUMMARY.mostAmended.count} records.{' '}
+            </>
+          )}
+          {SUMMARY.heaviest && (
+            <>
+              The heaviest single arc is {SUMMARY.heaviest.by}&apos;s {SUMMARY.heaviest.claims}{' '}
+              claims in {SUMMARY.heaviest.of}.{' '}
+            </>
+          )}
+          Two things are deliberately absent, both of them in the drawing this replaced: the
+          relations recorded only in the index&apos;s prose, and the corrections that landed in{' '}
+          <code>ARCHITECTURE.md</code> and in code comments. Neither can be derived from a record,
+          and a living document is rewritten in place rather than annotated, so there is nothing
+          left in it to read.
+        </>
+      }
+    >
+      <p>
+        Every record in <code>adr/</code>, in number order, with its standing and both ends of the
+        retirement graph. This list and the drawing are generated from one array, so they cannot
+        disagree.
+      </p>
+      <ul>
+        {quiet.length > 0 && (
+          <li>
+            {quiet.map((node) => node.number).join(', ')}: nothing recorded either way. They stand,
+            they struck no claim in another record, and no record has struck one in them.
+          </li>
         )}
-        {SUMMARY.mostAmended && (
-          <>
-            {SUMMARY.mostAmended.number} is the most amended, struck by {SUMMARY.mostAmended.count}{' '}
-            records.{' '}
-          </>
-        )}
-        {SUMMARY.heaviest && (
-          <>
-            The heaviest single arc is {SUMMARY.heaviest.by}&apos;s {SUMMARY.heaviest.claims} claims
-            in {SUMMARY.heaviest.of}.{' '}
-          </>
-        )}
-        Two things are deliberately absent, both of them in the drawing this replaced: the relations
-        recorded only in the index&apos;s prose, and the corrections that landed in{' '}
-        <code>ARCHITECTURE.md</code> and in code comments. Neither can be derived from a record, and
-        a living document is rewritten in place rather than annotated, so there is nothing left in
-        it to read.
-      </figcaption>
-      {alt && (
-        <div className={ALT} id="d2-alt">
-          <h3>The same diagram as a list</h3>
-          <p>
-            Every record in <code>adr/</code>, in number order, with its standing and both ends of
-            the retirement graph. This list and the drawing are generated from one array, so they
-            cannot disagree.
-          </p>
-          <ul>
-            {quiet.length > 0 && (
-              <li>
-                {quiet.map((node) => node.number).join(', ')}: nothing recorded either way. They
-                stand, they struck no claim in another record, and no record has struck one in them.
-              </li>
-            )}
-            {loud.map((node) => {
-              // A full stop after the title and not a colon: several titles in
-              // `adr/` carry a colon of their own, and a record whose heading ends
-              // "measured, not adopted yet: no longer stands" is two of them in one
-              // sentence.
-              const voiders = voidersSentence(node);
-              return (
-                <li key={node.number}>
-                  {node.number} {node.standing === 'withdrawn' ? <s>{node.title}</s> : node.title}.{' '}
-                  {standingWord(node.standing)}
-                  {voiders === '' ? '' : `, ${voiders}`}
-                  {node.voids.length > 0 && `. Strikes ${join(node.voids)}`}.
-                </li>
-              );
-            })}
-          </ul>
-          <p>
-            A struck claim is this repository&apos;s discipline working rather than damage: the
-            record is left standing and the claim is struck where it stands, so{' '}
-            {SUMMARY.partlyStruck} of {SUMMARY.records} carry one. Only the{' '}
-            {SUMMARY.withdrawn === 1 ? 'one record' : `${SUMMARY.withdrawn} records`} whose own
-            status line is struck through should be read as history.
-          </p>
-        </div>
-      )}
-    </figure>
+        {loud.map((node) => {
+          // A full stop after the title and not a colon: several titles in
+          // `adr/` carry a colon of their own, and a record whose heading ends
+          // "measured, not adopted yet: no longer stands" is two of them in one
+          // sentence.
+          const voiders = voidersSentence(node);
+          return (
+            <li key={node.number}>
+              {node.number} {node.standing === 'withdrawn' ? <s>{node.title}</s> : node.title}.{' '}
+              {standingWord(node.standing)}
+              {voiders === '' ? '' : `, ${voiders}`}
+              {node.voids.length > 0 && `. Strikes ${join(node.voids)}`}.
+            </li>
+          );
+        })}
+      </ul>
+      <p>
+        A struck claim is this repository&apos;s discipline working rather than damage: the record
+        is left standing and the claim is struck where it stands, so {SUMMARY.partlyStruck} of{' '}
+        {SUMMARY.records} carry one. Only the{' '}
+        {SUMMARY.withdrawn === 1 ? 'one record' : `${SUMMARY.withdrawn} records`} whose own status
+        line is struck through should be read as history.
+      </p>
+    </DiagramFigure>
   );
 }

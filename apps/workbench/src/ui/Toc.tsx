@@ -10,8 +10,9 @@ interface Props {
 /**
  * The in-page contents, following the heading currently on screen.
  *
- * It has no chrome of its own: the shell puts it inside the right sidebar, which
- * already carries the title and the way to shut it.
+ * It has no chrome of its own: the page hands it to the `contents` slot, and the
+ * tool panel it lands in carries the title. Nothing here shuts it, because nothing
+ * in the panel does — the rail is the switch.
  *
  * Only h2 and h3. An h4 in these documents is a detail inside an argument, and
  * listing them turns a map into a transcript. The observer's top margin keeps a

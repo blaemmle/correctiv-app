@@ -15,7 +15,7 @@ const MODES: { value: Appearance; label: string; hint: string; Icon: typeof Sun 
 
 const SHORTCUTS: [string, string][] = [
   ['⌘K', 'Search documents, sections and the API'],
-  ['⌘J', 'The right sidebar, whatever the open view puts there'],
+  ['⌘J', 'The tool panel, whatever the open view puts there'],
   ['Esc', 'Leave full screen on the app view'],
 ];
 

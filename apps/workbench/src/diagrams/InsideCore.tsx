@@ -1,22 +1,19 @@
 import { cn } from '../lib/cn';
 import {
-  ALT,
+  ArrowMarker,
   BOLD,
   BOUNDARY,
   BOX,
   BOX_CORE,
   CALLOUT,
-  CAPTION,
   CHIP,
   CHIP_PORT,
+  DiagramFigure,
   DRAWING,
-  FIGURE,
   GHOST,
   LEAD,
-  MARKER,
   MONO,
   MUTED,
-  SCROLL_BOX,
   T11,
   T12,
   T13,
@@ -24,12 +21,6 @@ import {
   WIRE,
 } from './shared';
 
-/**
- * The drawing alone, without the box that scrolls it or the list beside it.
- *
- * `alt` reaches this far in only to decide whether the drawing points at a list
- * that may not be on the page.
- */
 /**
  * The drawing on its own, with no description attached by default.
  *
@@ -52,17 +43,7 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         of it
       </title>
       <defs>
-        <marker
-          id="d3-arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto"
-        >
-          <path d="M0 0 L10 5 L0 10 z" className={MARKER} />
-        </marker>
+        <ArrowMarker id="d3-arrow" />
       </defs>
 
       <line x1="22" y1="84" x2="22" y2="592" className={WIRE} markerEnd="url(#d3-arrow)" />
@@ -343,75 +324,72 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
  */
 export function InsideCore({ alt = true }: { alt?: boolean }) {
   return (
-    <figure className={FIGURE}>
-      {/*
-        Fourth, because `diagrams/index.ts` orders it fourth and `DiagramView` counts
-        the breadcrumb off that same array. The `d3-` ids inside the drawing are
-        older and are only ever read by `aria-labelledby`, so they are left alone.
-      */}
-      <section className={SCROLL_BOX} aria-label="Diagram 4, scrollable" tabIndex={0}>
-        <InsideCoreDrawing alt={alt} />
-      </section>
-      <figcaption className={CAPTION}>
-        <strong>Every layer imports downward, and the lowest one is a set of interfaces.</strong>{' '}
-        The ports are declared here and implemented outside; the SDKs under the red line are the
-        host's business, and a test keeps them out. The root entry exports only the ports, so a host
-        reaches anything else by its path.
-      </figcaption>
-      {alt && (
-        <div className={ALT} id="d3-alt">
-          <h3>The same diagram as a list</h3>
-          <p>
-            <code>packages/app-core</code>, 57 TypeScript files. Imports point down the stack.
-            Layers from the top:
-          </p>
-          <ol>
-            <li>
-              <strong>stores</strong>: one Redux Toolkit store with 12 slices. The core owns the
-              slices and exports <code>createAppStore()</code>; the host constructs the instance.
-            </li>
-            <li>
-              <strong>articles</strong>: the Article model and its load cascade.{' '}
-              <code>articles/extract</code> holds two backends, a string one and a DOM one, behind
-              one <code>ArticleExtractor</code> type. Beside it, <strong>media</strong>, with one
-              rule: only one medium plays at a time.
-            </li>
-            <li>
-              <strong>services</strong>, 10 files: auth, cache, http, peertube, podcast, radio, rss,
-              search, spotlight, wp. Beside it, <strong>data</strong>, 11 files of typed content.
-            </li>
-            <li>
-              <strong>lib</strong>: dependency-free string and date helpers.
-            </li>
-            <li>
-              <strong>ports</strong> and <strong>types</strong>, the contracts:{' '}
-              <code>ports/index.ts</code>, one file, declares <code>KeyValueStore</code>,{' '}
-              <code>BlobStore</code>, <code>ContentBundle</code>, <code>AudioBackend</code>,{' '}
-              <code>ErrorReporter</code> and <code>configurePlatform()</code>. The drawing puts the
-              first four on one row and <code>ErrorReporter</code> on the next, because the first
-              four are what the core needs in order to work and this one is what it needs in order
-              to be heard: the app runs without it, which is why its default reports nowhere. Beside
-              them, <strong>types</strong>, one file of shared contracts.
-            </li>
-          </ol>
-          <p>
-            Below the contracts is a hard boundary. The platform SDKs (react-native, expo,
-            expo-audio, react-native-mmkv) sit on the far side and nothing in the package imports
-            them. <code>packages/app-core/test/boundary.test.ts</code> holds that line by refusing a
-            list of names: react-native, expo, node built-ins, the NativeScript scopes, and the view
-            layers the core used to be tied to. It matches the start of the import, so the storage
-            SDK is caught by the <code>react-native</code> entry rather than needing one of its own.
-            The same file also checks that <code>ports/index.ts</code> still declares all five
-            ports, so a capability cannot reach the host without being named there.
-          </p>
-          <p>
-            Two conventions: derived values are exported selectors taking state, never store
-            methods. Imports use subpaths and no barrel, for example{' '}
-            <code>@correctiv/app-core/stores/session</code>, because the root entry exposes only the
-            ports.
-          </p>
-        </div>
-      )}
-    </figure>
+    // Fourth in the rail, and `d3-` inside the drawing: those ids are older than the
+    // order, are only ever read by the `aria-labelledby` beside them, and are left
+    // alone rather than renumbered for tidiness.
+    <DiagramFigure
+      number={4}
+      altId="d3-alt"
+      alt={alt}
+      drawing={<InsideCoreDrawing alt={alt} />}
+      caption={
+        <>
+          <strong>Every layer imports downward, and the lowest one is a set of interfaces.</strong>{' '}
+          The ports are declared here and implemented outside; the SDKs under the red line are the
+          host's business, and a test keeps them out. The root entry exports only the ports, so a
+          host reaches anything else by its path.
+        </>
+      }
+    >
+      <p>
+        <code>packages/app-core</code>, 57 TypeScript files. Imports point down the stack. Layers
+        from the top:
+      </p>
+      <ol>
+        <li>
+          <strong>stores</strong>: one Redux Toolkit store with 12 slices. The core owns the slices
+          and exports <code>createAppStore()</code>; the host constructs the instance.
+        </li>
+        <li>
+          <strong>articles</strong>: the Article model and its load cascade.{' '}
+          <code>articles/extract</code> holds two backends, a string one and a DOM one, behind one{' '}
+          <code>ArticleExtractor</code> type. Beside it, <strong>media</strong>, with one rule: only
+          one medium plays at a time.
+        </li>
+        <li>
+          <strong>services</strong>, 10 files: auth, cache, http, peertube, podcast, radio, rss,
+          search, spotlight, wp. Beside it, <strong>data</strong>, 11 files of typed content.
+        </li>
+        <li>
+          <strong>lib</strong>: dependency-free string and date helpers.
+        </li>
+        <li>
+          <strong>ports</strong> and <strong>types</strong>, the contracts:{' '}
+          <code>ports/index.ts</code>, one file, declares <code>KeyValueStore</code>,{' '}
+          <code>BlobStore</code>, <code>ContentBundle</code>, <code>AudioBackend</code>,{' '}
+          <code>ErrorReporter</code> and <code>configurePlatform()</code>. The drawing puts the
+          first four on one row and <code>ErrorReporter</code> on the next, because the first four
+          are what the core needs in order to work and this one is what it needs in order to be
+          heard: the app runs without it, which is why its default reports nowhere. Beside them,{' '}
+          <strong>types</strong>, one file of shared contracts.
+        </li>
+      </ol>
+      <p>
+        Below the contracts is a hard boundary. The platform SDKs (react-native, expo, expo-audio,
+        react-native-mmkv) sit on the far side and nothing in the package imports them.{' '}
+        <code>packages/app-core/test/boundary.test.ts</code> holds that line by refusing a list of
+        names: react-native, expo, node built-ins, the NativeScript scopes, and the view layers the
+        core used to be tied to. It matches the start of the import, so the storage SDK is caught by
+        the <code>react-native</code> entry rather than needing one of its own. The same file also
+        checks that <code>ports/index.ts</code> still declares all five ports, so a capability
+        cannot reach the host without being named there.
+      </p>
+      <p>
+        Two conventions: derived values are exported selectors taking state, never store methods.
+        Imports use subpaths and no barrel, for example{' '}
+        <code>@correctiv/app-core/stores/session</code>, because the root entry exposes only the
+        ports.
+      </p>
+    </DiagramFigure>
   );
 }

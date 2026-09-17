@@ -73,7 +73,7 @@ export const DOCUMENTS: DocumentSource[] = [
     //
     // Not `/decisions/…` either, which would read better and be wrong twice:
     // `pages/Landing.tsx` counts the records as the documents under that prefix
-    // and would say thirty-four, and `ui/Search.tsx` labels everything under it
+    // and would count them all, and `ui/Search.tsx` labels everything under it
     // `ADR <segment>`, so the palette would offer "ADR notes". Both are right to
     // assume a segment there is a record. `ui/ActivityBar.tsx` lights the
     // Decisions rail for anything starting `/decisions`, which this still does.
@@ -130,6 +130,19 @@ export const DOCUMENTS: DocumentSource[] = [
       'Draws the app’s screens and kit into the Figma file from data in this repository, and what it needs to run.',
   },
 ];
+
+/**
+ * Whether a repository path is one of the records.
+ *
+ * Anchored at `adr/`, unlike `adrNumber` below, and that is the whole difference:
+ * this one is handed every path in the tree and has to refuse `tools/0012-x.md`,
+ * where `adrNumber` is handed a record and asked only to read its number. Both
+ * callers of this were filtering a list of repository paths with a copy of the
+ * literal, which is two regexes that have to be edited together.
+ */
+export function isRecordFile(file: string): boolean {
+  return /^adr\/0\d{3}-.*\.md$/.test(file);
+}
 
 /** `adr/0022-three-tiers-of-colour.md` and `0022-three-tiers-of-colour.md` both give `0022`. */
 export function adrNumber(file: string): string | null {

@@ -22,7 +22,7 @@ import { execFileSync } from 'node:child_process';
 import { closeSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 
-import { DOCUMENTS, type DocumentSource } from './registry.ts';
+import { DOCUMENTS, isRecordFile, type DocumentSource } from './registry.ts';
 
 /**
  * Where this page answers, and what it is called.
@@ -146,7 +146,7 @@ export interface Provenance {
   servicesClaim: string | null;
 }
 
-/** The measurement is the same for one build; four test files ask for it. */
+/** The measurement is the same for one build, and the test files ask for it repeatedly. */
 const CACHE = new Map<string, Provenance>();
 
 export function buildProvenance(root: string): Provenance {
@@ -506,7 +506,7 @@ function scan(root: string): Provenance {
     // that ought to be in it counts as a claim nothing answers.
     orphaned: generated.filter((entry) => entry.writtenBy === null && entry.claims.includes('/')),
     documents,
-    records: files.filter((file) => /^adr\/0\d{3}-.*\.md$/.test(file)).length,
+    records: files.filter(isRecordFile).length,
     ledger: {
       records: Object.keys(lock).length,
       decisions: Object.values(lock).reduce((n, r) => n + Object.keys(r.decisions ?? {}).length, 0),

@@ -32,11 +32,11 @@ export interface DevHandle {
  * Where the app answers, which is no longer this page's own directory.
  *
  * The shell used to sit beside the export inside `apps/mobile/public/`, so its
- * own directory was the app's ([ADR 0014](../../../../adr/0014-the-preview-shell-as-a-package.md)).
+ * own directory was the app's ([ADR 0014](../../../../../adr/0014-the-preview-shell-as-a-package.md)).
  * The workbench owns the site root now and the app is published beneath it, so the
  * path is the site's base plus `/app`: `/app` locally, `/correctiv-app/app` on
  * Pages, where `app.config.js` has given the export a matching `baseUrl`
- * ([ADR 0024](../../../../adr/0024-the-handbook-owns-the-root.md)).
+ * ([ADR 0024](../../../../../adr/0024-the-handbook-owns-the-root.md)).
  *
  * Same-origin is unchanged and is still the thing everything here depends on. On
  * Pages both halves are one artifact; in development the workbench's Vite server

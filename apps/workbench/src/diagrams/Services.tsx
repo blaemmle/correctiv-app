@@ -1,14 +1,12 @@
 import { cn } from '../lib/cn';
 import { href } from '../router';
 import {
-  ALT,
   ARC_INDEX,
   BOLD,
   BOX_CORE,
-  CAPTION,
   CHIP_PORT,
+  DiagramFigure,
   DRAWING,
-  FIGURE,
   HALO,
   MARKER,
   MONO,
@@ -17,9 +15,7 @@ import {
   NODE_MOOT,
   NODE_STRUCK,
   ON_ALTERNATIVE,
-  PROSE_CODE,
   RULE,
-  SCROLL_BOX,
   WIRE,
 } from './shared';
 
@@ -27,7 +23,7 @@ import {
  * The drawing alone, without the box that scrolls it or the list beside it.
  *
  * It names itself through the `<title>` inside it rather than an id outside, so
- * unlike the other three it needs nothing from the page around it.
+ * unlike the others it needs nothing from the page around it.
  */
 export function ServicesDrawing() {
   return (
@@ -88,7 +84,7 @@ export function ServicesDrawing() {
       <rect x="612" y="150" width="150" height="22" rx="11" className={NODE_STRUCK} />
       {/* Club yellow is the same colour in both schemes, so the label over it
           cannot inherit `fill-on-canvas`: in dark that is near-white on yellow.
-          See `ON_ALTERNATIVE` in `shared.ts` for the whole of it. */}
+          See `ON_ALTERNATIVE` in `shared.tsx` for the whole of it. */}
       <text x="628" y="162" className={ON_ALTERNATIVE} fontSize="11">
         simulated today
       </text>
@@ -179,68 +175,60 @@ export function ServicesDrawing() {
  */
 export function Services({ alt = true }: { alt?: boolean }) {
   return (
-    <figure className={FIGURE}>
-      {/*
-        Third, because `diagrams/index.ts` orders it third and `DiagramView` counts
-        the breadcrumb off that same array. The number a screen reader hears and the
-        number the page shows have to be the one number.
-      */}
-      <section className={SCROLL_BOX} aria-label="Diagram 3, scrollable" tabIndex={0}>
-        <ServicesDrawing />
-      </section>
-      <figcaption className={CAPTION}>
-        <strong>beabee is the door; the rest is what is behind it.</strong> Its answer decides
-        whether the app renders its routes at all, which no content source does, so it is drawn on
-        its own wire. That answer is simulated today, in{' '}
-        <code className={PROSE_CODE}>services/auth.service.ts</code>, and the shape of the answer is
-        the contract. Five content sources are live; three are files typed in the shape of the API
-        meant to replace them. Which is which, and the figures behind each, is the{' '}
-        <a href={href('/sources')} className="underline decoration-accent underline-offset-2">
-          sources board
-        </a>
-        .
-      </figcaption>
-      {alt && (
-        <div className={ALT}>
-          <h3>The same diagram as a list</h3>
-          <p className="mt-xs">
-            <strong>beabee, identity and membership.</strong> One login for the website and the app.
-            It answers with the tier, whether the app is included, why, and for how long. The app
-            asks it once at the door and renders its routes only on a yes. Simulated today in{' '}
-            <code className={PROSE_CODE}>packages/app-core/src/services/auth.service.ts</code>;
-            nothing reaches a network, and the screen that calls it says so.
-          </p>
-          <p className="mt-xs font-semibold">Content the app reads live</p>
-          <ul className="mt-3xs list-disc pl-m">
-            <li>
-              <code className={PROSE_CODE}>correctiv.org</code>, WordPress REST: articles by
-              category, the newsletter archive, and search.
-            </li>
-            <li>
-              <code className={PROSE_CODE}>salon5.correctiv.net</code>, CORRECTIV&apos;s own
-              Castopod, standard podcast RSS per show.
-            </li>
-            <li>
-              <code className={PROSE_CODE}>icecast.correctiv.net</code>, live radio, three mounts.
-            </li>
-            <li>
-              <code className={PROSE_CODE}>tube.funfacts.de</code>, CORRECTIV&apos;s own PeerTube,
-              nine channels.
-            </li>
-            <li>YouTube, Atom feeds.</li>
-          </ul>
-          <p className="mt-xs font-semibold">Content that is a file standing in for a service</p>
-          <ul className="mt-3xs list-disc pl-m">
-            <li>Faktenforum, a GraphQL backend, for the claims.</li>
-            <li>abriss-atlas.de, which has no public API.</li>
-            <li>beabee CrowdNewsroom, for the callouts.</li>
-          </ul>
-          <p className="mt-xs">
-            The counts, the dates each figure was measured on, and the wanted features with no
-            source at all are on the sources board.
-          </p>
-        </div>
-      )}
-    </figure>
+    <DiagramFigure
+      number={3}
+      alt={alt}
+      drawing={<ServicesDrawing />}
+      caption={
+        <>
+          <strong>beabee is the door; the rest is what is behind it.</strong> Its answer decides
+          whether the app renders its routes at all, which no content source does, so it is drawn on
+          its own wire. That answer is simulated today, in <code>services/auth.service.ts</code>,
+          and the shape of the answer is the contract. Five content sources are live; three are
+          files typed in the shape of the API meant to replace them. Which is which, and the figures
+          behind each, is the{' '}
+          <a href={href('/sources')} className="underline decoration-accent underline-offset-2">
+            sources board
+          </a>
+          .
+        </>
+      }
+    >
+      <p className="mt-xs">
+        <strong>beabee, identity and membership.</strong> One login for the website and the app. It
+        answers with the tier, whether the app is included, why, and for how long. The app asks it
+        once at the door and renders its routes only on a yes. Simulated today in{' '}
+        <code>packages/app-core/src/services/auth.service.ts</code>; nothing reaches a network, and
+        the screen that calls it says so.
+      </p>
+      <p className="mt-xs font-semibold">Content the app reads live</p>
+      <ul className="mt-3xs list-disc pl-m">
+        <li>
+          <code>correctiv.org</code>, WordPress REST: articles by category, the newsletter archive,
+          and search.
+        </li>
+        <li>
+          <code>salon5.correctiv.net</code>, CORRECTIV&apos;s own Castopod, standard podcast RSS per
+          show.
+        </li>
+        <li>
+          <code>icecast.correctiv.net</code>, live radio, three mounts.
+        </li>
+        <li>
+          <code>tube.funfacts.de</code>, CORRECTIV&apos;s own PeerTube, nine channels.
+        </li>
+        <li>YouTube, Atom feeds.</li>
+      </ul>
+      <p className="mt-xs font-semibold">Content that is a file standing in for a service</p>
+      <ul className="mt-3xs list-disc pl-m">
+        <li>Faktenforum, a GraphQL backend, for the claims.</li>
+        <li>abriss-atlas.de, which has no public API.</li>
+        <li>beabee CrowdNewsroom, for the callouts.</li>
+      </ul>
+      <p className="mt-xs">
+        The counts, the dates each figure was measured on, and the wanted features with no source at
+        all are on the sources board.
+      </p>
+    </DiagramFigure>
   );
 }
