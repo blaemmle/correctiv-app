@@ -131,16 +131,12 @@ where someone reading it would act on it and be wrong.
 
 ## Facts that expire
 
-**The rung above both of the ones below: do not write the figure at all unless the
-sentence loses something without it.** "The ports", not "the five ports"; "the
-drawings", not "six drawings". A figure that is not there cannot drift, needs no
-check under it and no second copy held in step — it beats a check because a check
-is upkeep and an absent figure is none, and it beats a pointer because a pointer
-can still go stale while nothing points at it being wrong. Reach for this first.
-Write the number only where the sentence would otherwise say less than it means:
-the count itself is the claim being made (ADR 0026 §4's three cache bounds), or a
-mechanism is being described rather than a total (`packages/design-tokens`
-generating its own modules). Then it earns a check, by the rung below.
+**First ask whether the figure needs to be there at all.** "The ports", not "the five
+ports"; "the drawings", not "six drawings". A number that is not written cannot drift,
+and needs neither a check under it nor a second copy held in step. Write one only where
+the sentence would otherwise say less than it means: where the count *is* the claim, as
+ADR 0026 §4's cache bounds are, or where what is being described is a mechanism rather
+than a total. A figure that earns its place that way then earns the check below.
 
 A figure measured against the outside world goes wrong quietly, and no reviewer
 catches it because nothing about it looks wrong. A figure measured against **this
