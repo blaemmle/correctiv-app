@@ -4,13 +4,7 @@ import { defineMessages, useIntl } from 'react-intl';
 import { ActivityIndicator, View } from 'react-native';
 
 import type { HomeSection } from '@correctiv/app-core/lib/home-layout';
-import {
-  FACT_CHECK_COUNT,
-  HERO_PIN,
-  itemCount,
-  pinnedItem,
-  RESEARCH_COUNT,
-} from '@correctiv/app-core/lib/home-settings';
+import { itemCount, pinnedItem } from '@correctiv/app-core/lib/home-settings';
 import { callouts } from '@correctiv/app-core/data/callouts';
 import { pinnedArticle } from '@correctiv/app-core/data/home-pins';
 
@@ -25,6 +19,7 @@ import { ImpactFooter } from '@/components/home/ImpactFooter';
 import { MediathekReihe } from '@/components/home/MediathekReihe';
 import { SpotlightBriefing } from '@/components/home/SpotlightBriefing';
 import { Hairline, SectionHeader, Typo } from '@/components/ui';
+import { FACT_CHECK_COUNT, HERO_PIN, RESEARCH_COUNT } from '@/lib/home/settings';
 import { useFeed } from '@/lib/feeds/useFeed';
 import { openArticle } from '@/lib/openArticle';
 import { useColors } from '@/lib/theme';
@@ -87,12 +82,14 @@ export const LIFTED_CALLOUT = 'callout-lifted';
 export const placeTestID = (id: string): string => `home-section-${id}`;
 
 /*
- * The settings below come from `@correctiv/app-core/lib/home-settings` by name, and the
- * default each one carries comes with it. ADR 0039 §4 puts that table in the core
- * because the parser has to refuse a key a module does not understand, and refusing
- * means knowing; what it buys HERE is that "five investigations under the lead" is not a
- * number in this file AND a number the editor has to repeat to show what happens when
- * nobody has chosen.
+ * The settings below come from `settings.ts` beside this file by name, and the default
+ * each one carries comes with it. ADR 0039 §4 puts the TABLE in the core, because the
+ * parser has to refuse a key a module does not understand and refusing means knowing;
+ * ADR 0045 §9 puts the DECLARATION here, because a module and its settings are one thing
+ * to write and one thing to read, and `scripts/generate-home-settings.mjs` carries the
+ * one into the other. What it buys HERE is that "five investigations under the lead" is
+ * not a number in this file AND a number the editor has to repeat to show what happens
+ * when nobody has chosen.
  */
 
 export interface HomeModuleProps {

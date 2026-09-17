@@ -36,6 +36,7 @@ import {
   withMoment,
   withoutMoment,
   withSetting,
+  type CountSetting,
   type Point,
   type SettingSpec,
 } from './document';
@@ -758,20 +759,7 @@ function Setting({
       </div>
 
       {spec.kind === 'count' ? (
-        <input
-          type="number"
-          min={spec.min}
-          max={spec.max}
-          disabled={disabled}
-          value={typeof value === 'number' ? value : spec.fallback}
-          aria-label={name}
-          onChange={(event) => {
-            const next = Number(event.target.value);
-            if (!Number.isInteger(next) || next < spec.min || next > spec.max) return;
-            onSet(next);
-          }}
-          className={cn(FIELD, 'w-[5rem]')}
-        />
+        <Count spec={spec} value={value} disabled={disabled} label={name} onSet={onSet} />
       ) : (
         <>
           <select
@@ -797,6 +785,72 @@ function Setting({
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * A whole number of items, as a slider with its ends and its value on show.
+ *
+ * ADR 0045 §8. It was a number field, and a number field hides the two facts the spec
+ * already carries: typing a value past the cap did nothing at all, because the handler
+ * returned without setting anything and without saying so, and nothing on screen said
+ * what the cap was. A range input cannot be out of bounds, carries its ends visibly, and
+ * is operable and announced from the keyboard without anything being added to it.
+ *
+ * The value is drawn beside the track rather than read off it, because a slider's
+ * position is an estimate and "eight fact checks" is the thing being chosen. `min` and
+ * `max` are drawn at the ends for the same reason they are in the declaration: they are
+ * what the module can actually draw, and a person moving the handle to the end should
+ * see that the end is the module's limit rather than the tool's.
+ *
+ * The value is boxed and the ends are not, which is the difference between them doing
+ * some work: three bare numerals in a row read as one run — `1 … 12 8` was on screen and
+ * the last two of them could be a range. The box is `CODE`'s, so the border and the
+ * radius are the ones this panel already uses for the module's own name.
+ *
+ * `onSet` fires on every step of a drag, which is what makes the frame follow the handle.
+ * `document.ts` is what keeps that from filling the document with noise: a value equal to
+ * what the point already inherits takes the change out again rather than writing it.
+ */
+function Count({
+  spec,
+  value,
+  disabled,
+  label,
+  onSet,
+}: {
+  spec: CountSetting;
+  value: unknown;
+  disabled: boolean;
+  label: string;
+  onSet: (value: number) => void;
+}) {
+  const held = typeof value === 'number' ? value : spec.fallback;
+
+  return (
+    <div className="flex items-center gap-2xs">
+      <span className={cn(NOTE, 'tabular-nums')}>{spec.min}</span>
+      <input
+        type="range"
+        min={spec.min}
+        max={spec.max}
+        step={1}
+        disabled={disabled}
+        value={held}
+        aria-label={label}
+        onChange={(event) => onSet(Number(event.target.value))}
+        className="h-[1.25rem] min-w-0 flex-1 accent-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      />
+      <span className={cn(NOTE, 'tabular-nums')}>{spec.max}</span>
+      <span
+        className={cn(
+          CODE,
+          'min-w-[2.5ch] py-4xs text-center text-s font-medium tabular-nums text-on-canvas',
+        )}
+      >
+        {held}
+      </span>
     </div>
   );
 }
