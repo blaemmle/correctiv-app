@@ -1,23 +1,20 @@
 import { cn } from '../lib/cn';
 import {
-  ALT,
+  ArrowMarker,
   BAND,
   BOLD,
   BOX,
   BOX_CORE,
-  CAPTION,
   CARD,
   CHIP,
   DASHED,
+  DiagramFigure,
   DRAWING,
-  FIGURE,
   HALO,
-  MARKER,
   MONO,
   MUTED,
   RULE,
   RULE_STRONG,
-  SCROLL_BOX,
   T11,
   T12,
   T13,
@@ -26,15 +23,10 @@ import {
 } from './shared';
 
 /**
- * The drawing alone, without the box that scrolls it or the list beside it.
- *
- * Split out because a page may want the picture and nothing else, and because
- * the ids inside it are referenced from outside, so they are part of what it is.
- * `alt` reaches this far in only to decide whether the drawing points at a list
- * that may not be on the page.
- */
-/**
  * The drawing on its own, with no description attached by default.
+ *
+ * Split out because a page may want the picture and nothing else, and because the
+ * ids inside it are referenced from outside, so they are part of what it is.
  *
  * `alt` is off here and on in the figure, and that asymmetry is the point: the
  * description it names lives in the figure, so a drawing rendered by itself,
@@ -53,17 +45,7 @@ export function CoreAndHostDrawing({ alt = false }: { alt?: boolean } = {}) {
         The core and its host: packages/app-core above, apps/mobile below, joined only by five ports
       </title>
       <defs>
-        <marker
-          id="d1-arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto"
-        >
-          <path d="M0 0 L10 5 L0 10 z" className={MARKER} />
-        </marker>
+        <ArrowMarker id="d1-arrow" />
       </defs>
 
       <rect x="40" y="28" width="1020" height="190" rx="8" className={BOX_CORE} />
@@ -354,91 +336,83 @@ export function CoreAndHostDrawing({ alt = false }: { alt?: boolean } = {}) {
  */
 export function CoreAndHost({ alt = true }: { alt?: boolean }) {
   return (
-    <figure className={FIGURE}>
-      {/*
-        A named section, because that is what a landmark for a scrollable box
-        is spelled as in HTML, and an `<svg>` with no role, because that
-        element already carries the graphics-document role that a diagram
-        wants. The name and the description come from the title inside it and
-        the list below it, so the drawing is never the only way to read this.
-      */}
-      <section className={SCROLL_BOX} aria-label="Diagram 1, scrollable" tabIndex={0}>
-        <CoreAndHostDrawing alt={alt} />
-      </section>
-      <figcaption className={CAPTION}>
-        <strong>
-          Everything that behaves lives above the ports; everything that touches a platform lives
-          below them.
-        </strong>{' '}
-        The core declares the five interfaces and calls them, and a test keeps the line from moving.
-        Four of them it needs in order to work. <code>ErrorReporter</code> it needs in order to be
-        heard: its default reports nowhere, nothing waits for the call, and an unconfigured core
-        goes quiet rather than breaking. This host answers four of them in{' '}
-        <code>apps/mobile/src/lib/platform/expo.ts</code> and the audio one in{' '}
-        <code>apps/mobile/src/lib/audio/backend.ts</code>, which{' '}
-        <code>apps/mobile/src/app/_layout.tsx</code> composes onto the other four. Adding a second
-        host means writing those two files again.
-      </figcaption>
-      {alt && (
-        <div className={ALT} id="d1-alt">
-          <h3>The same diagram as a list</h3>
-          <dl>
-            <dt>
-              <code>packages/app-core</code>, the behaviour
-            </dt>
-            <dd>
-              Holds stores, articles, media, services, data, lib, ports and types. It imports no UI
-              framework and no platform SDK. <code>packages/app-core/test/boundary.test.ts</code>{' '}
-              fails the build on an import matching its list.
-            </dd>
-            <dt>Five ports, the only crossing between the two</dt>
-            <dd>
-              <ul>
-                <li>
-                  <code>KeyValueStore</code>: the core needs small settings, asynchronously. This
-                  host answers with MMKV, in the store that holds what the reader chose.
-                </li>
-                <li>
-                  <code>BlobStore</code>: the core needs the HTTP cache, asynchronously. This host
-                  answers with a second MMKV store, which the core's cache bounds and evicts from.
-                  Two stores rather than one is what makes eviction unable to reach a bookmark.
-                </li>
-                <li>
-                  <code>ContentBundle</code>: the core needs what shipped inside the app. This host
-                  answers with generated TS modules.
-                </li>
-                <li>
-                  <code>AudioBackend</code>: the core needs playback, as status ticks. This host
-                  answers with expo-audio's status events.
-                </li>
-                <li>
-                  <code>ErrorReporter</code>: the core needs to be heard, for a fault no screen
-                  shows. This host answers with one log line, and no provider is chosen yet. It is
-                  the one the core does not need in order to work, which is why its default reports
-                  nowhere and why the call returns nothing for anyone to wait on. The host's own
-                  error boundary reports through the same implementation, but it reaches it directly
-                  rather than across this line.
-                </li>
-              </ul>
-              Both storage ports are asynchronous. What separates them is what they hold, a settings
-              string against a megabyte of cached feeds.
-            </dd>
-            <dt>The adapter</dt>
-            <dd>
-              <code>apps/mobile/src/lib/platform/expo.ts</code> answers four of them: the two
-              storage interfaces, the content bundle and the reporter.{' '}
-              <code>apps/mobile/src/lib/audio/backend.ts</code> answers the audio one, and{' '}
-              <code>apps/mobile/src/app/_layout.tsx</code> composes it onto the other four, so that
-              reasoning about where state is stored does not drag in an audio SDK. Those two files
-              are the whole cost of adding a host.
-            </dd>
-            <dt>
-              <code>apps/mobile</code>, the host
-            </dt>
-            <dd>Expo / React Native, targeting iOS, Android and web.</dd>
-          </dl>
-        </div>
-      )}
-    </figure>
+    <DiagramFigure
+      number={1}
+      altId="d1-alt"
+      alt={alt}
+      drawing={<CoreAndHostDrawing alt={alt} />}
+      caption={
+        <>
+          <strong>
+            Everything that behaves lives above the ports; everything that touches a platform lives
+            below them.
+          </strong>{' '}
+          The core declares the five interfaces and calls them, and a test keeps the line from
+          moving. Four of them it needs in order to work. <code>ErrorReporter</code> it needs in
+          order to be heard: its default reports nowhere, nothing waits for the call, and an
+          unconfigured core goes quiet rather than breaking. This host answers four of them in{' '}
+          <code>apps/mobile/src/lib/platform/expo.ts</code> and the audio one in{' '}
+          <code>apps/mobile/src/lib/audio/backend.ts</code>, which{' '}
+          <code>apps/mobile/src/app/_layout.tsx</code> composes onto the other four. Adding a second
+          host means writing those two files again.
+        </>
+      }
+    >
+      <dl>
+        <dt>
+          <code>packages/app-core</code>, the behaviour
+        </dt>
+        <dd>
+          Holds stores, articles, media, services, data, lib, ports and types. It imports no UI
+          framework and no platform SDK. <code>packages/app-core/test/boundary.test.ts</code> fails
+          the build on an import matching its list.
+        </dd>
+        <dt>Five ports, the only crossing between the two</dt>
+        <dd>
+          <ul>
+            <li>
+              <code>KeyValueStore</code>: the core needs small settings, asynchronously. This host
+              answers with MMKV, in the store that holds what the reader chose.
+            </li>
+            <li>
+              <code>BlobStore</code>: the core needs the HTTP cache, asynchronously. This host
+              answers with a second MMKV store, which the core's cache bounds and evicts from. Two
+              stores rather than one is what makes eviction unable to reach a bookmark.
+            </li>
+            <li>
+              <code>ContentBundle</code>: the core needs what shipped inside the app. This host
+              answers with generated TS modules.
+            </li>
+            <li>
+              <code>AudioBackend</code>: the core needs playback, as status ticks. This host answers
+              with expo-audio's status events.
+            </li>
+            <li>
+              <code>ErrorReporter</code>: the core needs to be heard, for a fault no screen shows.
+              This host answers with one log line, and no provider is chosen yet. It is the one the
+              core does not need in order to work, which is why its default reports nowhere and why
+              the call returns nothing for anyone to wait on. The host's own error boundary reports
+              through the same implementation, but it reaches it directly rather than across this
+              line.
+            </li>
+          </ul>
+          Both storage ports are asynchronous. What separates them is what they hold, a settings
+          string against a megabyte of cached feeds.
+        </dd>
+        <dt>The adapter</dt>
+        <dd>
+          <code>apps/mobile/src/lib/platform/expo.ts</code> answers four of them: the two storage
+          interfaces, the content bundle and the reporter.{' '}
+          <code>apps/mobile/src/lib/audio/backend.ts</code> answers the audio one, and{' '}
+          <code>apps/mobile/src/app/_layout.tsx</code> composes it onto the other four, so that
+          reasoning about where state is stored does not drag in an audio SDK. Those two files are
+          the whole cost of adding a host.
+        </dd>
+        <dt>
+          <code>apps/mobile</code>, the host
+        </dt>
+        <dd>Expo / React Native, targeting iOS, Android and web.</dd>
+      </dl>
+    </DiagramFigure>
   );
 }

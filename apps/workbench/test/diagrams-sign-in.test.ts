@@ -18,8 +18,7 @@ import {
   isComment,
   parse,
   parseFragment,
-  pathExists,
-  pathsNamedIn,
+  pathsDrawn,
   says,
   stringArguments,
   stringRecord,
@@ -298,10 +297,8 @@ describe('the sign-in drawing, against the answer it draws', () => {
   });
 
   it('names no file that is not there', () => {
-    const paths = pathsNamedIn(drawnText(DRAWING));
-    // Asserted, because a pattern that stopped matching would pass on an empty
-    // list and the check would be green about nothing.
-    expect(paths.length).toBeGreaterThan(1);
-    expect(paths.filter((path) => !pathExists(path))).toEqual([]);
+    const { named, missing } = pathsDrawn(drawnText(DRAWING));
+    expect(named.length).toBeGreaterThan(1);
+    expect(missing).toEqual([]);
   });
 });

@@ -4,24 +4,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { ROOT } from '../plugin/collect.ts';
+import { code } from './source.ts';
 
 const WORKBENCH = join(ROOT, 'apps/workbench');
 const BOUNDARY = readFileSync(join(WORKBENCH, 'src/ui/Boundary.tsx'), 'utf8');
 const APP = readFileSync(join(WORKBENCH, 'src/App.tsx'), 'utf8');
 const RENDERS = readFileSync(join(WORKBENCH, 'scripts/renders.mjs'), 'utf8');
-
-/**
- * The same source with its prose taken out, as `environment.test.ts` does it and
- * for the same reason: the check's header explains what it refuses to match on,
- * and a file has to be able to name the thing it does not do.
- */
-function code(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => !/^\s*(\/\/|\*)/.test(line))
-    .join('\n');
-}
 
 /**
  * One attribute, written in two files, and the check that fails when they part.

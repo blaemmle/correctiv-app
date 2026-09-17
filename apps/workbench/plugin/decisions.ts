@@ -1,5 +1,5 @@
-import type { RenderedDoc, RetiredClaim } from './markdown.ts';
-import { adrNumber, adrRoute } from './registry.ts';
+import { plain, type RenderedDoc, type RetiredClaim } from './markdown.ts';
+import { adrNumber, adrRoute, isRecordFile } from './registry.ts';
 
 /**
  * What the decisions board knows about one record, derived, never typed.
@@ -352,10 +352,10 @@ function indexStatus(note: string): string {
  * available to a build-time module (ADR 0031): the site does not build.
  *
  * THE FLOORS ARE PROPORTIONAL, and they were not. Each of the three collectors was
- * guarded by "at least one record has one", against a set where eighteen of
- * thirty-four carry a strike — so a collector degraded to finding a single strike,
- * or a single voider, satisfied the guard, and the board printed a confident wrong
- * answer about how much of this repository's reasoning has expired. That is the
+ * guarded by "at least one record has one", against a set where most records carry
+ * a strike — so a collector degraded to finding a single strike, or a single
+ * voider, satisfied the guard, and the board printed a confident wrong answer
+ * about how much of this repository's reasoning has expired. That is the
  * exact failure this comment warns about, passed by its own guard. A fraction of
  * the set is not a number anybody has to maintain, and it fails while the page is
  * still merely wrong rather than a lie.
@@ -370,22 +370,22 @@ function guard(records: DecisionRecord[], sources: ReadonlyMap<string, string>):
    * is exact now, and the floor underneath it is only there so that two empties
    * cannot agree with each other.
    */
-  const files = [...sources.keys()].filter((file) => /^adr\/0\d{3}-.*\.md$/.test(file));
+  const files = [...sources.keys()].filter(isRecordFile);
   if (records.length !== files.length) {
     faults.push(`${files.length} record files were read and ${records.length} became records`);
   }
-  // Thirty-four today. A record is never deleted, so this only ever rises and
-  // never needs raising.
+  // A record is never deleted, so this floor only ever rises and never needs
+  // raising.
   if (files.length < 34) faults.push(`only ${files.length} record files were read`);
 
   const struck = records.filter((record) => record.struck.length > 0).length;
   const voided = records.filter((record) => record.voidedBy.length > 0).length;
   const withCaveat = records.filter((record) => record.caveats.length > 0).length;
 
-  // Eighteen of thirty-four carry a strike, eleven name a voider, five carry a
-  // caveat. A quarter, an eighth and a tenth of the set puts the three thresholds
-  // at eight, four and three, so each may fall by roughly half before it fires and
-  // none of them can be satisfied by one record, which is what they were.
+  // A quarter, an eighth and a tenth of the set, taken from the proportions the
+  // records actually carry: a strike is common, a named voider less so, a caveat
+  // rarer still. Each may fall by roughly half before it fires, and none of them
+  // can be satisfied by a single record, which is what they were.
   if (struck < records.length / 4) {
     faults.push(`only ${struck} of ${records.length} records carry a struck claim`);
   }
@@ -437,15 +437,4 @@ function guard(records: DecisionRecord[], sources: ReadonlyMap<string, string>):
   if (faults.length > 0) {
     throw new Error(`The decisions board read the records wrongly: ${faults.join('; ')}.`);
   }
-}
-
-/** Markdown emphasis, code ticks and link syntax removed; the words kept. */
-function plain(markdown: string): string {
-  return markdown
-    .replace(/~~/g, '')
-    .replace(/\*\*?/g, '')
-    .replace(/`/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
 }

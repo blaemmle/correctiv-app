@@ -21,6 +21,7 @@ import { cn } from '../lib/cn';
 import { SlotTarget } from '../shell/slots';
 import { SECTION_TITLES, type SectionId, type ViewDeclaration } from '../shell/views';
 import { Tooltip, TooltipContent, TooltipTrigger } from './kit/tooltip';
+import { TOOL_PANEL_ID } from './ToolPanel';
 
 /**
  * The mark beside each tool's name.
@@ -62,7 +63,7 @@ const SECTION_ICONS: Record<SectionId, LucideIcon> = {
  * The header used to carry a `PanelRight` button and the panel a
  * `PanelRightClose` button, both of which shut the same panel and showed nearly
  * the same icon, and neither of them said which of the six things inside was
- * about to appear. ([ADR 0038](../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
+ * about to appear. ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
  *
  * `aria-expanded` and `aria-controls` rather than `aria-pressed`: this is a
  * disclosure, the panel is what it discloses, and the panel carries the matching
@@ -106,7 +107,7 @@ export function ToolRail({
               <button
                 type="button"
                 aria-expanded={open}
-                aria-controls="tool-panel"
+                aria-controls={TOOL_PANEL_ID}
                 onClick={() => onTool(open ? null : id)}
                 className={cn(
                   'relative flex size-[2.75rem] items-center justify-center rounded-md transition-colors',

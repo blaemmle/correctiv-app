@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import ts from 'typescript';
 
+import { filesUnder } from './source.ts';
+
 import { ROOT } from '../plugin/collect.ts';
 
 /**
@@ -55,6 +57,33 @@ export function drawnText(name: string): string {
   return [...svg.matchAll(/>([^<>{}]+)</g)].map((match) => match[1]).join(' / ');
 }
 
+/**
+ * How a drawing spells a small number, since a picture writes words not digits.
+ *
+ * Three copies of this array existed, two of them in one file, and the pair of
+ * checks that read it read it in opposite directions: one asks what a count should
+ * look like, the other what a word the drawing wrote is worth. Both directions off
+ * one array, because two arrays that disagree would make a drawing right and wrong
+ * at once.
+ */
+export const NUMBER_WORDS = [
+  'no',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+];
+
+/** What a drawing should write for `n`: the word where there is one, the digits otherwise. */
+export function spelledNumber(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
+
 export function drawn(text: string, word: string): boolean {
   return new RegExp(`\\b${word}\\b`).test(text);
 }
@@ -83,6 +112,19 @@ export function pathsNamedIn(text: string): string[] {
     found.add(match[0]);
   }
   return [...found];
+}
+
+/**
+ * Every path a drawing prints, and the ones with nothing behind them.
+ *
+ * Two drawings asked this in the same eight lines, the comment included. The
+ * caller asserts that the list is not empty as well as that nothing is missing,
+ * because a pattern that stopped matching would pass on an empty list and the
+ * check would be green about a drawing it never read.
+ */
+export function pathsDrawn(text: string): { named: string[]; missing: string[] } {
+  const named = pathsNamedIn(text);
+  return { named, missing: named.filter((path) => !pathExists(path)) };
 }
 
 /**
@@ -294,13 +336,8 @@ export function stringRecord(source: ts.SourceFile, name: string): Record<string
  * bundle contains the four letters of `pKCE` inside an image. A sweep that read
  * them would be answering a question about a JPEG.
  */
-export function handWritten(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) handWritten(path, out);
-    else if (/\.tsx?$/.test(entry.name) && !entry.name.includes('.generated.')) out.push(path);
-  }
-  return out;
+export function handWritten(dir: string): string[] {
+  return filesUnder(dir, /^(?!.*\.generated\.).*\.tsx?$/);
 }
 
 /** A line that is prose about code rather than code. */

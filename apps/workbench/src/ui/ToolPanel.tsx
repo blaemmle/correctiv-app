@@ -1,7 +1,15 @@
-import type { ElementType } from 'react';
-
 import { SlotTarget } from '../shell/slots';
 import { SECTION_TITLES, type SectionId, type ViewDeclaration } from '../shell/views';
+
+/**
+ * The id `ToolRail`'s `aria-controls` points at, so the pair is one fact.
+ *
+ * The disclosure relationship the rail argues for is two literals agreeing, and a
+ * rename of either would break it with nothing failing: the attribute would name an
+ * element that is not there, and a screen reader would announce a button that
+ * expands nothing.
+ */
+export const TOOL_PANEL_ID = 'tool-panel';
 
 /**
  * The right panel: one tool, the whole height, and no way to shut it from inside.
@@ -16,7 +24,7 @@ import { SECTION_TITLES, type SectionId, type ViewDeclaration } from '../shell/v
  * thirty-one per cent column and each needed a sentence explaining what the
  * sliver was. One at a time is the answer, and it is the rail's answer: the
  * switch is `ui/ToolRail.tsx`, this draws whatever the switch chose.
- * ([ADR 0038](../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
+ * ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
  *
  * **Every tool's body stays mounted and the shut ones are `hidden`**, which is the
  * one piece of knowledge carried over from the accordion this replaces. Unmount a
@@ -34,26 +42,23 @@ import { SECTION_TITLES, type SectionId, type ViewDeclaration } from '../shell/v
 export function ToolPanel({
   view,
   tool,
-  titleAs: Title = 'h2',
 }: {
   view: ViewDeclaration;
   /** The one tool showing, or `null` while the panel is shut. */
   tool: SectionId | null;
-  /** An `h2` docked; the narrow dock passes its own heading level. */
-  titleAs?: ElementType;
 }) {
   if (view.panelTitle === null) return null;
 
   return (
     <aside
-      id="tool-panel"
+      id={TOOL_PANEL_ID}
       aria-label={view.panelTitle}
       className="flex h-full min-h-0 flex-col bg-canvas"
     >
       <div className="flex h-[2.25rem] shrink-0 items-center border-b border-stroke px-s">
-        <Title className="truncate text-s font-semibold uppercase tracking-wider text-on-canvas-muted">
+        <h2 className="truncate text-s font-semibold uppercase tracking-wider text-on-canvas-muted">
           {tool === null ? view.panelTitle : SECTION_TITLES[tool]}
-        </Title>
+        </h2>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         {view.sections.map((id) => (

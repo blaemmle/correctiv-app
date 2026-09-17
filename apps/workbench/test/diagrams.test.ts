@@ -9,7 +9,16 @@ import { strikeEdges, type DecisionRecord, type Strike } from '../plugin/decisio
 import { DIAGRAMS as META } from '../src/diagrams';
 import { ADVANCE, chainLayout } from '../src/diagrams/layout';
 
-import { CORE, DIAGRAMS, diagramSources, drawn, drawnText } from './drawn.ts';
+import {
+  CORE,
+  DIAGRAMS,
+  diagramSources,
+  drawn,
+  drawnText,
+  NUMBER_WORDS,
+  spelledNumber,
+} from './drawn.ts';
+import { code } from './source.ts';
 
 const PORTS_FILE = join(CORE, 'ports/index.ts');
 const MANIFEST_FILE = join(ROOT, 'apps/workbench/content/sources.manifest.ts');
@@ -107,8 +116,6 @@ function declaredInterfaces(): string[] {
     .map((statement) => statement.name.text);
 }
 
-const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
-
 /** Every "five ports" / "four interfaces" in the drawings, as written. */
 const PORT_COUNT_CLAIMS =
   /\b(no|one|two|three|four|five|six|seven|eight|nine|\d+)\s+(?:named\s+)?(?:ports|interfaces)\b/gi;
@@ -204,7 +211,7 @@ describe('the drawings, against what they draw', () => {
    */
   it('says how many ports there are, and the number is the number', () => {
     const total = ports().length;
-    const expected = NUMBER_WORDS[total] ?? String(total);
+    const expected = spelledNumber(total);
 
     const wrong: string[] = [];
     let found = 0;
@@ -242,23 +249,6 @@ describe('the drawings, against what they draw', () => {
 const { module: DOCS } = collectDocs();
 const RECORDS = DOCS.decisions;
 const CHAIN = chainLayout(RECORDS, DOCS.strikes);
-
-/**
- * The same source with its prose taken out, as `environment.test.ts` does it.
- *
- * Both files below argue about record numbers in their comments — which set of
- * arcs the drawing no longer draws, and why one obvious derivation of them is
- * wrong — and a check that no record number is typed would otherwise punish the
- * two files for explaining themselves. Block comments and whole comment lines
- * only.
- */
-function code(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => !/^\s*(\/\/|\*)/.test(line))
-    .join('\n');
-}
 
 /**
  * The decisions drawing, which is now a layout function over `adr/` rather than a
@@ -581,9 +571,15 @@ describe('the services drawing, against the sources manifest', () => {
    * or this fails, so rewording the sentence out from under the check turns the
    * suite red rather than quiet. A count in front of the word is read as a claim
    * about the total, which is the rule the port counts above are held to as well.
+   *
+   * Whitespace is collapsed first, because the wrapping is the formatter's and not
+   * the sentence's. A newline inside a JSX text node renders as one space, so
+   * "three are files" broken across two lines says the same thing on the page —
+   * and this threw on exactly that, after a reflow that changed no word of it.
+   * The phrasing stays load-bearing; only the line breaks stop counting.
    */
   it('says how many sources are live and how many are files, and both are the number', () => {
-    const caption = readFileSync(join(DIAGRAMS, 'Services.tsx'), 'utf8');
+    const caption = readFileSync(join(DIAGRAMS, 'Services.tsx'), 'utf8').replace(/\s+/g, ' ');
     const spelled = (pattern: RegExp): number => {
       const hit = pattern.exec(caption);
       // A throw rather than an expectation, because a caption that no longer says

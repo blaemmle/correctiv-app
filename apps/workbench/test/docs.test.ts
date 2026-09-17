@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
 import { adrFiles, collectDocs, GENERATED_DOCUMENTS, REPO, ROOT } from '../plugin/collect';
 import { DOCUMENTS } from '../plugin/registry';
+import { filesUnder } from './source.ts';
 
 const { module } = collectDocs();
 const { docs } = module;
@@ -141,5 +142,42 @@ describe('retired claims', () => {
     for (const claim of cited) {
       for (const number of claim.by) expect(routes.has(`/decisions/${number}`)).toBe(true);
     }
+  });
+});
+
+/**
+ * A Markdown link in a source comment, resolved against the file it sits in.
+ *
+ * These are how the code cites the record behind a decision, and two audiences read
+ * them: a person opening the file on GitHub, where the link is followed, and a
+ * person reading it in an editor, where it is prose. Only the first of them finds
+ * out it is wrong, and only if they click.
+ *
+ * Nothing held them and they had drifted in five places, every time by one step:
+ * the files that moved into `src/ui/` when ADR 0038 split the panel in two kept the
+ * depth they had one directory up, and `preview/frame/handle.ts` wrote one depth
+ * for ADR 0014 and a different one for ADR 0025 in the same file. The depth is the
+ * one part of such a link a reviewer never checks, because the record it names is
+ * obviously the right record.
+ */
+describe('the records the code cites', () => {
+  const CITATION = /\]\((\.\.[./]*\/adr\/[\w.-]+\.md)(?:#[^)]*)?\)/g;
+
+  it('resolves every relative link into `adr/` that a source file writes', () => {
+    const broken: string[] = [];
+    let found = 0;
+    for (const file of filesUnder(join(ROOT, 'apps/workbench/src'), /\.tsx?$/)) {
+      for (const [, link] of readFileSync(file, 'utf8').matchAll(CITATION)) {
+        found += 1;
+        if (!existsSync(join(dirname(file), link))) {
+          broken.push(`${relative(ROOT, file)} cites ${link}, which resolves to nothing`);
+        }
+      }
+    }
+
+    // Asserted, because a pattern that stopped matching would pass on an empty
+    // list and the check would be green about a file it never read.
+    expect(found).toBeGreaterThan(5);
+    expect(broken).toEqual([]);
   });
 });

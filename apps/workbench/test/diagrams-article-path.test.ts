@@ -20,10 +20,11 @@ import {
   functionBody,
   functionParameters,
   interfaceMembers,
+  NUMBER_WORDS,
   parse,
-  pathExists,
-  pathsNamedIn,
+  pathsDrawn,
   says,
+  spelledNumber,
 } from './drawn.ts';
 
 const DRAWING = 'ArticlePath.tsx';
@@ -33,9 +34,6 @@ const CACHE = join(CORE, 'services/cache.service.ts');
 const WP = join(CORE, 'services/wp.service.ts');
 const READER_HTML = join(CORE, 'articles/reader-html.ts');
 const READER_FONTS = join(ROOT, 'apps/mobile/src/lib/theme/readerFonts.generated.ts');
-
-/** How the drawings spell a small number, since a picture writes words not digits. */
-const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
 
 /**
  * The sixth drawing prints a dozen numbers, and every one of them is a figure
@@ -168,8 +166,7 @@ describe('the cascade drawing, against the bundle', () => {
 
   it('spells how many methods it has, twice, and both times correctly', () => {
     const methods = interfaceMembers(parse(PORTS), 'ContentBundle');
-    const words = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
-    const spelled = words[methods.length] ?? String(methods.length);
+    const spelled = spelledNumber(methods.length);
     const text = drawnText(DRAWING);
 
     expect(says(text, `${spelled} methods`)).toBe(true);
@@ -314,10 +311,8 @@ describe('the cascade drawing, against the document it ends on', () => {
 
 describe('the cascade drawing, against the tree', () => {
   it('names no file that is not there', () => {
-    const paths = pathsNamedIn(drawnText(DRAWING));
-    // Asserted, because a pattern that stopped matching would pass on an empty
-    // list and the check would be green about nothing.
-    expect(paths.length).toBeGreaterThan(1);
-    expect(paths.filter((path) => !pathExists(path))).toEqual([]);
+    const { named, missing } = pathsDrawn(drawnText(DRAWING));
+    expect(named.length).toBeGreaterThan(1);
+    expect(missing).toEqual([]);
   });
 });

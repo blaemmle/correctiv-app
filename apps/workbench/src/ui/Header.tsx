@@ -23,7 +23,7 @@ interface Props {
  * carried a second button with nearly the same icon that shut the same panel —
  * two controls, one job, and neither of them said which of six tools was about to
  * appear. `ui/ToolRail.tsx` is the one switch now, on the edge the panel opens
- * from. ([ADR 0038](../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
+ * from. ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
  */
 export function Header({ onSearch, onSettings, onFull, children }: Props) {
   return (

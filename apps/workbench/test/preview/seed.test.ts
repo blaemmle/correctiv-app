@@ -1,10 +1,11 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
 import { ROOT } from '../../plugin/collect.ts';
+import { filesUnder } from '../source.ts';
 
 import { CONTENT_FEEDS } from '@correctiv/app-core/data/feeds.config';
 import { fileKey } from '@correctiv/app-core/services/cache.service';
@@ -18,16 +19,6 @@ import {
   holdTheDoorOpen,
   SEEDED_KEY,
 } from '../../src/preview/frame/seed';
-
-/** Every source file under a directory, so a new one is checked without being listed. */
-function sources(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) sources(path, out);
-    else if (/\.tsx?$/.test(entry.name)) out.push(path);
-  }
-  return out;
-}
 
 /**
  * The shell writes the app's storage directly, so it has to know four things the
@@ -379,7 +370,7 @@ describe('saying that the door was held open', () => {
    * package's, and the app's bundle has none of it.
    */
   it('keeps the bypass itself out of the app', () => {
-    const offenders = sources(resolve(ROOT, 'apps/mobile/src')).filter((file) =>
+    const offenders = filesUnder(resolve(ROOT, 'apps/mobile/src'), /\.tsx?$/).filter((file) =>
       readFileSync(file, 'utf8').includes('holdTheDoorOpen'),
     );
     expect(offenders).toEqual([]);

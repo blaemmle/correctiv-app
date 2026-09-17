@@ -230,7 +230,14 @@ function flattenInline(tokens: Token[]): Token[] {
   return out;
 }
 
-function plain(raw: string): string {
+/**
+ * Markdown emphasis, code ticks and link syntax removed; the words kept.
+ *
+ * Exported because `decisions.ts` had a byte-identical copy of it, and a record's
+ * title reaching the board with its asterisks intact in one place and stripped in
+ * the other is the kind of difference nobody sees until a heading is bold.
+ */
+export function plain(raw: string): string {
   return raw
     .replace(/~~/g, '')
     .replace(/\*\*?/g, '')
@@ -239,6 +246,9 @@ function plain(raw: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/** What `blobBase` puts between the repository and the path, and what a raw file needs instead. */
+const REPO_BLOB_SEGMENT = '/blob';
 
 /**
  * One document, rendered.
@@ -249,9 +259,6 @@ function plain(raw: string): string {
  * second symptom is subtle, a second document's repeated heading getting a `-1`
  * suffix because the first document had already used the bare slug.
  */
-/** What `blobBase` puts between the repository and the path, and what a raw file needs instead. */
-const REPO_BLOB_SEGMENT = '/blob';
-
 export function renderDoc(
   source: DocumentSource,
   markdown: string,

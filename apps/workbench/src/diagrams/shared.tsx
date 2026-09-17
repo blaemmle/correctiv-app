@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { cn } from '../lib/cn';
 
 /*
@@ -56,6 +58,36 @@ export const ARC_INDEX = 'fill-none stroke-stroke-strong [stroke-dasharray:2_3]'
  */
 export const MARKER = 'fill-on-canvas-muted stroke-none';
 
+/**
+ * The arrowhead itself, which five of the drawings had a copy of.
+ *
+ * A marker is referenced by id and an id is document-wide, so each drawing needs
+ * one of its own rather than a shared definition — but the geometry was the same
+ * eight numbers in all five, and the fifth copy is how a drawing ends up with a
+ * head a size nobody chose. The id stays at the call site because that is the half
+ * that genuinely differs, and it is what `markerEnd="url(#…)"` a few lines below
+ * has to match.
+ *
+ * `Services.tsx` keeps its own, smaller: it is the one drawing laid out at a
+ * different scale, and parameterising this for its six numbers would be the shared
+ * thing carrying the difference rather than the sameness.
+ */
+export function ArrowMarker({ id }: { id: string }) {
+  return (
+    <marker
+      id={id}
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto"
+    >
+      <path d="M0 0 L10 5 L0 10 z" className={MARKER} />
+    </marker>
+  );
+}
+
 /** A record with nothing recorded against it, drawn small on the axis. */
 export const NODE_QUIET = 'fill-stroke-strong stroke-none';
 export const NODE_INTACT = 'fill-canvas stroke-on-canvas-muted [stroke-width:1.5]';
@@ -104,12 +136,9 @@ export const DRAWING = 'fill-on-canvas [&_text]:[dominant-baseline:central]';
 /**
  * A diagram is wider than the column, so it scrolls inside its own box.
  *
- * The focus stop is deliberate and is the exception `.oxlintrc.json` carries for
- * `apps/workbench/src/diagrams/*.tsx`, which is where the `tabIndex={0}` beside this
- * class actually sits, one per figure. Nothing here needs the exception; this file
- * is the class it is spelled with. Chrome and Firefox focus a scroll container on
- * their own, Safari does not, and a diagram nobody can scroll is worse than a lint
- * exception with a reason attached.
+ * The focus ring is for the stop `DiagramFigure` puts on that box, and the argument
+ * for the stop is down there beside the `tabIndex` rather than up here beside the
+ * class it is drawn with.
  */
 export const SCROLL_BOX = cn(
   'overflow-x-auto rounded-md border border-stroke bg-canvas p-xs',
@@ -117,15 +146,14 @@ export const SCROLL_BOX = cn(
 );
 
 /**
- * Identifiers in the prose around the drawings.
+ * Identifiers in the prose around the drawings, styled as the documents style them,
+ * since this page names the same paths.
  *
  * `app.css` styles `code` only inside `.prose`, which is the rendered-Markdown
  * wrapper, and none of this page is that. Naming the element from its container
- * keeps the rule in one place rather than on each of the forty `code` elements
- * below.
- */
-/*
- * The same inline code the documents get, since this page names the same paths.
+ * keeps the rule in one place rather than on every `code` element in a caption or a
+ * list, which is why `CAPTION` and `ALT` below fold this in and no call site writes
+ * it on a `code` of its own.
  *
  * `overflow-wrap: anywhere` for the same reason `app.css` gives it to `.prose`:
  * a path has no break opportunity in it, and one `apps/mobile/src/lib/platform/
@@ -179,3 +207,58 @@ export const ALT = cn(
  * yellow", and the token package defines this one as `#333333` in both schemes.
  */
 export const ON_ALTERNATIVE = 'fill-neutral-700';
+
+/**
+ * The box around a drawing, which every drawing had written out for itself.
+ *
+ * Six copies of the same four elements, and the parts worth getting right were in
+ * all six: a named section, because that is what a landmark for a scrollable box is
+ * spelled as in HTML, and an `<svg>` with no role of its own, because that element
+ * already carries the graphics-document role a diagram wants. The name and the
+ * description come from the `<title>` inside the drawing and the list below it, so
+ * the picture is never the only way to read this.
+ *
+ * `tabIndex={0}` is the exception `.oxlintrc.json` carries for
+ * `apps/workbench/src/diagrams/*.tsx`, and it now sits here rather than once per
+ * figure. Chrome and Firefox focus a scroll container on their own, Safari does
+ * not, and a diagram nobody can scroll is worse than a lint exception with a reason
+ * attached.
+ *
+ * **`number` is typed rather than derived, and it is the one figure here that can
+ * drift.** It is the drawing's place in `DIAGRAMS`, which `DiagramView` also counts
+ * the breadcrumb off, and the number a screen reader hears has to be the number the
+ * page shows. Reading it from `diagrams/index.ts` is what the drawings cannot do:
+ * that module imports every one of them, so asking it back would be a cycle.
+ */
+export function DiagramFigure({
+  number,
+  altId,
+  drawing,
+  caption,
+  alt,
+  children,
+}: {
+  number: number;
+  /** What the drawing's `aria-describedby` points at, on the drawings that have one. */
+  altId?: string;
+  drawing: ReactNode;
+  caption: ReactNode;
+  alt: boolean;
+  /** The list under the figure, which is the page for anyone who cannot see it. */
+  children: ReactNode;
+}) {
+  return (
+    <figure className={FIGURE}>
+      <section className={SCROLL_BOX} aria-label={`Diagram ${number}, scrollable`} tabIndex={0}>
+        {drawing}
+      </section>
+      <figcaption className={CAPTION}>{caption}</figcaption>
+      {alt && (
+        <div className={ALT} id={altId}>
+          <h3>The same diagram as a list</h3>
+          {children}
+        </div>
+      )}
+    </figure>
+  );
+}

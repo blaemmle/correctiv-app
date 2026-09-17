@@ -174,7 +174,7 @@ function Mark({ n, tone, label }: { n: number; tone: 'warn' | 'err'; label: stri
  * appearance setting and the inspector are inert" — which is true, and was
  * printed above six tools of which it concerns two. The status line says which
  * build is in the frame; the two tools it disables say so themselves, here.
- * ([ADR 0038](../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
+ * ([ADR 0038](../../../../../adr/0038-one-tool-at-a-time-in-a-rail.md))
  */
 function NeedsDev({ children }: { children: ReactNode }) {
   return (

@@ -1,19 +1,16 @@
 import { cn } from '../lib/cn';
 import {
-  ALT,
+  ArrowMarker,
   BOLD,
   BOX_CORE,
-  CAPTION,
   CHIP,
   CHIP_PORT,
+  DiagramFigure,
   DRAWING,
-  FIGURE,
   HALO,
-  MARKER,
   MONO,
   MUTED,
   RULE,
-  SCROLL_BOX,
   T11,
   T12,
   T13,
@@ -87,17 +84,7 @@ export function ArticlePathDrawing({ alt = false }: { alt?: boolean } = {}) {
         the bounded cache they read, and the one document a WebView is handed at the end
       </title>
       <defs>
-        <marker
-          id="d6-arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto"
-        >
-          <path d="M0 0 L10 5 L0 10 z" className={MARKER} />
-        </marker>
+        <ArrowMarker id="d6-arrow" />
       </defs>
 
       <rect x="60" y="24" width="200" height="36" rx="6" className={CHIP} />
@@ -360,106 +347,104 @@ export function ArticlePathDrawing({ alt = false }: { alt?: boolean } = {}) {
  */
 export function ArticlePath({ alt = true }: { alt?: boolean }) {
   return (
-    <figure className={FIGURE}>
-      <section className={SCROLL_BOX} aria-label="Diagram 6, scrollable" tabIndex={0}>
-        <ArticlePathDrawing alt={alt} />
-      </section>
-      <figcaption className={CAPTION}>
-        <strong>Five rungs, and the first that answers is the answer.</strong> The bundle comes
-        first because that is the promise the demo makes: the reader opens with no Wi-Fi. It is
-        generated TypeScript committed to the repository, reached through the{' '}
-        <code>ContentBundle</code> port, and on any host without one{' '}
-        <code>createEmptyContentBundle()</code> answers null to every method, so rung 1 falls
-        straight through. The cache behind rungs 2 and 5 is bounded three ways, and it writes only
-        through the <code>BlobStore</code> port, which is what makes an eviction unable to reach a
-        saved article. A byte here is a UTF-16 code unit, which is what the code measures and about
-        half a percent under the same text in UTF-8.
-      </figcaption>
-      {alt && (
-        <div className={ALT} id="d6-alt">
-          <h3>The same diagram as a list</h3>
-          <dl>
-            <dt>
-              The cascade, <code>packages/app-core/src/articles/load.ts</code>
-            </dt>
-            <dd>
-              <ol>
-                <li>
-                  <code>platform().content.article(url)</code> — the snapshot compiled into the app.
-                  No network, and no change until the next release.
-                </li>
-                <li>
-                  <code>getCached(&apos;articles&apos;, url, 24 h)</code> — an article extracted
-                  earlier today, still inside its window.
-                </li>
-                <li>
-                  <code>fetchWpArticle(url)</code> — correctiv.org&apos;s WordPress REST API, with a
-                  6 s budget. One request, everything, the fact-check verdict included.
-                </li>
-                <li>
-                  <code>fetchText(url)</code> then <code>extract(html)</code> — the page itself, 12
-                  s, for a URL the API does not know. That is every page in the app which is not a
-                  post.
-                </li>
-                <li>
-                  <code>getStale(&apos;articles&apos;, url)</code> — expired beats absent. A miss
-                  here is the only way this throws.
-                </li>
-              </ol>
-              Rungs 3 and 4 write what they produced back, and only the extracted article, never the
-              page HTML. The network rungs can time out one after the other, so the first gets the
-              shorter budget.
-            </dd>
-            <dt>The bundle, and the port in front of it</dt>
-            <dd>
-              <code>ContentBundle</code> has four methods: <code>feed</code>, <code>article</code>,{' '}
-              <code>image</code> and <code>podcastSeries</code>.{' '}
-              <code>apps/mobile/src/lib/platform/expo.ts</code> is the only real implementation, and
-              it is four record lookups into generated TypeScript modules that are committed to the
-              repository and compiled into the app: 15 pre-extracted articles, 15 cover images as
-              data URIs, 6 feed snapshots and 7 podcast shows. They are written by{' '}
-              <code>apps/mobile/scripts/fetch-offline-articles.mts</code> and{' '}
-              <code>apps/mobile/scripts/fetch-offline-podcasts.mts</code>.{' '}
-              <code>createEmptyContentBundle()</code> answers null to all four and is what the
-              in-memory platform uses, so on any other host the first rung falls straight through.
-            </dd>
-            <dt>
-              The cache, <code>packages/app-core/src/services/cache.service.ts</code>
-            </dt>
-            <dd>
-              Two layers: a session map over the host&apos;s <code>BlobStore</code> port. Three
-              bounds, and a least-recently-used order between them: 768 KiB per entry, above which
-              an entry is refused rather than evicted; 2 MiB in total; 128 entries. An eviction
-              drops the session entry and asks the host to delete the blob, because dropping one of
-              the two leaves the other growing unwatched. It writes through the blob port and never
-              the key-value one, which is what keeps a saved article and a setting out of reach of
-              the bound. The unit is a UTF-16 code unit, not a byte.
-            </dd>
-            <dt>The document</dt>
-            <dd>
-              <code>buildReaderHtml(article, copy, options)</code> builds one string and the core
-              owns it: the structure, the class names, the byline and the verdict plaque. It owns
-              neither the words nor the colours — a document built for a WebView can reach no
-              provider and inherits no stylesheet — so the copy is a required second parameter the
-              host formats and the host&apos;s CSS arrives through the optional third.
-            </dd>
-            <dt>What the host adds</dt>
-            <dd>
-              <code>apps/mobile/src/lib/articles/reader.ts</code> supplies the CSS: the token
-              variables, so every colour in the layout is one the app already uses; two font
-              families in four faces, base64 inline, because the WebView is a browser context of its
-              own and cannot use the fonts React Native loaded; and in dark mode one more block of
-              variables, which is the whole cost of the dark reader.
-            </dd>
-            <dt>The view</dt>
-            <dd>
-              <code>ReaderView</code> is a WebView on iOS and Android and an iframe with{' '}
-              <code>srcDoc</code> on the web target, because the WebView package has no web build
-              and renders a sentence in red rather than failing.
-            </dd>
-          </dl>
-        </div>
-      )}
-    </figure>
+    <DiagramFigure
+      number={6}
+      altId="d6-alt"
+      alt={alt}
+      drawing={<ArticlePathDrawing alt={alt} />}
+      caption={
+        <>
+          <strong>Five rungs, and the first that answers is the answer.</strong> The bundle comes
+          first because that is the promise the demo makes: the reader opens with no Wi-Fi. It is
+          generated TypeScript committed to the repository, reached through the{' '}
+          <code>ContentBundle</code> port, and on any host without one{' '}
+          <code>createEmptyContentBundle()</code> answers null to every method, so rung 1 falls
+          straight through. The cache behind rungs 2 and 5 is bounded three ways, and it writes only
+          through the <code>BlobStore</code> port, which is what makes an eviction unable to reach a
+          saved article. A byte here is a UTF-16 code unit, which is what the code measures and
+          about half a percent under the same text in UTF-8.
+        </>
+      }
+    >
+      <dl>
+        <dt>
+          The cascade, <code>packages/app-core/src/articles/load.ts</code>
+        </dt>
+        <dd>
+          <ol>
+            <li>
+              <code>platform().content.article(url)</code> — the snapshot compiled into the app. No
+              network, and no change until the next release.
+            </li>
+            <li>
+              <code>getCached(&apos;articles&apos;, url, 24 h)</code> — an article extracted earlier
+              today, still inside its window.
+            </li>
+            <li>
+              <code>fetchWpArticle(url)</code> — correctiv.org&apos;s WordPress REST API, with a 6 s
+              budget. One request, everything, the fact-check verdict included.
+            </li>
+            <li>
+              <code>fetchText(url)</code> then <code>extract(html)</code> — the page itself, 12 s,
+              for a URL the API does not know. That is every page in the app which is not a post.
+            </li>
+            <li>
+              <code>getStale(&apos;articles&apos;, url)</code> — expired beats absent. A miss here
+              is the only way this throws.
+            </li>
+          </ol>
+          Rungs 3 and 4 write what they produced back, and only the extracted article, never the
+          page HTML. The network rungs can time out one after the other, so the first gets the
+          shorter budget.
+        </dd>
+        <dt>The bundle, and the port in front of it</dt>
+        <dd>
+          <code>ContentBundle</code> has four methods: <code>feed</code>, <code>article</code>,{' '}
+          <code>image</code> and <code>podcastSeries</code>.{' '}
+          <code>apps/mobile/src/lib/platform/expo.ts</code> is the only real implementation, and it
+          is four record lookups into generated TypeScript modules that are committed to the
+          repository and compiled into the app: 15 pre-extracted articles, 15 cover images as data
+          URIs, 6 feed snapshots and 7 podcast shows. They are written by{' '}
+          <code>apps/mobile/scripts/fetch-offline-articles.mts</code> and{' '}
+          <code>apps/mobile/scripts/fetch-offline-podcasts.mts</code>.{' '}
+          <code>createEmptyContentBundle()</code> answers null to all four and is what the in-memory
+          platform uses, so on any other host the first rung falls straight through.
+        </dd>
+        <dt>
+          The cache, <code>packages/app-core/src/services/cache.service.ts</code>
+        </dt>
+        <dd>
+          Two layers: a session map over the host&apos;s <code>BlobStore</code> port. Three bounds,
+          and a least-recently-used order between them: 768 KiB per entry, above which an entry is
+          refused rather than evicted; 2 MiB in total; 128 entries. An eviction drops the session
+          entry and asks the host to delete the blob, because dropping one of the two leaves the
+          other growing unwatched. It writes through the blob port and never the key-value one,
+          which is what keeps a saved article and a setting out of reach of the bound. The unit is a
+          UTF-16 code unit, not a byte.
+        </dd>
+        <dt>The document</dt>
+        <dd>
+          <code>buildReaderHtml(article, copy, options)</code> builds one string and the core owns
+          it: the structure, the class names, the byline and the verdict plaque. It owns neither the
+          words nor the colours — a document built for a WebView can reach no provider and inherits
+          no stylesheet — so the copy is a required second parameter the host formats and the
+          host&apos;s CSS arrives through the optional third.
+        </dd>
+        <dt>What the host adds</dt>
+        <dd>
+          <code>apps/mobile/src/lib/articles/reader.ts</code> supplies the CSS: the token variables,
+          so every colour in the layout is one the app already uses; two font families in four
+          faces, base64 inline, because the WebView is a browser context of its own and cannot use
+          the fonts React Native loaded; and in dark mode one more block of variables, which is the
+          whole cost of the dark reader.
+        </dd>
+        <dt>The view</dt>
+        <dd>
+          <code>ReaderView</code> is a WebView on iOS and Android and an iframe with{' '}
+          <code>srcDoc</code> on the web target, because the WebView package has no web build and
+          renders a sentence in red rather than failing.
+        </dd>
+      </dl>
+    </DiagramFigure>
   );
 }

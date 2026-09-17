@@ -1,25 +1,22 @@
 import { cn } from '../lib/cn';
 import { href } from '../router';
 import {
-  ALT,
+  ArrowMarker,
   BOLD,
   BOUNDARY,
   BOX_CORE,
   CALLOUT,
-  CAPTION,
   CHIP,
   CHIP_PORT,
   DASHED,
+  DiagramFigure,
   DRAWING,
-  FIGURE,
   GHOST,
   HALO,
-  MARKER,
   MONO,
   MUTED,
   NODE_STRUCK,
   ON_ALTERNATIVE,
-  SCROLL_BOX,
   T11,
   T12,
   T13,
@@ -48,17 +45,7 @@ export function SignInDrawing({ alt = false }: { alt?: boolean } = {}) {
         reaches
       </title>
       <defs>
-        <marker
-          id="d5-arrow"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto"
-        >
-          <path d="M0 0 L10 5 L0 10 z" className={MARKER} />
-        </marker>
+        <ArrowMarker id="d5-arrow" />
       </defs>
 
       {/*
@@ -330,127 +317,126 @@ export function SignInDrawing({ alt = false }: { alt?: boolean } = {}) {
  */
 export function SignIn({ alt = true }: { alt?: boolean }) {
   return (
-    <figure className={FIGURE}>
-      <section className={SCROLL_BOX} aria-label="Diagram 5, scrollable" tabIndex={0}>
-        <SignInDrawing alt={alt} />
-      </section>
-      <figcaption className={CAPTION}>
-        <strong>There is no sign-in in this repository, and that is the drawing.</strong> The door
-        is real: the root layout renders it instead of the route tree, so no route is mounted and
-        nothing can be deep-linked past it. What it asks is a function that waits a second and a
-        half and reads a table of email addresses.{' '}
-        <code>packages/app-core/src/services/auth.service.ts</code> holds no network call, and no
-        token, secure store, redirect address or identity library exists anywhere here. So the
-        contract is what was decided and the client is what was not, which is why the seam is drawn
-        as a port and everything past it as an absence. The app does read beabee, for the callouts
-        on the Mitmachen screen, and correctiv.org for everything else; that is the{' '}
-        <a
-          href={href('/diagrams/services')}
-          className="underline decoration-accent underline-offset-2"
-        >
-          third drawing
-        </a>{' '}
-        and a different question, because none of it asks who anybody is.
-      </figcaption>
-      {alt && (
-        <div className={ALT} id="d5-alt">
-          <h3>The same diagram as a list</h3>
-          <dl>
-            <dt>The door, in the host</dt>
-            <dd>
-              <code>apps/mobile/src/app/_layout.tsx</code> renders one of two things: the route tree
-              when <code>isAdmitted(session, now)</code> is true, and{' '}
-              <code>apps/mobile/src/components/gate/LoginGate</code> when it is not. A branch and
-              not a redirect, so an address cannot reach past it. Inside the app nothing is gated at
-              all. The door is one surface in four states, which are the four values of{' '}
-              <code>SessionStatus</code>: signed-out, signing-in, failed, signed-in.
-            </dd>
-            <dt>The seam, in the core</dt>
-            <dd>
-              <code>packages/app-core/src/services/auth.service.ts</code> is where a real client
-              would go. Today <code>simulatedSignIn()</code> waits 1500 ms and reads a directory of
-              rules so that every state of the door is reachable on a device with no back end: an
-              address with no <code>@</code> in it fails, and so does a password under four
-              characters; <code>frei</code> in the address answers signed in with no app access;{' '}
-              <code>test</code> answers with a thirty-day trial; <code>lokal</code> with a
-              local-newsletter bundle; <code>soli</code> with the Soli tier; anything else is a
-              paying member. Nothing in the file reaches a network.
-            </dd>
-            <dt>The answer, which is the part that is decided</dt>
-            <dd>
-              An <code>Account</code> (email, name) and an <code>Entitlement</code>: the tier,
-              whether the app is included (<code>appAccess</code>), why (<code>source</code>), until
-              when (<code>validUntil</code>), which local areas, and since when. No amount, because
-              a trial pays 0 € and has the app and a local bundle has the app without being an app
-              membership. <code>stores/session</code> persists two of those fields, the account and
-              the entitlement, as JSON through the <code>KeyValueStore</code> port. Not a secure
-              store: there is no secret in it.
-            </dd>
-            <dt>Where the door sends people</dt>
-            <dd>
-              Upgrade, join and password reset are all three{' '}
-              <code>https://correctiv.org/unterstuetzen/</code>, opened in the system browser. The
-              membership system owns no account page yet, so there is nothing else to point at.
-            </dd>
-            <dt>Two corrections to the sketch it was drawn from</dt>
-            <dd>
-              <ul>
-                <li>
-                  Saving an article and loading saved articles are drawn there as calls into the
-                  membership system. They are <code>stores/savedArticles</code> on the device, kept
-                  through the same <code>KeyValueStore</code> port, and nothing about them leaves
-                  the phone.
-                </li>
-                <li>
-                  The app is drawn there doing an OIDC login. It does not. The only mention of OIDC
-                  in this repository is one line of ADR 0020 ruling the question out of that
-                  decision&apos;s scope.
-                </li>
-              </ul>
-            </dd>
-            <dt>Below the red line: planned, and not here</dt>
-            <dd>
-              <ul>
-                <li>
-                  <code>auth.community.correctiv.org</code>, Zitadel according to the sketch. The
-                  name appears nowhere in this repository, so the diagram carries it as a claim.
-                </li>
-                <li>
-                  <code>community.correctiv.org</code>, the beabee instance: one login for the
-                  website and the app, and the answer the door already knows how to read.
-                </li>
-                <li>
-                  Behind it, per the sketch and drawn as one box: an identity provider, a contacts
-                  service, a newsletter service, a notification centre marked as not in the first
-                  version and its provider, feeding on to Salesforce. The app sees a door, not a
-                  building.
-                </li>
-                <li>
-                  What a real sign-in brings with it: a token, a secure-storage port, and an{' '}
-                  <code>Authorization</code> header in{' '}
-                  <code>packages/app-core/src/services/http.ts</code>. ADR 0016 lists the port and
-                  the header as open and names the token as what both of them wait on. None of the
-                  three is here.
-                </li>
-              </ul>
-            </dd>
-            <dt>The open question, marked as one</dt>
-            <dd>
-              A native sign-in or a webview. ADR 0020 reaches the nearest question — whether
-              browser-based OIDC is what Apple and Google want at a login — only to rule it outside
-              its own scope, and says in as many words that the sign-in shape is left to a later
-              ADR. So the diagram names the question rather than answering it.
-            </dd>
-            <dt>What the sketch has that this leaves out</dt>
-            <dd>
-              The load balancer, the website core, the website&apos;s own auth, the mailwall, the
-              newsletter subscribe form, the push provider, and the audio and video hosting. The app
-              asks none of them who somebody is. Where the app does read them for content, that is
-              the third drawing, and it is a different question.
-            </dd>
-          </dl>
-        </div>
-      )}
-    </figure>
+    <DiagramFigure
+      number={5}
+      altId="d5-alt"
+      alt={alt}
+      drawing={<SignInDrawing alt={alt} />}
+      caption={
+        <>
+          <strong>There is no sign-in in this repository, and that is the drawing.</strong> The door
+          is real: the root layout renders it instead of the route tree, so no route is mounted and
+          nothing can be deep-linked past it. What it asks is a function that waits a second and a
+          half and reads a table of email addresses.{' '}
+          <code>packages/app-core/src/services/auth.service.ts</code> holds no network call, and no
+          token, secure store, redirect address or identity library exists anywhere here. So the
+          contract is what was decided and the client is what was not, which is why the seam is
+          drawn as a port and everything past it as an absence. The app does read beabee, for the
+          callouts on the Mitmachen screen, and correctiv.org for everything else; that is the{' '}
+          <a
+            href={href('/diagrams/services')}
+            className="underline decoration-accent underline-offset-2"
+          >
+            third drawing
+          </a>{' '}
+          and a different question, because none of it asks who anybody is.
+        </>
+      }
+    >
+      <dl>
+        <dt>The door, in the host</dt>
+        <dd>
+          <code>apps/mobile/src/app/_layout.tsx</code> renders one of two things: the route tree
+          when <code>isAdmitted(session, now)</code> is true, and{' '}
+          <code>apps/mobile/src/components/gate/LoginGate</code> when it is not. A branch and not a
+          redirect, so an address cannot reach past it. Inside the app nothing is gated at all. The
+          door is one surface in four states, which are the four values of{' '}
+          <code>SessionStatus</code>: signed-out, signing-in, failed, signed-in.
+        </dd>
+        <dt>The seam, in the core</dt>
+        <dd>
+          <code>packages/app-core/src/services/auth.service.ts</code> is where a real client would
+          go. Today <code>simulatedSignIn()</code> waits 1500 ms and reads a directory of rules so
+          that every state of the door is reachable on a device with no back end: an address with no{' '}
+          <code>@</code> in it fails, and so does a password under four characters;{' '}
+          <code>frei</code> in the address answers signed in with no app access; <code>test</code>{' '}
+          answers with a thirty-day trial; <code>lokal</code> with a local-newsletter bundle;{' '}
+          <code>soli</code> with the Soli tier; anything else is a paying member. Nothing in the
+          file reaches a network.
+        </dd>
+        <dt>The answer, which is the part that is decided</dt>
+        <dd>
+          An <code>Account</code> (email, name) and an <code>Entitlement</code>: the tier, whether
+          the app is included (<code>appAccess</code>), why (<code>source</code>), until when (
+          <code>validUntil</code>), which local areas, and since when. No amount, because a trial
+          pays 0 € and has the app and a local bundle has the app without being an app membership.{' '}
+          <code>stores/session</code> persists two of those fields, the account and the entitlement,
+          as JSON through the <code>KeyValueStore</code> port. Not a secure store: there is no
+          secret in it.
+        </dd>
+        <dt>Where the door sends people</dt>
+        <dd>
+          Upgrade, join and password reset are all three{' '}
+          <code>https://correctiv.org/unterstuetzen/</code>, opened in the system browser. The
+          membership system owns no account page yet, so there is nothing else to point at.
+        </dd>
+        <dt>Two corrections to the sketch it was drawn from</dt>
+        <dd>
+          <ul>
+            <li>
+              Saving an article and loading saved articles are drawn there as calls into the
+              membership system. They are <code>stores/savedArticles</code> on the device, kept
+              through the same <code>KeyValueStore</code> port, and nothing about them leaves the
+              phone.
+            </li>
+            <li>
+              The app is drawn there doing an OIDC login. It does not. The only mention of OIDC in
+              this repository is one line of ADR 0020 ruling the question out of that
+              decision&apos;s scope.
+            </li>
+          </ul>
+        </dd>
+        <dt>Below the red line: planned, and not here</dt>
+        <dd>
+          <ul>
+            <li>
+              <code>auth.community.correctiv.org</code>, Zitadel according to the sketch. The name
+              appears nowhere in this repository, so the diagram carries it as a claim.
+            </li>
+            <li>
+              <code>community.correctiv.org</code>, the beabee instance: one login for the website
+              and the app, and the answer the door already knows how to read.
+            </li>
+            <li>
+              Behind it, per the sketch and drawn as one box: an identity provider, a contacts
+              service, a newsletter service, a notification centre marked as not in the first
+              version and its provider, feeding on to Salesforce. The app sees a door, not a
+              building.
+            </li>
+            <li>
+              What a real sign-in brings with it: a token, a secure-storage port, and an{' '}
+              <code>Authorization</code> header in{' '}
+              <code>packages/app-core/src/services/http.ts</code>. ADR 0016 lists the port and the
+              header as open and names the token as what both of them wait on. None of the three is
+              here.
+            </li>
+          </ul>
+        </dd>
+        <dt>The open question, marked as one</dt>
+        <dd>
+          A native sign-in or a webview. ADR 0020 reaches the nearest question — whether
+          browser-based OIDC is what Apple and Google want at a login — only to rule it outside its
+          own scope, and says in as many words that the sign-in shape is left to a later ADR. So the
+          diagram names the question rather than answering it.
+        </dd>
+        <dt>What the sketch has that this leaves out</dt>
+        <dd>
+          The load balancer, the website core, the website&apos;s own auth, the mailwall, the
+          newsletter subscribe form, the push provider, and the audio and video hosting. The app
+          asks none of them who somebody is. Where the app does read them for content, that is the
+          third drawing, and it is a different question.
+        </dd>
+      </dl>
+    </DiagramFigure>
   );
 }

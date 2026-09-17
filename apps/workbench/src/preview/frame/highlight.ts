@@ -39,18 +39,25 @@ function ensureStyle(doc: Document): void {
  */
 const marked = new Map<string, Element>();
 
-function only(doc: Document, attribute: string, node: Element | null): void {
+/** Takes the mark off whatever is remembered as carrying it, and puts it on `node`. */
+function move(attribute: string, node: Element | null): void {
   marked.get(attribute)?.removeAttribute(attribute);
   marked.delete(attribute);
-  // Anything left over from an earlier document, or set before this module was
-  // the one doing the marking, still has to go.
-  for (const previous of doc.querySelectorAll(`[${attribute}]`)) {
-    previous.removeAttribute(attribute);
-  }
   if (node) {
     node.setAttribute(attribute, '');
     marked.set(attribute, node);
   }
+}
+
+function only(doc: Document, attribute: string, node: Element | null): void {
+  // Anything left over from an earlier document, or set before this module was
+  // the one doing the marking, still has to go. The remembered node is swept by
+  // `move` rather than here, because after a navigation it is detached and no
+  // query over this document reaches it.
+  for (const previous of doc.querySelectorAll(`[${attribute}]`)) {
+    previous.removeAttribute(attribute);
+  }
+  move(attribute, node);
 }
 
 /** The element the pick landed on. Stays until the next pick. */
@@ -62,21 +69,20 @@ export function markPicked(win: Window | null, node: Element | null): void {
   only(doc, HOVERED, null);
 }
 
-/** What a click would hit right now. Only while the picker is armed. */
+/**
+ * What a click would hit right now. Only while the picker is armed.
+ *
+ * `move` and not `only`: this runs on every `pointermove`, and the sweep `only`
+ * does would put a full tree walk in the path of the one interaction a person
+ * already found fiddly. What the sweep is for cannot arise here anyway, because
+ * nothing but this function has ever written the hover mark.
+ */
 export function markHovered(win: Window | null, node: Element | null): void {
   const doc = win?.document;
   if (!doc) return;
-  const previous = marked.get(HOVERED);
-  if (previous === node) return; // the common case while a pointer moves inside one element
+  if (marked.get(HOVERED) === node) return; // the common case while a pointer moves inside one element
   ensureStyle(doc);
-  if (previous) {
-    previous.removeAttribute(HOVERED);
-    marked.delete(HOVERED);
-  }
-  if (node) {
-    node.setAttribute(HOVERED, '');
-    marked.set(HOVERED, node);
-  }
+  move(HOVERED, node);
 }
 
 export function clearHighlight(win: Window | null): void {
