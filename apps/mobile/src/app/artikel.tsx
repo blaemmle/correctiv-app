@@ -300,7 +300,6 @@ function HeaderButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={label}
       // Spoken as well as shown: a dimmed circle says nothing to a screen reader.
@@ -308,6 +307,14 @@ function HeaderButton({
       className={`items-center justify-center rounded-full border border-stroke bg-canvas ${
         disabled ? 'opacity-40' : 'active:opacity-70'
       }`}
+      /*
+       * 44 drawn, where this was 40 with `hitSlop={8}` — and here the slop was the
+       * second thing #102 asks to be checked at every one of the twelve sites, not
+       * just the first. Share and bookmark sit in a `gap-2xs` row, 6 dp apart, so
+       * their slop rectangles overlapped by 10 dp and a tap in that strip went to
+       * whichever won: an invisible ambiguity between "share this article" and
+       * "save it", on the one screen where both are one-tap actions.
+       */
       style={{ width: sizes.iconButton, height: sizes.iconButton }}
     >
       <Ionicons name={icon} size={22} color={colors['on-canvas']} />

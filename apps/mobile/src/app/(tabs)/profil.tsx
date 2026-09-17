@@ -15,6 +15,7 @@ import { TIER_LABELS } from '@/lib/membership/tierLabel';
 import { openArticle } from '@/lib/openArticle';
 import { openExternal } from '@/lib/openExternal';
 import { useCoreActions, useSavedArticles, useSession, useSettings } from '@/lib/store/core';
+import { sizes } from '@/lib/theme';
 
 /**
  * Everything a person reads on the profile, in one place.
@@ -266,7 +267,14 @@ export default function ProfilScreen() {
             onPress={() => openArticle(article)}
             accessibilityRole="link"
             accessibilityLabel={article.title}
-            className="mt-s active:opacity-70"
+            className="mt-s justify-center active:opacity-70"
+            /*
+             * One line of `text-m` is 23 dp, and these are stacked directly under
+             * one another in the card, which is the arrangement a thumb lands
+             * between (#102). No slop rectangle would have been safe here for that
+             * reason; the box can grow because the gap between them is a margin.
+             */
+            style={{ minHeight: sizes.tapTarget }}
           >
             <Typo variant="text-m" weight="semibold" numberOfLines={2}>
               {article.title}

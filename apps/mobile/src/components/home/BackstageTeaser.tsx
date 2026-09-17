@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { Badge, Typo } from '@/components/ui';
 import { bonusMedia, diaries } from '@correctiv/app-core/data/backstage';
-import { useColors } from '@/lib/theme';
+import { sizes, useColors } from '@/lib/theme';
 
 /**
  * The card's one action, in ENGLISH; the German ships in
@@ -73,10 +73,15 @@ export function BackstageTeaser({
 
       <Pressable
         onPress={onOpenBackstage}
-        hitSlop={8}
         accessibilityRole="link"
         accessibilityLabel={intl.formatMessage(COPY.allFromBackstage)}
-        className="mx-m mb-m active:opacity-60"
+        className="mx-m mb-m justify-center active:opacity-60"
+        /*
+         * 24 dp with an 8 dp slop around it before #102. This link has a line of
+         * the card to itself, above the card's bottom margin, so the box takes the
+         * room without reaching either neighbour.
+         */
+        style={{ minHeight: sizes.tapTarget }}
       >
         <Typo variant="button" color="accent">
           {intl.formatMessage(COPY.allFromBackstage)} →

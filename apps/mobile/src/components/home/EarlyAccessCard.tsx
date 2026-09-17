@@ -36,6 +36,14 @@ export function EarlyAccessCard({ onPress }: { onPress?: () => void }) {
   return (
     <Pressable
       onPress={onPress}
+      /*
+       * The role, and no label: the card's own three lines already say what it is
+       * and what tapping it does, and a name typed over them would replace them
+       * rather than add to them. What was missing is that it announces as a
+       * control at all — without this it read as a paragraph that happened to end
+       * in an arrow (#102).
+       */
+      accessibilityRole="link"
       className="overflow-hidden rounded-md border border-stroke active:opacity-90"
     >
       <View className="bg-accent-alternative px-m py-s">

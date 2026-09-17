@@ -1,6 +1,6 @@
 import { Pressable, Text } from 'react-native';
 
-import { typography, useColors } from '@/lib/theme';
+import { sizes, typography, useColors } from '@/lib/theme';
 
 export type ChipProps = {
   label: string;
@@ -39,10 +39,20 @@ export function Chip({ label, selected = false, onPress, className }: ChipProps)
       accessibilityState={{ selected }}
       onPress={onPress}
       className={[
-        'rounded-md px-s py-2xs active:opacity-80',
+        'justify-center rounded-md px-s py-2xs active:opacity-80',
         selected ? 'bg-accent' : 'bg-surface border border-stroke',
         className ?? '',
       ].join(' ')}
+      /*
+       * A floor, not a height. `text-s` plus `py-2xs` either side is 33 dp, which
+       * is what every chip on Entdecken and in the onboarding measured before #102;
+       * the rail is dense but it is not so dense that nine more dp do not fit.
+       *
+       * `minHeight` rather than `height`, so the box still grows with the system
+       * font — a chip's label is one of the strings that wraps first, and a fixed
+       * height is what cut the search field's placeholder in #158.
+       */
+      style={{ minHeight: sizes.tapTarget }}
     >
       <Text
         style={[

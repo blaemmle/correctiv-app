@@ -60,8 +60,9 @@ export default function PlayerScreen() {
           accessibilityRole="button"
           accessibilityLabel={intl.formatMessage(COPY.close)}
           onPress={goBack}
-          hitSlop={8}
           className="items-center justify-center active:opacity-70"
+          // `iconButton` is 44 since #102, so the `hitSlop={8}` that used to sit
+          // here bought nothing on the phone and nothing at all in the browser.
           style={{ width: sizes.iconButton, height: sizes.iconButton }}
         >
           <Ionicons name="close" size={24} color={colors['on-canvas']} />
@@ -129,8 +130,15 @@ export default function PlayerScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={intl.formatMessage(COPY.changeSpeed)}
                   onPress={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
-                  hitSlop={8}
-                  className="absolute left-0 active:opacity-70"
+                  className="absolute left-0 items-center justify-center active:opacity-70"
+                  /*
+                   * "1×" is two characters and was a 23 dp target with a slop
+                   * rectangle around it (#102). It is absolutely positioned at the
+                   * left edge of the transport row and the play button is centred
+                   * in the same row, so the box can take the room it needs without
+                   * moving anything and without reaching its neighbour.
+                   */
+                  style={{ minWidth: sizes.tapTarget, minHeight: sizes.tapTarget }}
                 >
                   <Typo variant="text-m" weight="semibold" color="on-canvas-muted">
                     {speed}×

@@ -367,17 +367,15 @@ describe('a control reaches a screen reader', () => {
  * an invisible difference in a screenshot and a whole screen's difference to
  * somebody swiping through it.
  *
- * A ratchet rather than a failure, and a small one: these two are the app's
- * remainder, both one prop from done. The reason is per entry rather than a shared
- * note, because the two are not the same case and only one of them is obviously a
- * button.
+ * **Empty, and that is the finished state rather than a missing list.** It held
+ * two entries when this file was written — the compact row under "Neueste
+ * Recherchen" and Home's early-access card — and #102 gave both an
+ * `accessibilityRole="link"`. The pair of assertions below is what makes an empty
+ * ledger mean something: the first one now says every control in the app declares
+ * a role, and the second one is what stops somebody writing an entry back in for a
+ * control they did not want to finish.
  */
-const WITHOUT_A_ROLE: Record<string, string> = {
-  'components/feed/ArticleRow.tsx:16':
-    'the compact row under "Neueste Recherchen"; announced as its headline, opens the reader',
-  'components/home/EarlyAccessCard.tsx:37':
-    'the whole card is the target, and its last line ("Jetzt lesen →") already reads like one',
-};
+const WITHOUT_A_ROLE: Record<string, string> = {};
 
 describe('the controls that still announce as text only', () => {
   const missing = app.controls.filter((control) => !control.role && !control.spread).map(at);
@@ -410,16 +408,14 @@ describe('the controls that still announce as text only', () => {
  * at all, and by Android as nothing — so a decorative image and a load-bearing one
  * are indistinguishable from outside, which is the whole point of marking one.
  *
- * The app has exactly one `<Image>`, inside `Thumbnail`, and which of the two it is
- * has not been decided: the frame is a cover beside a headline on a feed card
- * (decorative, and `accessibilityElementsHidden` is the answer) and the only content
- * of a rail tile (not decorative). Listed rather than guessed, because guessing puts
- * `alt=""` on a picture somebody needed.
+ * **Empty since #102.** The app has exactly one `<Image>`, inside `Thumbnail`, and
+ * this file held it open on the grounds that the same component draws a cover
+ * beside a headline and the whole of a rail tile. The answer was not in the
+ * component: every call site wraps it in a control that already names what the
+ * picture is of, so it is decorative in all of them, and it says so with `alt=""`
+ * and `accessible={false}`. The reasoning is at that element.
  */
-const IMAGES_WITHOUT_A_DECISION: Record<string, string> = {
-  'components/ui/Thumbnail.tsx:60':
-    'cover art; decorative beside a headline and load-bearing in a rail tile, and the same component renders both',
-};
+const IMAGES_WITHOUT_A_DECISION: Record<string, string> = {};
 
 describe('every image is named or marked decorative', () => {
   it('finds images at all (guards against a walk that matched no <Image>)', () => {

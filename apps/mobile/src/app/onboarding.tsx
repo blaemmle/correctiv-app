@@ -8,7 +8,7 @@ import { Button, Card, Chip, SafeAreaView, SplitRow, Typo } from '@/components/u
 import { interests } from '@correctiv/app-core/data/interests';
 import { useCoreActions, useSelectedInterests, useSettings } from '@/lib/store/core';
 import { useDocumentTitle } from '@/lib/navigation/documentTitle';
-import { useColors } from '@/lib/theme';
+import { sizes, useColors } from '@/lib/theme';
 
 /**
  * Everything a person reads in the onboarding, in ENGLISH; the German that ships
@@ -130,8 +130,14 @@ export default function OnboardingScreen() {
             accessibilityRole="button"
             accessibilityLabel={intl.formatMessage(COPY.skip)}
             onPress={finish}
-            hitSlop={8}
-            className="active:opacity-70"
+            className="justify-center active:opacity-70"
+            /*
+             * "Überspringen" was one line of `text-s` — 21 dp — with an 8 dp slop
+             * around it (#102). It is the only way past this screen other than
+             * answering it, and the row it sits in holds nothing but three 7 dp
+             * dots at the far left, so the box can have the height.
+             */
+            style={{ minHeight: sizes.tapTarget }}
           >
             <Typo variant="text-s" color="on-canvas-muted">
               {intl.formatMessage(COPY.skip)}
