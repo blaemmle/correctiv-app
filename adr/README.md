@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Thirty-nine records shaped this repo. Read them when you want to know *why* something
+Forty-four records shaped this repo. Read them when you want to know *why* something
 is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it is.
 
 | | Decision | Status |
@@ -44,6 +44,11 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0037](0037-the-whole-site-is-the-workbench.md) | The whole site is the workbench, and the device frame is `/preview` | accepted and carried out the same day; retires two of 0024's, renames nothing in here, and is why the note below exists |
 | [0038](0038-one-tool-at-a-time-in-a-rail.md) | One tool at a time, in a rail | accepted and carried out the same day; six decisions, retires four of 0028's claims and names one it read and left standing, two open items named |
 | [0039](0039-the-home-screen-is-a-day-not-a-timetable.md) | The home screen is a day, not a timetable | accepted and carried out the same day; eleven decisions, replaces the dayparts with a sequence of moments and deletes `lib/daypart.ts`, retires five of 0036's claims and names three it read and left standing, three open items named |
+| [0040](0040-the-app-does-not-depend-on-the-workbench.md) | The app does not depend on the workbench | accepted, **not built**; four decisions from the architecture meeting in #200, specifies the two halves of the check that holds the direction, retires nothing and names four records read for it |
+| [0041](0041-a-change-may-name-an-audience.md) | A change may name an audience, and one file knows what the name means | accepted, **not built**; five decisions, extends 0039's day with who, names two of 0039's claims read and left standing, three open items named including the audience list itself |
+| [0042](0042-the-timeline-belongs-to-the-stage.md) | The timeline belongs to the stage, not the tools | accepted, **not built**; five decisions, moves 0039 §10's track out of the tool panel and keeps it in `full` above 64rem only, strikes nothing and says which sentence the carrying-out will strike, two open items named |
+| [0043](0043-two-concepts-become-packages-and-the-shell-stays.md) | Two concepts become packages, and the shell stays | accepted, **not built**; seven decisions, two capabilities surveyed and declined as already published, Backstage measured and rejected, two gaps recorded as deliberately unfilled, four open items named |
+| [0044](0044-the-workbench-drives-a-real-device.md) | The workbench drives a real device, in the same view | accepted in shape, **not built** and not measured; five decisions, the ground it stands on measured over Android and nothing at all on iOS, names the one experiment that decides whether the shape is worth building, four open items named |
 
 Ten notes for readers of the older ones:
 
