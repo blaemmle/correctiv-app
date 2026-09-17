@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { IMPORT_RE, specifier } from './support/source';
+
 /**
  * The architectural guard.
  *
@@ -68,35 +70,6 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-/**
- * Every form in which a module name can enter a file. Three alternatives, in this
- * order, because the first that matches at a position wins and consumes the text:
- *
- *  1. `import 'react-native'` — a side-effect import, which has no `from` at all
- *     and is exactly how one pulls in a module for what it does to globals.
- *  2. `import('…')` and `require('…')` — the runtime forms. `require` matters even
- *     in an ESM package: a `.js` under `src` is read by whatever loads it, and it
- *     is the spelling a copied snippet arrives in.
- *  3. `import … from '…'` / `export … from '…'`, over as many lines as it takes.
- *
- * The lookbehind keeps `myImport(` and `foo.require(` out, and `[^;]*?` keeps the
- * third alternative inside one statement — without it a `from`-less `export { a };`
- * swallows the lines after it, side-effect imports included.
- */
-const IMPORT_RE = new RegExp(
-  [
-    String.raw`(?<![\w$.])import\s*['"]([^'"]+)['"]`,
-    String.raw`(?<![\w$.])(?:import|require)\s*\(\s*['"]([^'"]+)['"]\s*\)`,
-    String.raw`(?<![\w$.])(?:import|export)[^;]*?\bfrom\s+['"]([^'"]+)['"]`,
-  ].join('|'),
-  'g',
-);
-
-/** The module name out of whichever alternative of IMPORT_RE matched. */
-function specifier(match: RegExpMatchArray): string | undefined {
-  return match[1] ?? match[2] ?? match[3];
-}
-
 describe('core stays platform-free', () => {
   const files = sourceFiles(SRC);
 
@@ -110,6 +83,11 @@ describe('core stays platform-free', () => {
    * matching would report a core with no imports at all and pass. The fixture names
    * one specifier per form, so a form that falls out of the net fails here by name
    * rather than by letting a real import through somewhere else.
+   *
+   * IMPORT_RE is shared — `support/source.ts`, beside the two comment readers — and
+   * `apps/mobile/__tests__/no-workbench-dependency.test.ts` reads the app through the
+   * same one. This fixture is therefore the proof for both nets, which is why it
+   * stays here rather than being copied there.
    */
   it('matches every import form it claims to (guards against a net that catches nothing)', () => {
     const fixture = [

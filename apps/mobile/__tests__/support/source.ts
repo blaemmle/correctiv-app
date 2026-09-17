@@ -8,6 +8,8 @@
  * functions rather than in each caller.
  */
 export {
+  IMPORT_RE,
+  specifier,
   withEscapesDecoded,
   withoutComments,
 } from '../../../../packages/app-core/test/support/source';

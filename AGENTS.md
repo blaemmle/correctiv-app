@@ -38,6 +38,17 @@ browser refuses those property reads silently.
 [ADR 0024](adr/0024-the-handbook-owns-the-root.md),
 [ADR 0037](adr/0037-the-whole-site-is-the-workbench.md))
 
+**That coupling has one direction.** The workbench may read the app, and does;
+`apps/mobile` and `packages/` may never read the workbench, because the app ships
+through a store and the workbench is a developer tool on a public URL. Naming it
+is not reading it: the `workbench:` override keys the app declares and every comment
+that says where a seam's other end is are the permitted side of that line. What holds
+the rule is `apps/mobile/__tests__/no-workbench-dependency.test.ts`, which reads the
+manifests and the configuration, and ci.yml's `independence` job, which removes
+`apps/workbench` from the checkout and rebuilds the app. Two halves because a path into
+a directory that is gone matches nothing and builds.
+([ADR 0040](adr/0040-the-app-does-not-depend-on-the-workbench.md))
+
 `tools/` is the third place, for what is neither a host nor a library the app ships:
 `tools/figma-plugin` is what is left there.
 
