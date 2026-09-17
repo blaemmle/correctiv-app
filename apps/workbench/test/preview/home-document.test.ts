@@ -410,8 +410,16 @@ describe('the three ends of the seam', () => {
     const state = source('apps/workbench/src/preview/state.ts');
     expect(state).toContain("p.set('tm', state.time)");
 
-    const panel = source('apps/workbench/src/preview/home/HomeDocument.tsx');
-    expect(panel).toContain('useEffect(() => apply(simulated), [simulated])');
+    /*
+     * The write is in `usePreview` and not in the panel, which is the difference
+     * between "the address decides" and "the tool that happens to be open decides".
+     * A simulated clock that outlived the panel would be a frame showing an hour with
+     * nothing on screen saying so, and one that outlived the view would be durable
+     * state nobody can see.
+     */
+    const preview = source('apps/workbench/src/preview/Preview.tsx');
+    expect(preview).toContain('useEffect(() => applyHomeTime(state.time), [state.time])');
+    expect(preview).toContain('useEffect(() => () => applyHomeTime(null), [])');
 
     const clock = source('apps/workbench/src/preview/home/clock.ts');
     expect(clock).toContain('window.localStorage.removeItem(HOME_TIME_KEY)');

@@ -21,8 +21,12 @@ import { HOME_TIME_KEY } from './names';
  * address, an address that does not name a time **clears** it, which `apply` below does
  * by taking the key away rather than by leaving the last one standing.
  *
- * So there is exactly one writer and it writes on every render of the tool: what the
- * address says, or nothing at all.
+ * So there is exactly one writer, and it is **not this tool**. `usePreview` applies
+ * `state.time` the way it already applies the appearance and the storage fixture, and
+ * clears it when the view goes away. The home tool draws the timeline that moves the
+ * time; whether that tool is open or shut is not what decides whether a `tm=` in the
+ * address means anything, and a simulated clock that outlived the panel would be a frame
+ * showing an hour with nothing on screen saying so.
  */
 
 /**

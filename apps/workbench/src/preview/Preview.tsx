@@ -22,6 +22,7 @@ import { armPicker, openInEditor, type Located } from './frame/locate';
 import { audit, setOutline, type Finding } from './frame/measure';
 import { waitReady } from './frame/ready';
 import { applyFixture } from './frame/seed';
+import { apply as applyHomeTime } from './home/clock';
 import { apply as applyTokens, type Scheme } from './frame/tokens';
 import { addLog, clearLogs, getLogs, subscribeLogs } from './logs';
 import { HOST_DEVICE } from './devices';
@@ -164,6 +165,21 @@ export function usePreview() {
   useEffect(() => {
     if (state.theme) applyTheme(win(), state.theme);
   }, [state.theme, loaded]);
+
+  /*
+   * What time the framed app is told it is, which follows the address the way the
+   * appearance above does and for the same reason: it is a way of looking at the app,
+   * not a setting of one tool. The home tool draws the timeline that MOVES it; the tool
+   * being open or shut is not what decides whether a `tm=` in the address means
+   * anything.
+   *
+   * Cleared when this view goes away. A simulated clock left in storage is durable state
+   * nobody can see — the published demo would open on some fixed hour for ever, with
+   * nothing on screen saying why — and leaving `/preview` is exactly the moment nothing
+   * is framing the app any more. `preview/home/clock.ts` argues it in full.
+   */
+  useEffect(() => applyHomeTime(state.time), [state.time]);
+  useEffect(() => () => applyHomeTime(null), []);
 
   useEffect(
     () => applyTokens(win(), state.overrides, textPass),

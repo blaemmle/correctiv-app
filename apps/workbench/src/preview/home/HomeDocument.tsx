@@ -15,7 +15,7 @@ import { cn } from '../../lib/cn';
 import { Badge } from '../../ui/kit/badge';
 import { Button } from '../../ui/kit/button';
 import type { PreviewState } from '../state';
-import { apply, timeOf } from './clock';
+import { timeOf } from './clock';
 import {
   changedAt,
   differs,
@@ -119,15 +119,6 @@ export function HomeDocument({
   const point = pointAt(layout, minute);
   const moment = momentAt(layout, point);
   const span = spanOf(layout, point);
-
-  /*
-   * The one writer of the app's clock, and it writes on every render of this tool.
-   *
-   * What the address says, or nothing at all — so an address with no `tm` takes the key
-   * away, and a simulated clock cannot be left behind by shutting a tab. `./clock.ts`
-   * argues it in full.
-   */
-  useEffect(() => apply(simulated), [simulated]);
 
   /*
    * Once, on arrival: a stored document that is now identical to the shipped one is a
