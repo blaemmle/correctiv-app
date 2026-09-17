@@ -529,7 +529,33 @@ function parseMoments(
   return parsed.sort((a, b) => a.minute - b.minute);
 }
 
-/** One change, or null with its fault appended to `problems`. */
+/**
+ * One change, or null with its fault appended to `problems`.
+ *
+ * **Dropping a change is not dropping a place**, and that is ADR 0039 §6 read at the level
+ * it is written for. The unit the rule drops is one place's instruction: a section is a
+ * place's instruction for the day's start, a change is the same place's instruction at a
+ * moment, and a fault in either costs that one and nothing around it. What differs is only
+ * what stands behind the instruction. At the day's start nothing does, so the place goes.
+ * At a moment the state the place is already in does, and inheritance is what the data IS
+ * (§1) rather than a fallback chosen here — so "drop the change" cannot mean "show nothing
+ * there", because there is no such state for the fold to produce.
+ *
+ * The cost is real and it is the one the record weighed for the other level: at 18:00 an
+ * older app leads with the article the newsroom pinned in the morning, which looks
+ * unconfigured. It is reported with the time, the place and the key rather than shown, and
+ * it is a state the document could itself have meant, since a day that changes nothing at
+ * six is an ordinary document.
+ *
+ * Both alternatives were read on 2026-09-17 and are worse. Dropping the SECTION makes a
+ * fault at one minute cost the place for the whole day, the hours before the fault
+ * included — a larger thing than the rule says to drop, and it would let a moment delete a
+ * section the moments before it have already been parsed against. Dropping the one SETTING
+ * and applying the rest of the change gives settings a granularity at a moment that they
+ * do not have in a section, which is the second rule §6 refuses; nothing here weakens the
+ * case for refusing it, because a place configured by a rule this app cannot apply is the
+ * same fault whether the rule arrived at midnight or at six.
+ */
 function parseChange(
   raw: unknown,
   at: string,

@@ -204,6 +204,47 @@ export function usePreview() {
   useEffect(() => applyHomeTime(state.time), [state.time]);
   useEffect(() => () => applyHomeTime(null), []);
 
+  /*
+   * And cleared when the DOCUMENT goes away, which an unmount is not.
+   *
+   * The two effects above run while this page is alive: one on every change of
+   * `state.time`, one when React takes the view down. Closing the tab is neither, so
+   * the key outlived the page that wrote it — measured against the assembled site,
+   * where `handle.ts`'s `BASE` makes `onRaw` open `<site>/app/` in a tab of its own on
+   * the same origin. Set an hour, open raw, close the workbench tab, and the published
+   * demo was pinned to that hour for that browser for ever, with nothing on screen
+   * saying why. That is the exact state ADR 0039 §9 put the time in the address to
+   * prevent, reached by the one door the address cannot reach: there is no later
+   * address, because there is no later page.
+   *
+   * `pagehide` is the event for it, and `pageshow` is why it can be. A tab close, a
+   * navigation away and a freeze into the back/forward cache are all one event here,
+   * and only the last of them comes back — `pageshow` then writes `state.time` again,
+   * so a restored page is simulating the hour its address still names. `unload` would
+   * have covered the first two and made the third impossible, because a page with an
+   * `unload` handler is not cached at all.
+   *
+   * The other way out was the APP clearing a key that did not arrive with the page it is
+   * rendering, and it is worse for a reason that is not taste. The app
+   * cannot tell: this shell writes the key from an effect and boots the frame in the
+   * same render, so "it was already there when I started" is a race and not a fact, and
+   * the first thing the app would clear on a slow boot is the hour the timeline just
+   * asked for. It would also make the app a writer of this key, and the whole event
+   * model next door rests on it not being one — a browser tells every same-origin
+   * document about a write except the one that made it, which is exactly why a write
+   * here reaches the frame (`apps/mobile/src/lib/home/clock.ts`).
+   */
+  useEffect(() => {
+    const hide = () => applyHomeTime(null);
+    const show = () => applyHomeTime(state.time);
+    window.addEventListener('pagehide', hide);
+    window.addEventListener('pageshow', show);
+    return () => {
+      window.removeEventListener('pagehide', hide);
+      window.removeEventListener('pageshow', show);
+    };
+  }, [state.time]);
+
   useEffect(
     () => applyTokens(win(), state.overrides, textPass),
     [state.overrides, textPass, loaded],

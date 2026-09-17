@@ -27,11 +27,18 @@
  *     cd apps/mobile && EXPO_BASE_URL=/app npm run build:web
  *     node apps/workbench/scripts/home-live.mjs
  *
+ * **The second thing it drives is the simulated clock, for the same reason.** ADR 0039 §9
+ * holds the hour in the address so that it cannot be left behind in storage, and the shell
+ * cleared it on a change of address and on leaving `/preview`. Neither is a tab closing,
+ * and a tab closing is what a person does — measured on the assembled site, where the key
+ * survived and pinned `<site>/app/` to that hour for that browser. Nothing in a unit test
+ * can see it: the fault is a document going away, and only a browser has one.
+ *
  * No dependency beyond Node and a browser, matching `renders.mjs`: the Chrome DevTools
  * Protocol is JSON over a `WebSocket`, and everything this needs inside the app frame is a
  * same-origin property read `Runtime.evaluate` can do from the shell's own document — no
- * second CDP target, because the shell already reaches the frame that way itself
- * (ADR 0014).
+ * second CDP target for the FRAME, because the shell already reaches it that way itself
+ * (ADR 0014). The second target below is a second tab, which is a different thing.
  */
 import { spawn } from 'node:child_process';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -271,6 +278,25 @@ async function evaluate(call, sessionId, expression) {
   return result?.value;
 }
 
+/**
+ * The key the shell writes the simulated hour into, read out of the file that declares it.
+ *
+ * Typed here it would be a third spelling of one string, and the failure of a wrong one is
+ * that everything passes: the assertion below would find no key after a tab close because
+ * there was never a key under that name at all.
+ */
+function homeTimeKey() {
+  const source = readFileSync(join(WORKBENCH, 'src/preview/home/names.ts'), 'utf8');
+  const found = /HOME_TIME_KEY\s*=\s*'([^']+)'/.exec(source);
+  if (!found) {
+    throw new Reported(
+      'src/preview/home/names.ts no longer declares HOME_TIME_KEY as a string literal, so ' +
+        'this script cannot tell which key to look for.',
+    );
+  }
+  return found[1];
+}
+
 /** What the frame currently shows, or null while there is nothing to read yet. */
 const READ_FRAME = `(() => {
   const frame = document.querySelector('iframe');
@@ -383,7 +409,88 @@ async function main() {
     );
   }
 
-  console.log('home-live: a fresh visit reaches Home, and moving a block redraws the frame.');
+  await clockDoesNotOutliveThePage(call, sessionId, targetId, server.url);
+
+  console.log(
+    'home-live: a fresh visit reaches Home, moving a block redraws the frame, and the ' +
+      'simulated clock does not outlive the page that set it.',
+  );
+}
+
+/**
+ * The hour in the address, and the two ways the page it is on can go away.
+ *
+ * Both are the same event in the browser and both were open: the shell cleared the key
+ * from an effect on `state.time` and from an unmount, and a document going away runs
+ * neither. They are asserted separately anyway, because they fail separately — a
+ * `pagehide` handler that is never attached fails both, and a handler attached to the
+ * wrong window fails only the second.
+ *
+ * `location.hash` rather than `Page.navigate` for the first step: the two addresses differ
+ * only in their hash, so navigating is a same-document fragment change, and driving it
+ * through the property makes it unambiguous which one the browser is doing.
+ */
+async function clockDoesNotOutliveThePage(call, sessionId, targetId, url) {
+  const key = homeTimeKey();
+  const read = `window.localStorage.getItem(${JSON.stringify(key)})`;
+
+  const held = async (session, want) => {
+    const deadline = Date.now() + READY_MS;
+    let seen = null;
+    while (Date.now() < deadline) {
+      seen = await evaluate(call, session, read);
+      if (seen === want) return seen;
+      await sleep(POLL_MS);
+    }
+    return seen;
+  };
+
+  await evaluate(call, sessionId, `location.hash = '#/?tool=home&tm=23:00'`);
+  if ((await held(sessionId, '23:00')) !== '23:00') {
+    throw new Reported(
+      `\`tm=23:00\` in the address did not reach \`${key}\` within ${READY_MS / 1000}s. The ` +
+        `timeline moves nothing, and every assertion below would pass for the wrong reason.`,
+    );
+  }
+
+  // Away from `/preview` and out of this document altogether, which is the half a
+  // `hashchange` cannot cover and an unmount only looks like.
+  await call('Page.navigate', { url }, sessionId);
+  const afterLeaving = await held(sessionId, null);
+  if (afterLeaving !== null) {
+    throw new Reported(
+      `navigating the whole page away from /preview left \`${key}\` at ` +
+        `${JSON.stringify(afterLeaving)}. Every later visit to <site>/app/ in this browser ` +
+        `opens on that hour with nothing on screen saying why, which is the durable state ` +
+        `ADR 0039 §9 put the time in the address to prevent.`,
+    );
+  }
+
+  // And the way a person actually leaves: a second tab, set to an hour, shut.
+  const second = await call('Target.createTarget', { url: `${url}preview#/?tool=home&tm=22:00` });
+  const { sessionId: secondSession } = await call('Target.attachToTarget', {
+    targetId: second.targetId,
+    flatten: true,
+  });
+  await call('Runtime.enable', {}, secondSession);
+  if ((await held(secondSession, '22:00')) !== '22:00') {
+    throw new Reported(
+      `a second tab opened at \`tm=22:00\` never wrote \`${key}\` within ` +
+        `${READY_MS / 1000}s, so closing it proves nothing.`,
+    );
+  }
+  await call('Target.closeTarget', { targetId: second.targetId });
+
+  // Read from the first tab, which is where the key outlived the tab that wrote it.
+  const afterClosing = await held(sessionId, null);
+  if (afterClosing !== null) {
+    throw new Reported(
+      `closing the tab that had set \`tm=22:00\` left \`${key}\` at ` +
+        `${JSON.stringify(afterClosing)} for the whole origin. This is the reported fault: ` +
+        `set an hour, open \`<site>/app/\` in its own tab, shut the workbench, and the ` +
+        `published demo is pinned to that hour for this browser for ever.`,
+    );
+  }
 }
 
 let status = 0;

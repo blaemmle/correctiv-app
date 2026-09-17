@@ -147,15 +147,25 @@ rather than a precedent.
 It is: **drop the smallest thing that carries the rule.** In a section that is the
 section, because a section's state IS the section and there is nothing smaller to lose.
 In a moment it is the one change, because the other changes at that time are unrelated
-instructions about other places. A setting a module does not understand drops its section,
-which is the same failure as an unrecognised key and is deliberately not given a second
-rule of its own.
+instructions about other places. ~~A setting a module does not understand drops its
+section, which is the same failure as an unrecognised key and is deliberately not given a
+second rule of its own.~~ It drops whichever of the two it is written in, and the parser
+has dropped the change since the day it was built; the half of the sentence worth keeping
+is that settings get no rule of their own, and the word that is wrong is "section",
+written while only one of the two levels was in view. Nothing voided it and there is no
+later record to link: it was false the day it was written, and 2026-09-17 is the day
+somebody read `parseChange` beside it.
 
-The reader-facing cost was weighed rather than assumed. An older app meeting a newer
-document loses the whole lead-article place rather than showing the wrong lead. That is
-the worse outcome for one reader and the right one for the newsroom, because a setting
-changes **what a place shows**, not how it looks, and a place quietly showing something
-nobody chose is the fault nobody can see.
+The reader-facing cost was weighed rather than assumed. ~~An older app meeting a newer
+document loses the whole lead-article place rather than showing the wrong lead.~~ True of
+a section and false of a change: a refused change is dropped and the place goes on holding
+what it inherited, so an older app leads at six with the article the newsroom chose for
+the morning. Wrong the day it was written rather than overtaken, so there is no record to
+link; measured 2026-09-17 by folding such a document and looking. What stands is the rule
+above, not this generalisation of one level's cost to both. Losing the place is the worse
+outcome for one reader and the right one for the newsroom, because a setting changes
+**what a place shows**, not how it looks, and a place quietly showing something nobody
+chose is the fault nobody can see.
 
 Everything else in that parser is unchanged, including that it reports rather than
 throws, that it costs the fetched copy and never the screen, and that a document numbered
@@ -184,11 +194,17 @@ nothing has to be injected or reset for a test, and the whole question of "what 
 it" is one question in one file in the host: `apps/mobile/src/lib/home/clock.ts`.
 
 That file's one door is `localStorage`, under `workbench:home-time`, beside the document
-override that already worked this way. On iOS and Android there is no `window`, so there
-is no key. On the web target the key can be set, and what it can do is move the home
-screen to another hour **of the same document** — it selects between states the document
-already describes and cannot introduce one, which is strictly less than
-`workbench:home-layout` next door can already do.
+override that already worked this way. ~~On iOS and Android there is no `window`, so there
+is no key.~~ There is one: `react-native/Libraries/Core/setUpGlobals.js` sets
+`global.window = global`. The guard is safe on its other half, `!window.localStorage`, and
+not on the half this sentence names, which is how `lib/home/layout.ts` already put it
+about the same door. Nothing voided this either; it was false when it was written, and
+2026-09-17 is the day it was read against React Native's own source.
+
+On the web target the key can be set, and what it can do is move the home screen to
+another hour **of the same document** — it selects between states the document already
+describes and cannot introduce one, which is strictly less than `workbench:home-layout`
+next door can already do.
 
 ### 9. The simulated time lives in the address, so it cannot be left behind
 
@@ -205,6 +221,17 @@ screen stuck at eleven at night, with nothing on screen saying why. Held in the 
 the tool writes the key from `state.time` on every render, so an address that names no
 time takes the key away. The same shape as the layout override removing its key when the
 document matches the file, reached by a different door.
+
+**And a page that has gone away takes it away too**, which is a second event and was not
+built. An effect on `state.time` and an unmount both run while the page is alive, so the
+key outlived a tab close and the paragraph above described a hole it had left open: with
+`frame/handle.ts` making `BASE` the site's own `/app`, setting an hour, opening the app
+raw and shutting the workbench pinned `<site>/app/` to that hour for that browser.
+`usePreview` listens for `pagehide` now, and writes the address's time back on `pageshow`
+so a page restored from the back/forward cache still simulates the hour it names. Added
+2026-09-17 against the assembled site, where it was measured;
+`apps/workbench/scripts/home-live.mjs` is the check under it, because only a browser has a
+document that can go away.
 
 ### 10. The editor is a timeline, and an edit lands on the point in effect
 
@@ -223,6 +250,14 @@ minute apart, and the document is meant to be a day somebody can read.
 out instead, and takes the change entry out when its last field goes. The parser will
 happily read a moment that restates what it inherits; a document full of them is a day
 nobody can read, and the editor is the half that can know the difference.
+
+Two things that sentence covers and the first version of it did not, added 2026-09-17
+after each was reproduced through the controls. **An absent value is one of the values a
+point inherits** — it means the module's own default, which §4 put in the same table for
+this reason — so "no pin" and a count typed back to five are changes equal to what is
+inherited and are not written. And **an edit changes what the points after it inherit**,
+so those are re-checked: taking `hidden` off a place at the day's start takes the moment
+that used to bring it back out with it.
 
 ### 11. The choices a block offers are sample data, and the interface says so from the inventory
 
@@ -285,7 +320,7 @@ not struck.**
 [ADR 0028](0028-one-shell-and-a-route-that-declares-its-context.md) or
 [ADR 0038](0038-one-tool-at-a-time-in-a-rail.md) is affected, and all four were read for
 it.** 0031's mechanism 1 is what `MODULE_SETTINGS` and the three key tables in the parser
-are. 0032's report shape is unchanged and this adds fourteen codes to the same domain.
+are. 0032's report shape is unchanged and this adds codes to the same domain.
 0028 is where `tm` goes and why. 0038 is the rail the tool sits in, and this tool keeps
 its one slot.
 

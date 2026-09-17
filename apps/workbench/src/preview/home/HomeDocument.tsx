@@ -67,6 +67,8 @@ import { canSave, publish, save, type SaveResult } from './write';
  *
  * It never writes a change equal to what the point already inherits — `withHidden` and
  * `withSetting` take one out instead — so a moment's diff is what is different about it.
+ * An absent inherited value counts as one: absent means the module's own default, which
+ * `home-settings.ts` names and which "The newest investigation (no pin)" below sends back.
  * And it never says a thing on screen that is not true of the frame: the sample-data
  * marking on the article picker is read out of `content/sources.manifest.ts` rather than
  * typed here, so it disappears by itself on the day that row turns live.

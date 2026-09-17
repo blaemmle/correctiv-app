@@ -34,20 +34,29 @@ import {
  *
  * ## Why this is not a hole in a shipped app
  *
- * On iOS and Android there is no `window`, so there is no key, and the guarded read
- * below answers `null` before it touches anything. On the web target the key can be set
- * — by the workbench, which is the point — and what it can do is move the home screen to
- * another hour of the SAME document. It selects between states the document already
- * describes; it cannot introduce one. That is a strictly smaller power than
- * `workbench:home-layout` next door, which can replace the document outright, and it is
- * spelled `workbench:` for the same reason issue #112 asks of every key this tool
- * writes: a screen that quietly differs from the repository is worse than one that says
- * who changed it.
+ * On iOS and Android there is no `localStorage`, so there is no key, and the guarded read
+ * below answers `null` before it touches anything. **`window` is not what makes that
+ * true**, and the guard would be a hole if it were: React Native defines one —
+ * `react-native/Libraries/Core/setUpGlobals.js` sets `global.window = global` — so the
+ * `typeof window === 'undefined'` half passes on a phone and it is the
+ * `!window.localStorage` half that answers. `./layout.ts` next door says it that way
+ * round about the same door.
  *
- * It is also not durable state that somebody can leave behind by accident. The workbench
- * holds the simulated time in the **address** (`tm=18:30`) and writes this key from
- * there, so a link without the parameter clears it on arrival; `apps/workbench/src/preview/home/clock.ts`
- * is the other half and says so.
+ * On the web target the key can be set — by the workbench, which is the point — and what
+ * it can do is move the home screen to another hour of the SAME document. It selects
+ * between states the document already describes; it cannot introduce one. That is a
+ * strictly smaller power than `workbench:home-layout` next door, which can replace the
+ * document outright, and it is spelled `workbench:` for the same reason issue #112 asks
+ * of every key this tool writes: a screen that quietly differs from the repository is
+ * worse than one that says who changed it.
+ *
+ * It is also not durable state that somebody can leave behind by accident, and it takes
+ * two mechanisms rather than one to say so. The workbench holds the simulated time in the
+ * **address** (`tm=18:30`) and writes this key from there, so a link without the
+ * parameter clears it on arrival; and the page holding that address going away clears it
+ * too, which is a tab closing rather than a route changing and was the half that was
+ * missing. `apps/workbench/src/preview/home/clock.ts` is the other end and says which
+ * event covers which.
  */
 export const HOME_TIME_OVERRIDE_KEY = 'workbench:home-time';
 
