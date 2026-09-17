@@ -1,4 +1,4 @@
-![The CORRECTIV app in the workbench's device frame](docs/readme-header.png)
+![The app in the workbench's device frame, beside the tool that orders its home screen](docs/readme-header.png)
 
 # CORRECTIV app
 
