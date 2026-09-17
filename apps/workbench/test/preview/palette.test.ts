@@ -74,15 +74,13 @@ describe('the palette is the registry', () => {
   });
 
   it('gives every module in that table words a newsroom can read', () => {
-    // The other half of §1, and the half that was already there: a module reaching the
-    // palette without an entry here would be offered as `faktencheck-rail`.
-    // `home-document.test.ts` holds this in both directions against the app's source;
-    // what is held here is that the palette shows the label rather than the id.
-    // Only the first half is held here. `MODULE_LABELS` is a literal in the module this
-    // file imports, so a floor under its size would be a floor within nothing of zero —
-    // and the real check, in both directions and against the app's own source, is
-    // `home-document.test.ts`'s "has a name and a description for every module the app
-    // can draw". A cold review found the floor here doing nothing and it is gone.
+    // A module reaching the palette without an entry in `MODULE_LABELS` would be offered
+    // to a newsroom as `faktencheck-rail`. What holds that, in both directions and
+    // against the app's own source, is `home-document.test.ts`'s "has a name and a
+    // description for every module the app can draw"; what is held here is that the
+    // palette shows the label rather than the id. A floor under `MODULE_LABELS`'s size
+    // used to sit beside it and could not fail, since it is a literal in the module this
+    // file imports — a cold review found it doing nothing and it is gone.
     expect(PALETTE).toMatch(/moduleLabel\(module\)/);
   });
 
@@ -142,5 +140,127 @@ describe('the marks and the verbs they carry', () => {
     const closed = PALETTE.indexOf('</button>', button);
     expect(closed).toBeGreaterThan(-1);
     expect(PALETTE.indexOf('<HomeBlock')).toBeGreaterThan(closed);
+  });
+});
+
+describe('one handle for the pointer, and the arrows for the keyboard', () => {
+  /**
+   * [ADR 0047](../../../../adr/0047-the-handle-is-the-pointers-and-the-arrows-are-the-keyboards.md),
+   * which changed ADR 0045 §7 before it was built. The handle is the pointer's route and
+   * has no keyboard mode; the arrow buttons stay and are the keyboard's; both end at
+   * `moved`, so the document never learns there were two controls.
+   *
+   * The arithmetic that turns a drop into a distance is `deltaTo` and
+   * `home-document.test.ts` runs it over every block and every gap of the shipped
+   * document. What is read here is that the two routes exist and that neither has grown
+   * the other's input.
+   */
+  it('gives the handle a pointer and refuses it a key', () => {
+    /*
+     * No `tabindex`, no role, and hidden from the accessibility tree: a handle that
+     * looked focusable while doing nothing on a key would be the untested route wearing
+     * the tested one's clothes.
+     *
+     * The OPENING TAG and not the element, because the element contains an icon carrying
+     * an `aria-hidden` of its own. Measured in a cold review: read to `</span>`, deleting
+     * the handle's own attribute left the whole suite green, answered by the icon's.
+     */
+    const at = PANEL.indexOf('{...grip}');
+    const opening = PANEL.slice(at, PANEL.indexOf('>', at));
+    expect(opening).toMatch(/aria-hidden="true"/);
+    expect(opening).not.toMatch(/tabIndex|role=|onKey/);
+    // And `touch-none`, or a touch scrolls the panel and the capture never sees a move.
+    expect(opening).toMatch(/touch-none/);
+  });
+
+  it('keeps the arrow buttons, and points each one the way its name says', () => {
+    /*
+     * Each label with its own delta, in one button. Asked separately — both labels
+     * somewhere and both deltas somewhere — this stayed green with the two arrows swapped,
+     * measured in a cold review, which is ADR 0047 §2's route that must work pointing the
+     * wrong way with every check passing.
+     */
+    const button = (label: string) => {
+      // A plain string, because what is being looked for is source text containing a
+      // template literal, and a template literal looking for one is unreadable.
+      const at = PANEL.indexOf('aria-label={`Move ${spoken} ' + label + '`}');
+      expect(at).toBeGreaterThan(-1);
+      return PANEL.slice(at, PANEL.indexOf('</Button>', at));
+    };
+    expect(button('up')).toMatch(/onMove\(-1\)/);
+    expect(button('up')).not.toMatch(/onMove\(1\)/);
+    expect(button('down')).toMatch(/onMove\(1\)/);
+    expect(button('down')).not.toMatch(/onMove\(-1\)/);
+  });
+
+  it('ends both routes at one function', () => {
+    // ADR 0047 §3. A second way to reorder the document would be a difference between
+    // the two inputs living below the interface, which is where it would be expensive.
+    expect(PANEL).toMatch(/moved\(layout, section\.id, delta\)/);
+    expect(PANEL).toMatch(
+      /moved\(layout, held\.id, deltaTo\(held\.from, gapAt\(event\.clientY\)\)\)/,
+    );
+    expect(PANEL.match(/setLayout\(moved\(/g) ?? []).toHaveLength(2);
+  });
+
+  it('reads the drop from a ref rather than from the state it draws with', () => {
+    // A `pointerup` can arrive before React has re-rendered from the last `pointermove`,
+    // and the handlers a row carries are the ones built by the render it can see. Reading
+    // state at the drop applies the position the pointer was in one move ago: a block
+    // landing one place out, rarely, and only on a fast drag.
+    // Sliced to the drop, because the move reads the ref too and a check over the whole
+    // file stayed green when the drop alone was changed back to state. Measured.
+    const drop = PANEL.slice(PANEL.indexOf('onPointerUp:'), PANEL.indexOf('onPointerCancel:'));
+    expect(drop).toMatch(/const held = mine\(event\);/);
+    expect(drop).not.toMatch(/=\s*carried\b/);
+    expect(PANEL).toMatch(/const held = carrying\.current;\s*\n\s*return held !== null/);
+    expect(PANEL).toMatch(/carrying\.current = next;/);
+  });
+
+  it('shows the drop in the mark that is already at that gap', () => {
+    // Not a second line drawn over the list: the marks are one per gap, at exactly the
+    // places a block can land in, and two answers to "where are the gaps" would part the
+    // first time one of them moved.
+    expect(PANEL).toMatch(/dropping=\{carried !== null && carried\.gap === index\}/);
+    expect(PALETTE).toMatch(/dropping\?: boolean/);
+  });
+
+  it('re-asks where the pointer is at the drop and at a scroll', () => {
+    /*
+     * There was a check here asserting that `gapAt` measures rather than caches, by
+     * looking for `getBoundingClientRect` in it. It could not fail: a cold review rewrote
+     * `gapAt` to measure once per drag and cache for ever, and the token was still there.
+     * Gone, because a check that cannot fail is worse than none.
+     *
+     * What is held instead is the two moments where a stale gap showed: the drop reads
+     * the release's own `clientY` rather than what the last move left behind, and a
+     * scroll during a carry re-asks with the remembered one. Both are lines that can be
+     * deleted, so both can turn this red. That `gapAt` itself does not cache is held by
+     * looking, which this file's header already says is the weaker half.
+     */
+    const drop = PANEL.slice(PANEL.indexOf('onPointerUp:'), PANEL.indexOf('onPointerCancel:'));
+    expect(drop).toMatch(/gapAt\(event\.clientY\)/);
+    expect(PANEL).toMatch(/addEventListener\('scroll'/);
+    expect(PANEL).toMatch(/gapAt\(held\.y\)/);
+  });
+
+  it('refuses a second pointer, a second button, and a release away from the list', () => {
+    /*
+     * All three measured in a cold review. Two touches: one finger carrying the header
+     * while a second merely RESTED on another row's handle moved the second block and not
+     * the first. A right-click on the handle picked a block up and the right-button
+     * release reordered the day. And a release out over the phone frame, nine hundred
+     * pixels from the list, reordered it too — which also left a drag somebody had
+     * thought better of with no way out, since ADR 0047 §1 gives the handle no key.
+     */
+    expect(PANEL).toMatch(
+      /event\.button !== 0 \|\| !event\.isPrimary \|\| carrying\.current !== null/,
+    );
+    expect(PANEL).toMatch(/held\.pointer === event\.pointerId/);
+    const drop = PANEL.slice(PANEL.indexOf('onPointerUp:'), PANEL.indexOf('onPointerCancel:'));
+    expect(drop).toMatch(/overList\(event\.clientX\)/);
+    // And the way out that is not a key on the handle: a listener that exists only while
+    // a pointer is down, so nothing can be reordered with it.
+    expect(PANEL).toMatch(/event\.key === 'Escape'/);
   });
 });

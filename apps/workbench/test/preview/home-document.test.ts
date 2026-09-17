@@ -19,6 +19,7 @@ import {
   HOME_TIME_KEY,
   inheritedAt,
   added,
+  deltaTo,
   mintId,
   moduleLabel,
   MODULE_LABELS,
@@ -204,6 +205,84 @@ describe('the document the editor writes', () => {
 });
 
 describe('the vocabulary the editor offers', () => {
+  /**
+   * ADR 0047 §3: one operation with two controls. An arrow passes `-1` or `1`, a drop
+   * passes how far the block travelled, and the document sees one function either way.
+   */
+  it('moves a block any distance, and clamps rather than refusing', () => {
+    const last = SHIPPED.sections.length - 1;
+    expect(ids(moved(SHIPPED, 'impact', -last))[0]).toBe('impact');
+    expect(ids(moved(SHIPPED, 'header', last)).at(-1)).toBe('header');
+    // Past the end is the end, because a drop below the last block is a drop at the end
+    // and not a refusal: the pointer is where it is.
+    expect(ids(moved(SHIPPED, 'header', 99))).toEqual(ids(moved(SHIPPED, 'header', last)));
+    expect(ids(moved(SHIPPED, 'impact', -99))).toEqual(ids(moved(SHIPPED, 'impact', -last)));
+  });
+
+  it('answers with what it was given when the clamp leaves the block where it was', () => {
+    // So that a caller can tell nothing happened. Not, as an earlier comment claimed,
+    // because an equal copy would light up Save: `differs` compares the two documents as
+    // printed text, so it would read as unchanged either way. A cold review measured that
+    // and the justification was wrong rather than the behaviour.
+    expect(moved(SHIPPED, SHIPPED.sections[0]!.id, -5)).toBe(SHIPPED);
+    expect(moved(SHIPPED, SHIPPED.sections.at(-1)!.id, 5)).toBe(SHIPPED);
+    expect(moved(SHIPPED, 'hero', 0)).toBe(SHIPPED);
+  });
+
+  it('refuses a delta that is not a whole number of places', () => {
+    /*
+     * `NaN` survives `Math.max` and `Math.min` unchanged and `splice(NaN, …)` inserts at
+     * the front, so a bad delta moved a block to the TOP of the day rather than doing
+     * nothing — measured in a cold review. A fraction slipped past the identity test and
+     * handed back an equal copy. Neither is reachable from the arrows or from a drop,
+     * which is why they are refused rather than thrown at.
+     */
+    for (const delta of [
+      Number.NaN,
+      0.5,
+      -0.5,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+    ]) {
+      expect(moved(SHIPPED, 'hero', delta)).toBe(SHIPPED);
+    }
+    // And the whole numbers either side of them still work.
+    expect(ids(moved(SHIPPED, 'hero', -1))[2]).toBe('hero');
+    expect(ids(moved(SHIPPED, 'hero', 1))[4]).toBe('hero');
+  });
+
+  /**
+   * The arithmetic that is wrong in every first attempt at a drag, and wrong by exactly
+   * one place — the amount nobody notices in a screenshot.
+   */
+  it('turns a gap into a distance, allowing for the block leaving its own place', () => {
+    // Moving UP: the gaps above the block do not shift, so the gap IS the destination.
+    expect(deltaTo(5, 0)).toBe(-5);
+    expect(deltaTo(5, 4)).toBe(-1);
+    // Moving DOWN: the block leaves first, so every gap below it has shifted up by one.
+    expect(deltaTo(5, 7)).toBe(1);
+    expect(deltaTo(5, 12)).toBe(6);
+    // The two gaps either side of the block itself are both "stay where you are".
+    expect(deltaTo(5, 5)).toBe(0);
+    expect(deltaTo(5, 6)).toBe(0);
+
+    // And the property that matters, over the whole shipped document: dropping a block
+    // into gap `g` puts it where a reader pointed.
+    const order = ids(SHIPPED);
+    for (let from = 0; from < order.length; from += 1) {
+      for (let gap = 0; gap <= order.length; gap += 1) {
+        const after = ids(moved(SHIPPED, order[from]!, deltaTo(from, gap)));
+        const rest = order.filter((id) => id !== order[from]);
+        const want = [
+          ...rest.slice(0, gap > from ? gap - 1 : gap),
+          order[from]!,
+          ...rest.slice(gap > from ? gap - 1 : gap),
+        ];
+        expect(after).toEqual(want);
+      }
+    }
+  });
+
   it('moves a section one step, and refuses to move it off either end', () => {
     const first = SHIPPED.sections[0]!.id;
     const last = SHIPPED.sections.at(-1)!.id;
