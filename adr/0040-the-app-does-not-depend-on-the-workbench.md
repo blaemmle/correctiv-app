@@ -2,7 +2,7 @@
 
 Status: accepted, 2026-09-17, from the architecture meeting held in
 [#200](https://github.com/correctiv/correctiv-app/issues/200). **Built the same day**, in
-both halves and in the places §2 left open.
+both halves, and the two questions this record leaves open about how are answered here.
 
 The configuration half is `apps/mobile/__tests__/no-workbench-dependency.test.ts`, in the
 suite and therefore in `npm run check`, because it is a source read that costs under a
