@@ -1,34 +1,44 @@
-import { DAYPART_HOURS, DAYPARTS, type Daypart } from '@correctiv/app-core/lib/daypart';
 import {
   DEFAULT_HOME_LAYOUT,
+  formatTimeOfDay,
+  MINUTES_IN_DAY,
+  stateAt,
+  type HomeChange,
   type HomeLayout,
+  type HomeMoment,
   type HomeSection,
+  type MinuteOfDay,
+  type ModuleSettings,
+  type SettingValue,
 } from '@correctiv/app-core/lib/home-layout';
+import { settingsFor, type SettingSpec } from '@correctiv/app-core/lib/home-settings';
 
 /**
  * The home document, as a thing that can be edited and printed.
  *
  * Every export here is a pure function of a layout, or a name both ends of the tool have
- * to spell the same way. The two ways a change leaves the page — into the running app,
- * and into the repository — are `write.ts`, and they are separate for a reason that is
- * not tidiness: **this file is imported by the dev server**. `plugin/home-layout.ts`
- * prints what it writes with `formatLayoutDocument` below, so a browser-only line here
- * (`window`, `import.meta.env`) would be an exception thrown while Vite loads its own
- * config, and the whole site would fail to start.
+ * to spell the same way. The three ways a change leaves the page — into the running
+ * app's document, into the running app's clock, and into the repository — are `write.ts`
+ * and `clock.ts`, and they are separate for a reason that is not tidiness: **this file is
+ * imported by the dev server**. `plugin/home-layout.ts` prints what it writes with
+ * `formatLayoutDocument` below, so a browser-only line here (`window`,
+ * `import.meta.env`) would be an exception thrown while Vite loads its own config, and
+ * the whole site would fail to start.
  *
  * The tool's component (`HomeDocument.tsx`) reads the layout from `./store.ts` and calls
  * these; nothing in this file holds state of its own, so a second caller — the endpoint,
  * a test, a scenario loader when ADR 0036 §11 is built — costs nothing.
  *
- * **This is the first module under `src/` to import the core.** It was test-only until
- * now, on the grounds that the shell re-implements the app's storage layout rather than
- * depending on it (`test/preview/seed.test.ts` says why). The reason does not reach the
- * home document: ADR 0036 §12 wants one validator rather than two that disagree, and
- * §14 wants one definition rather than three copies of it. Re-implementing
- * `parseHomeLayout` here would be exactly the second copy those two decisions exist to
- * prevent. What it costs the bundle is `lib/home-layout.ts`, `lib/daypart.ts`, the
- * ports module they reach for a report, and the shipped JSON — no React, no store, no
- * service.
+ * ## What the vocabulary is, since ADR 0039
+ *
+ * The document is a day: an ordered list of places in the state they are in when the day
+ * starts, and a list of **moments**, each a time and the changes that happen at it. So
+ * the editing functions below come in two groups. One moves a place in the order, which
+ * is a fact about the screen and not about the hour. The other writes a value **at a
+ * point in the day** — `null` for the day's start, a minute for a moment — and the
+ * interesting half of this file is what that has to do: a value equal to what the point
+ * before it already said is not written at all, it is taken out, because a change that
+ * changes nothing is the thing the whole model exists to avoid writing.
  */
 
 /**
@@ -68,7 +78,7 @@ export const MODULE_LABELS: Readonly<Record<string, { name: string; what: string
   },
   'latest-research': {
     name: 'Latest investigations',
-    what: 'The five investigations under the lead, as a list.',
+    what: 'The investigations under the lead, as a list.',
   },
   'faktencheck-rail': {
     name: 'Fact checks',
@@ -76,7 +86,7 @@ export const MODULE_LABELS: Readonly<Record<string, { name: string; what: string
   },
   'callout-teaser': {
     name: 'Participation callout',
-    what: 'The open callout. Two places in the document, one per part of the day.',
+    what: 'The open callout. Two places in the document, one lifted over the lead at midday.',
   },
   'mediathek-reihe': { name: 'Mediathek', what: 'Video and audio, as a row.' },
   'backstage-teaser': { name: 'Backstage', what: 'The newsroom diary and the way in.' },
@@ -88,57 +98,115 @@ export function moduleLabel(module: string): { name: string; what: string } {
   return MODULE_LABELS[module] ?? { name: module, what: 'This tool has no description for it.' };
 }
 
-/** The parts of the day, as a person says them. */
-const DAYPART_NAMES: Record<Daypart, string> = {
-  morning: 'Morning',
-  midday: 'Midday',
-  evening: 'Evening',
-  'off-hours': 'The rest',
+/**
+ * The words for one setting, addressed the way the document addresses it.
+ *
+ * The keys are `<module>.<key>` because a setting belongs to a module and two modules
+ * spell `count` the same way while meaning different numbers. The core holds the
+ * grammar — which keys exist, what each may hold, what it falls back to — and this holds
+ * the question a person is being asked, for the same reason `MODULE_LABELS` does: a
+ * label is how a tool asks, and the app has no use for one.
+ *
+ * `test/preview/home-document.test.ts` holds the two lists together in both directions,
+ * so a setting added to the core with no words here is a red test rather than a control
+ * labelled `count`.
+ */
+export const SETTING_LABELS: Readonly<Record<string, { name: string; what: string }>> = {
+  'article-hero.pin': {
+    name: 'Which article leads',
+    what: 'Pinned, or the newest investigation when nothing is.',
+  },
+  'latest-research.count': {
+    name: 'How many investigations',
+    what: 'The list under the lead article.',
+  },
+  'faktencheck-rail.count': {
+    name: 'How many fact checks',
+    what: 'The row that scrolls sideways.',
+  },
 };
 
-export function daypartName(daypart: Daypart): string {
-  return DAYPART_NAMES[daypart];
+export function settingLabel(module: string, spec: SettingSpec): { name: string; what: string } {
+  return (
+    SETTING_LABELS[`${module}.${spec.key}`] ?? { name: spec.key, what: 'No description for it.' }
+  );
+}
+
+export { formatTimeOfDay, settingsFor, type SettingSpec };
+
+// --- where in the day -----------------------------------------------------------
+
+/**
+ * A point in the day the editor can be editing: a moment's minute, or the day's start.
+ *
+ * `null` is the day's start and it is deliberately not a moment. The moments are what
+ * CHANGES; the sections as written are what the day begins as, and there is no earlier
+ * point for them to inherit from. Making the start a moment would have bought one type
+ * and cost the two rules that make the rest coherent — that a moment can be moved and
+ * removed, and that a change writes only a difference.
+ */
+export type Point = MinuteOfDay | null;
+
+/** The point in effect at a minute: the last moment at or before it, or the day's start. */
+export function pointAt(layout: HomeLayout, minute: MinuteOfDay): Point {
+  let held: Point = null;
+  for (const moment of layout.moments) {
+    if (moment.minute > minute) break;
+    held = moment.minute;
+  }
+  return held;
+}
+
+/** The moment at a point, or null at the day's start. */
+export function momentAt(layout: HomeLayout, point: Point): HomeMoment | null {
+  if (point === null) return null;
+  return layout.moments.find((moment) => moment.minute === point) ?? null;
 }
 
 /**
- * The same, with the hours the core actually uses.
+ * How long a point lasts: from it, to the next moment or to midnight.
  *
- * The hours come from `DAYPART_HOURS` rather than from a sentence typed here, because
- * they are editorial numbers somebody is expected to argue with — `lib/daypart.ts` says
- * so in as many words — and a tool that printed its own copy of them would be the place
- * the argument went wrong.
- *
- * Two functions rather than one, and the reason is the panel's width. Four chips with
- * the hours in them wrap onto two lines at a third of a 1440 window, and twelve rows of
- * that is a list nobody can see the shape of. The chips carry the name and the hours in
- * their `title`; the sentence under the list, written once, carries them in full.
+ * What the panel prints as the heading of whatever is being edited, because "11:00" on
+ * its own does not say what an edit here will affect and "11:00 until 14:00" does.
  */
-export function daypartLabel(daypart: Daypart): string {
-  const hours = DAYPART_HOURS[daypart as Exclude<Daypart, 'off-hours'>];
-  const name = DAYPART_NAMES[daypart];
-  return hours ? `${name} ${hours[0]}–${hours[1]}` : name;
+export function spanOf(layout: HomeLayout, point: Point): { from: number; to: number } {
+  const from = point ?? 0;
+  const next = layout.moments.find((moment) => moment.minute > from);
+  return { from, to: next?.minute ?? MINUTES_IN_DAY };
 }
 
-export { DAYPARTS, type Daypart };
-
-// --- editing ------------------------------------------------------------------
-
-/** The whole vocabulary: a section moves, switches off, or changes its hours. */
-function replace(layout: HomeLayout, id: string, next: (section: HomeSection) => HomeSection) {
-  return {
-    ...layout,
-    sections: layout.sections.map((section) => (section.id === id ? next(section) : section)),
-  };
+/**
+ * The state a point INHERITS: everything that has happened strictly before it.
+ *
+ * `stateAt(layout, minute - 1)` and not a second fold, because minutes are whole numbers
+ * and a moment sits on one — so the minute before a moment is the last minute it has not
+ * happened in. At the day's start the answer is the sections as written, which
+ * `stateAt(layout, -1)` gives for free: no moment is at or before minute −1.
+ */
+export function inheritedAt(layout: HomeLayout, point: Point): readonly HomeSection[] {
+  return stateAt(layout, point === null ? -1 : point - 1);
 }
+
+/** The state a point PRODUCES: what the frame shows while it is in effect. */
+export function effectiveAt(layout: HomeLayout, point: Point): readonly HomeSection[] {
+  return stateAt(layout, point ?? 0);
+}
+
+// --- editing the order ------------------------------------------------------------
 
 /**
  * One step up or down, in the document's own order.
  *
  * Over the whole list rather than over what is on screen right now: the document is one
- * order and the daypart is a filter over it, so moving a midday-only section past one
- * that never appears at midday still means something and still has to be expressible.
+ * order and the time is a filter over it, so moving a section that is hidden at this
+ * minute past one that is shown still means something and still has to be expressible.
  * At either end this answers with the layout it was given, so a button that cannot move
  * anything changes nothing rather than wrapping around.
+ *
+ * **Order is the document's and not a moment's**, which is ADR 0039 §3. A moment can
+ * switch a place off and another one on, which is how the callout appears to move; what
+ * it cannot do is rearrange the screen, because ADR 0036 §2 keeps the places fixed and
+ * an arrangement that changed by the hour would be a layout engine in the app.
  */
 export function moved(layout: HomeLayout, id: string, delta: -1 | 1): HomeLayout {
   const from = layout.sections.findIndex((section) => section.id === id);
@@ -150,78 +218,262 @@ export function moved(layout: HomeLayout, id: string, delta: -1 | 1): HomeLayout
   return { ...layout, sections };
 }
 
+// --- editing a point --------------------------------------------------------------
+
 /**
- * On and off.
+ * Switch a place on or off at a point in the day.
  *
- * Written as `hidden: true` and then taken out again rather than written `false`,
- * because the document's optional fields are negative on purpose — absent means shown —
- * and a document full of `"hidden": false` is a document that got longer without saying
- * anything more.
+ * At the day's start this writes the section's own `hidden`, and writes it by taking the
+ * key away again rather than writing `false`: the document's optional fields are
+ * negative on purpose — absent means shown — and a document full of `"hidden": false` is
+ * a document that got longer without saying anything more.
+ *
+ * At a moment it writes a change, and `false` IS written there, because at a moment
+ * `hidden: false` is the instruction that brings a place back. What is not written is a
+ * value the point already inherits: setting a block to what it already was at this time
+ * takes the change out, which is what keeps the document a list of differences rather
+ * than a list of assertions.
  */
-export function toggledHidden(layout: HomeLayout, id: string): HomeLayout {
-  return replace(layout, id, (section) => {
-    if (section.hidden) {
-      const { hidden: _hidden, ...rest } = section;
+export function withHidden(
+  layout: HomeLayout,
+  point: Point,
+  id: string,
+  hidden: boolean,
+): HomeLayout {
+  if (point === null) {
+    return withSection(layout, id, (section) => {
+      if (!hidden) {
+        const { hidden: _hidden, ...rest } = section;
+        return rest;
+      }
+      return { ...section, hidden: true };
+    });
+  }
+
+  const before = inheritedAt(layout, point).find((section) => section.id === id);
+  const inherits = Boolean(before?.hidden) === hidden;
+  return withChange(layout, point, id, (change) => {
+    if (inherits) {
+      const { hidden: _hidden, ...rest } = change;
       return rest;
     }
-    return { ...section, hidden: true };
+    return { ...change, hidden };
   });
 }
 
 /**
- * The parts of the day a section appears in.
+ * Set one setting of one place at a point in the day.
  *
- * Every daypart selected is written as no `dayparts` key at all. The two mean the same
- * thing to `sectionsAt`, and the short one is the one a person reads: absent means
- * always, which is the rule `HomeSection` states and this is the only place that can
- * keep the document honest to it.
+ * The same rule as above and one more: settings MERGE key by key, so writing one key at
+ * a moment leaves the others inherited. `undefined` in means "stop saying anything about
+ * this key here", which at the day's start is the module's own default and at a moment
+ * is whatever the point before it left.
  *
- * The list is put back in `DAYPARTS` order rather than in the order the toggles were
- * clicked, so the same choice always writes the same line and a diff shows an edit
- * rather than a shuffle.
+ * A value equal to the inherited one is taken out rather than written, and a settings
+ * object with nothing left in it is taken out with it. That is what makes the diff of a
+ * day readable: a moment lists what is different about it and nothing else.
  */
-export function withDayparts(
+export function withSetting(
   layout: HomeLayout,
+  point: Point,
   id: string,
-  chosen: ReadonlySet<Daypart>,
+  key: string,
+  value: SettingValue | undefined,
 ): HomeLayout {
-  return replace(layout, id, (section) => {
-    const { dayparts: _dayparts, ...rest } = section;
-    if (chosen.size === 0 || chosen.size === DAYPARTS.length) return rest;
-    return { ...rest, dayparts: DAYPARTS.filter((part) => chosen.has(part)) };
-  });
+  const before = inheritedAt(layout, point).find((section) => section.id === id);
+  const inherited = before?.settings?.[key];
+
+  if (point === null) {
+    return withSection(layout, id, (section) =>
+      withKey(section, key, value === undefined ? undefined : value),
+    );
+  }
+
+  const same = value !== undefined && inherited !== undefined && sameValue(inherited, value);
+  return withChange(layout, point, id, (change) =>
+    withKey(change, key, same || value === undefined ? undefined : value),
+  );
 }
 
-/** What a section's toggles show: an absent list is every daypart, not none. */
-export function daypartsOf(section: HomeSection): ReadonlySet<Daypart> {
-  return new Set(section.dayparts ?? DAYPARTS);
+/** Two setting values, compared the way a document compares them. */
+function sameValue(a: SettingValue, b: SettingValue): boolean {
+  return a === b;
+}
+
+/** One key onto a section or a change's `settings`, dropping the object when it empties. */
+function withKey<T extends { settings?: ModuleSettings }>(
+  holder: T,
+  key: string,
+  value: SettingValue | undefined,
+): T {
+  const next: Record<string, SettingValue> = { ...holder.settings };
+  if (value === undefined) delete next[key];
+  else next[key] = value;
+
+  if (Object.keys(next).length === 0) {
+    const { settings: _settings, ...rest } = holder;
+    return rest as T;
+  }
+  return { ...holder, settings: next };
+}
+
+/** One section replaced, in place, in the document's order. */
+function withSection(
+  layout: HomeLayout,
+  id: string,
+  next: (section: HomeSection) => HomeSection,
+): HomeLayout {
+  return {
+    ...layout,
+    sections: layout.sections.map((section) => (section.id === id ? next(section) : section)),
+  };
+}
+
+/**
+ * One change replaced at one moment, and dropped when it says nothing.
+ *
+ * A change whose only fields were taken away is a change entry naming a section and
+ * changing nothing about it. The parser accepts one and the fold ignores it, so nothing
+ * breaks — but it would sit in the file as a line that means "look here, something
+ * happens", and nothing does. The editor is the half that can know that, so it is the
+ * half that takes it out.
+ */
+function withChange(
+  layout: HomeLayout,
+  minute: MinuteOfDay,
+  id: string,
+  next: (change: HomeChange) => HomeChange,
+): HomeLayout {
+  /*
+   * In the document's section order, which is the order the printer writes them in.
+   * Keeping the two the same is what makes the editor's document and the file's own
+   * parse of itself equal values — otherwise a change appended here and printed in
+   * section order comes back in a different place, and every comparison of "what I have"
+   * against "what I would save" has to know about it.
+   */
+  const rank = new Map(layout.sections.map((section, index) => [section.id, index]));
+
+  return {
+    ...layout,
+    moments: layout.moments.map((moment) => {
+      if (moment.minute !== minute) return moment;
+      const held = moment.changes.find((change) => change.id === id) ?? { id };
+      const edited = next(held);
+      const rest = moment.changes.filter((change) => change.id !== id);
+      // One key left is the id alone: a change entry naming a section and changing
+      // nothing about it.
+      const changes = Object.keys(edited).length <= 1 ? rest : [...rest, edited];
+      return {
+        ...moment,
+        changes: [...changes].sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0)),
+      };
+    }),
+  };
+}
+
+// --- editing the timeline ----------------------------------------------------------
+
+/**
+ * A new point in the day, carrying nothing.
+ *
+ * It is empty, and that is the honest state of a point somebody has just put down: they
+ * have said WHEN something changes and have not yet said what. An empty moment renders
+ * exactly as its absence does, so the frame does not move when one appears — which is
+ * the behaviour to want, because a point that changed the screen by existing would be a
+ * point that did something nobody asked for.
+ *
+ * A minute that already has a moment answers with the layout unchanged. Two moments at
+ * one time is the one thing the parser refuses, so it is the one thing this must not
+ * make.
+ */
+export function withMoment(layout: HomeLayout, minute: MinuteOfDay): HomeLayout {
+  if (layout.moments.some((moment) => moment.minute === minute)) return layout;
+  const moment: HomeMoment = { at: formatTimeOfDay(minute), minute, changes: [] };
+  return { ...layout, moments: sorted([...layout.moments, moment]) };
+}
+
+/** A point taken out, with everything it was carrying. */
+export function withoutMoment(layout: HomeLayout, minute: MinuteOfDay): HomeLayout {
+  return { ...layout, moments: layout.moments.filter((moment) => moment.minute !== minute) };
+}
+
+/**
+ * A point moved to another time, carrying its changes with it.
+ *
+ * Landing on another point is refused rather than merged. Merging would be a rule about
+ * which of two conflicting instructions wins, which is the rule the parser refuses to
+ * invent for a duplicate time, and inventing it here would mean the editor could produce
+ * a document it could not read back.
+ */
+export function movedMoment(layout: HomeLayout, from: MinuteOfDay, to: MinuteOfDay): HomeLayout {
+  if (from === to) return layout;
+  if (to < 0 || to >= MINUTES_IN_DAY) return layout;
+  if (layout.moments.some((moment) => moment.minute === to)) return layout;
+  return {
+    ...layout,
+    moments: sorted(
+      layout.moments.map((moment) =>
+        moment.minute === from ? { ...moment, at: formatTimeOfDay(to), minute: to } : moment,
+      ),
+    ),
+  };
+}
+
+/** In time order, which is the only order the list has. */
+function sorted(moments: readonly HomeMoment[]): readonly HomeMoment[] {
+  return [...moments].sort((a, b) => a.minute - b.minute);
 }
 
 // --- what changed -------------------------------------------------------------
 
 /**
- * The ids whose place, switch or hours differ from the shipped document.
+ * Whether this document differs from the file at all.
  *
- * Position included, which is why this cannot be a per-section comparison: a section
- * that moved makes its neighbour move too, and an editor who lifted one block should
- * not be told they changed four. So position is compared against the shipped index of
- * the same id, and the count is honest about the blast radius rather than flattering.
+ * Compared as the printed file, which is exactly the question Save and "Back to the
+ * file" are asking: not whether some structure is deeply equal, but whether saving would
+ * leave a diff. It also cannot be wrong about a field somebody adds later, the way a
+ * hand-written comparison of four keys was wrong the day a fifth arrived.
  */
-export function changed(layout: HomeLayout): readonly string[] {
+export function differs(layout: HomeLayout): boolean {
+  return formatLayoutDocument(layout) !== formatLayoutDocument(SHIPPED);
+}
+
+/**
+ * The ids whose place on the screen, or whose state AT THIS MINUTE, differs from the
+ * shipped document at the same minute.
+ *
+ * At a minute, because that is the only honest comparison once the document is a day: a
+ * section is not simply "changed", it is changed at eleven and not at nine, and a badge
+ * that said otherwise would be a badge that means nothing at the time being looked at.
+ *
+ * Position is compared against the shipped index of the same id, which is why this
+ * cannot be a per-section comparison: a section that moved makes its neighbour move too,
+ * and an editor who lifted one block should not be told they changed four.
+ */
+export function changedAt(layout: HomeLayout, minute: MinuteOfDay): readonly string[] {
   const before = new Map(
-    SHIPPED.sections.map((section, index) => [section.id, { section, index }]),
+    stateAt(SHIPPED, minute).map((section, index) => [section.id, { section, index }]),
   );
-  return layout.sections
+  return stateAt(layout, minute)
     .filter((section, index) => {
       const was = before.get(section.id);
       if (!was) return true;
       return (
         was.index !== index ||
         Boolean(was.section.hidden) !== Boolean(section.hidden) ||
-        [...daypartsOf(was.section)].join() !== [...daypartsOf(section)].join()
+        printSettings(was.section.settings) !== printSettings(section.settings)
       );
     })
     .map((section) => section.id);
+}
+
+/** Settings as one comparable string, in the order the printer would write them. */
+function printSettings(settings: ModuleSettings | undefined): string {
+  if (!settings) return '';
+  return Object.keys(settings)
+    .sort()
+    .map((key) => `${key}=${JSON.stringify(settings[key])}`)
+    .join(',');
 }
 
 // --- the file ------------------------------------------------------------------
@@ -232,15 +484,22 @@ export function changed(layout: HomeLayout): readonly string[] {
  * `JSON.stringify(…, 2)` is not this, and the difference is the whole point: it puts
  * every key of every section on a line of its own, so saving an unchanged document
  * would produce a 60-line diff that says nothing. What oxfmt does to JSON is width and
- * nothing else — measured, not assumed: a group goes on one line when the rendered
- * line, its indent and its trailing comma included, is at most `printWidth`, and the
- * source's own line breaks are not preserved. So this prints each section on one line
- * and breaks the ones that do not fit, which is what the shipped document already looks
- * like.
+ * one shape rule, both measured rather than assumed:
+ *
+ *   WIDTH. A group goes on one line when the rendered line, its indent and its trailing
+ *   comma included, is at most `printWidth`, and the source's own line breaks are not
+ *   preserved.
+ *
+ *   SHAPE. An array breaks one element per line, whatever its width, when it holds more
+ *   than one element and EVERY element is an object with more than one member or an
+ *   array with more than one item. That is Prettier's rule and oxfmt keeps it. It is why
+ *   `sections` is one section per line and why `["morning", "evening"]` was not — and it
+ *   had to be measured, because until `changes` arrived every array in this document was
+ *   over the width anyway and the rule never showed itself.
  *
  * `test/preview/home-document.test.ts` runs the repository's own oxfmt over the output
- * and fails if the two disagree. That check is why this can be a fifteen-line printer
- * rather than a formatter: it is allowed to be wrong in a way somebody notices.
+ * and fails if the two disagree. That check is why this can be a short printer rather
+ * than a formatter: it is allowed to be wrong in a way somebody notices.
  */
 const PRINT_WIDTH = 100;
 const INDENT = '  ';
@@ -275,6 +534,22 @@ function flat(value: unknown): string {
 }
 
 /**
+ * The shape rule above: an array oxfmt will break whatever its width.
+ *
+ * More than one element, and every one of them a group with more than one member. A
+ * single-element array is left alone however long it is, and one holding a bare value is
+ * left alone however many it holds — which is what keeps a list of strings on one line.
+ */
+function breaksByShape(value: unknown[]): boolean {
+  if (value.length <= 1) return false;
+  return value.every((item) => {
+    if (isObj(item)) return item.obj.length > 1;
+    if (Array.isArray(item)) return item.length > 1;
+    return false;
+  });
+}
+
+/**
  * One value, broken across lines only where it has to be.
  *
  * `column` is how much of the line is already spent before the value starts — the indent
@@ -286,8 +561,9 @@ function flat(value: unknown): string {
  * The first line carries no indent of its own; the caller has already written it.
  */
 function print(value: unknown, column: number, depth: number, trailing: string): string {
+  const shaped = Array.isArray(value) && breaksByShape(value);
   const one = `${flat(value)}${trailing}`;
-  if (column + one.length <= PRINT_WIDTH) return one;
+  if (!shaped && column + one.length <= PRINT_WIDTH) return one;
 
   const pad = INDENT.repeat(depth);
   const inner = INDENT.repeat(depth + 1);
@@ -310,6 +586,20 @@ function print(value: unknown, column: number, depth: number, trailing: string):
   return one;
 }
 
+/** A settings object, in the order the module declares its keys rather than in edit order. */
+function settingsEntries(module: string, settings: ModuleSettings): Obj {
+  const specs = settingsFor(module);
+  const known = specs
+    .filter((spec) => settings[spec.key] !== undefined)
+    .map((spec) => [spec.key, settings[spec.key]] as const);
+  // A key no module declares cannot be written by this editor and would not parse, so it
+  // is here only to keep the printer total: printing is not where a document is judged.
+  const rest = Object.keys(settings)
+    .filter((key) => !specs.some((spec) => spec.key === key))
+    .map((key) => [key, settings[key]] as const);
+  return obj([...known, ...rest]);
+}
+
 /**
  * The order `HomeSection` declares, so a section that gains a field gains it in the same
  * place in every line of the file, and the two optional ones are written only when they
@@ -320,24 +610,71 @@ function sectionEntries(section: HomeSection): Obj {
     ['id', section.id],
     ['module', section.module],
   ];
-  if (section.dayparts) entries.push(['dayparts', [...section.dayparts]]);
   if (section.hidden !== undefined) entries.push(['hidden', section.hidden]);
+  if (section.settings)
+    entries.push(['settings', settingsEntries(section.module, section.settings)]);
   return obj(entries);
 }
 
-export function formatLayoutDocument(layout: HomeLayout): string {
-  const document = obj([
-    ['version', layout.version],
-    ['sections', layout.sections.map(sectionEntries)],
-  ]);
-  return `${print(document, 0, 0, '')}\n`;
+/** The same for a change, whose module is the section it names. */
+function changeEntries(change: HomeChange, module: string): Obj {
+  const entries: (readonly [string, unknown])[] = [['id', change.id]];
+  if (change.hidden !== undefined) entries.push(['hidden', change.hidden]);
+  if (change.settings) entries.push(['settings', settingsEntries(module, change.settings)]);
+  return obj(entries);
 }
 
-// --- the two names both ends spell ----------------------------------------------
+/**
+ * A moment, with its changes in the document's own section order.
+ *
+ * Not in the order they were edited, which is the same argument the daypart list used to
+ * make for itself: the same day, arranged the same way, has to print the same file, or
+ * every diff is a shuffle with an edit hidden in it.
+ *
+ * `minute` is not written. It is the parse of `at`, so writing it would be the second
+ * copy of one fact — and the one the parser would then have to decide which of the two
+ * to believe.
+ */
+function momentEntries(
+  moment: HomeMoment,
+  order: ReadonlyMap<string, number>,
+  modules: ReadonlyMap<string, string>,
+): Obj {
+  const changes = [...moment.changes].sort(
+    (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
+  );
+  return obj([
+    ['at', moment.at],
+    ['changes', changes.map((change) => changeEntries(change, modules.get(change.id) ?? ''))],
+  ]);
+}
+
+export function formatLayoutDocument(layout: HomeLayout): string {
+  const order = new Map(layout.sections.map((section, index) => [section.id, index]));
+  const modules = new Map(layout.sections.map((section) => [section.id, section.module]));
+
+  const entries: (readonly [string, unknown])[] = [
+    ['version', layout.version],
+    ['sections', layout.sections.map(sectionEntries)],
+  ];
+  /*
+   * Written only when there is a day to describe. A document whose home screen is the
+   * same at every hour says so by having no moments at all, and an empty list in the
+   * file would read as a thing somebody had deleted the contents of.
+   */
+  if (layout.moments.length > 0) {
+    const printed = layout.moments.map((moment) => momentEntries(moment, order, modules));
+    entries.push(['moments', printed]);
+  }
+  return `${print(obj(entries), 0, 0, '')}\n`;
+}
+
+// --- the names both ends spell ---------------------------------------------------
 
 /**
  * Re-exported rather than declared here, and `names.ts` says why in full: the dev
- * server needs both before it can match a request, and it cannot import this file at
- * all, because Node will not follow the core's JSON import without an attribute.
+ * server needs the key and the address before it can match a request, and it cannot
+ * import this file at all, because Node will not follow the core's JSON import without
+ * an attribute.
  */
-export { HOME_LAYOUT_ENDPOINT, HOME_LAYOUT_KEY } from './names';
+export { HOME_LAYOUT_ENDPOINT, HOME_LAYOUT_KEY, HOME_TIME_KEY, sectionTestId } from './names';

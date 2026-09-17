@@ -4,11 +4,12 @@ import { act } from 'react-test-renderer';
  * The one block on Home that moves with the clock, seen from the screen.
  *
  * The requirements ask for modules "pushed to the top of the home screen between
- * certain hours, after they drop into the chronological feed". The hours are covered in
- * `packages/app-core/test/daypart.test.ts` and the document's two callout sections in
- * `home-layout.test.tsx`; what is worth pinning HERE is the one thing neither of those
- * can see, and it is the last test in this file: that the screen moves the card when the
- * clock crosses a boundary and nothing else happens.
+ * certain hours, after they drop into the chronological feed". The times are the
+ * document's moments and are covered in `packages/app-core/test/home-layout.test.ts`,
+ * the document's two callout sections in `home-layout.test.tsx`; what is worth pinning
+ * HERE is the one thing neither of those can see, and it is the last test in this file:
+ * that the screen moves the card when the clock reaches a moment and nothing else
+ * happens.
  *
  * The rest reads the rendered card rather than a section id, so it is also the check
  * that the document's two positions are two positions on a screen and not two entries in
@@ -45,7 +46,7 @@ import { coreStore } from '@/lib/store/core';
 
 const OPEN = callouts.find((entry) => entry.status === 'open')!;
 
-/** Local time, as `daypartAt` reads it. */
+/** Local time, which is the only clock `minuteOfDay` reads. */
 const at = (hour: number) => new Date(2026, 8, 3, hour, 0, 0, 0);
 
 beforeEach(() => {
@@ -100,10 +101,11 @@ describe('the callout on Home', () => {
   /**
    * Nothing else re-renders Home on the hour: a tab screen stays mounted, and a feed
    * landing or a pull to refresh is not a clock. So the screen owns one timer to the
-   * next boundary (`useDaypart`), and this is the test that it fires. Rendered a
-   * minute before lunchtime, then the clock moves and nothing else does.
+   * document's next moment (`useHomeMinute`), and this is the test that it fires.
+   * Rendered a minute before the 11:00 moment, then the clock moves and nothing else
+   * does.
    */
-  it('moves when the clock crosses a boundary, with nothing else happening', () => {
+  it('moves when the clock reaches a moment, with nothing else happening', () => {
     jest.useFakeTimers().setSystemTime(new Date(2026, 8, 3, 10, 59, 0, 0));
     const tree = render(<HomeScreen />);
     expect(position(tree)).toBe('in-place');

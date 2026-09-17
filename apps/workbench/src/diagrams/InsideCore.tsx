@@ -81,7 +81,7 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         packages/app-core
       </text>
       <text x="700" y="56" textAnchor="end" className={cn(MUTED, T12)}>
-        56 TypeScript files
+        57 TypeScript files
       </text>
 
       <rect x="56" y="80" width="648" height="84" rx="6" className={CHIP} />
@@ -362,7 +362,7 @@ export function InsideCore({ alt = true }: { alt?: boolean }) {
         <div className={ALT} id="d3-alt">
           <h3>The same diagram as a list</h3>
           <p>
-            <code>packages/app-core</code>, 56 TypeScript files. Imports point down the stack.
+            <code>packages/app-core</code>, 57 TypeScript files. Imports point down the stack.
             Layers from the top:
           </p>
           <ol>
