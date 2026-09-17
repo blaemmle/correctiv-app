@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { Plugin } from 'vite';
 
 import { collectDocs, ROOT } from './collect.ts';
+import { homeLayoutEndpoint } from './home-layout.ts';
 
 const MODULE_ID = 'virtual:docs';
 const API_ID = 'virtual:api';
@@ -70,6 +71,13 @@ export function docsPlugin(): Plugin {
       // ARCHITECTURE.md changes nothing until the server is restarted, which
       // looks like the plugin not working.
       server.watcher.add(watched.length > 0 ? watched : [join(ROOT, 'adr'), join(ROOT, '*.md')]);
+
+      // The one thing this site writes back, and the reason it is here rather
+      // than in a plugin of its own: `configureServer` is the hook that does not
+      // run in a build, so a dev-only endpoint costs nothing in the published
+      // bundle, and the repository has exactly one of these to read.
+      // `plugin/home-layout.ts` is what it refuses and why.
+      server.middlewares.use(homeLayoutEndpoint(server));
     },
 
     handleHotUpdate({ file, server }) {

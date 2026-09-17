@@ -1,7 +1,7 @@
 import { sectionsAt } from '@correctiv/app-core/lib/home-layout';
 
 import { Screen } from '@/components/ui';
-import { homeLayout } from '@/lib/home/layout';
+import { useHomeLayout } from '@/lib/home/layout';
 import { HOME_MODULES } from '@/lib/home/modules';
 import { useDaypart } from '@/lib/useDaypart';
 
@@ -17,6 +17,10 @@ import { useDaypart } from '@/lib/useDaypart';
  * renders is `lib/home/modules.tsx`; which of them appear right now is `sectionsAt`,
  * which drops a hidden section and one that does not belong to this part of the day.
  *
+ * `useHomeLayout` rather than a read, because the document may be replaced while this
+ * screen is on it: §4's stored copy is a key in the app's own storage, and the
+ * workbench's editor writes it. `lib/home/layout.ts` is where that seam is argued.
+ *
  * The block that moves with the clock is that last rule and nothing more: the callout
  * has two sections in the document, one restricted to the lunchtime daypart and one to
  * the rest, so it is still rendered exactly once and still in one of two places. A
@@ -29,7 +33,7 @@ import { useDaypart } from '@/lib/useDaypart';
  */
 export default function HomeScreen() {
   const daypart = useDaypart();
-  const sections = sectionsAt(homeLayout(), daypart);
+  const sections = sectionsAt(useHomeLayout(), daypart);
 
   return (
     <Screen>

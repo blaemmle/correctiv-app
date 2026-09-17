@@ -23,6 +23,7 @@ export type SectionId =
   // /preview
   | 'appearance'
   | 'state'
+  | 'home'
   | 'console'
   | 'tokens'
   | 'measure'
@@ -166,7 +167,7 @@ export const VIEWS: Record<ViewKind, ViewDeclaration> = {
 
   preview: {
     kind: 'preview',
-    sections: ['appearance', 'state', 'console', 'tokens', 'measure', 'inspect'],
+    sections: ['appearance', 'state', 'home', 'console', 'tokens', 'measure', 'inspect'],
     panelTitle: 'Tools',
     panelWidth: '31%',
     contextBar: true,
@@ -187,6 +188,7 @@ export const SECTION_TITLES: Record<SectionId, string> = {
   contents: 'On this page',
   appearance: 'Appearance',
   state: 'State',
+  home: 'Home layout',
   console: 'Console',
   tokens: 'Tokens',
   measure: 'Measure',

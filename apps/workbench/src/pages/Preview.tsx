@@ -7,6 +7,7 @@ import { defaultFull } from '../preview/devices';
 import { toAddress } from '../preview/state';
 import { namesFrame } from '../preview/store';
 import { usePreview } from '../preview/Preview';
+import { HomeDocument } from '../preview/home/HomeDocument';
 import {
   Appearance,
   Console,
@@ -28,9 +29,11 @@ const VIEW = VIEWS.preview;
  * its own.
  *
  * This is the route that used to be seven `isApp` branches in `App.tsx`. Its
- * body is the stage; everything else it has — the frame controls, the six tools,
- * the two numbers on the rail, the readout and the link — goes into the places
- * the declaration in `shell/views.ts` keeps for it.
+ * body is the stage; everything else it has — the frame controls, the seven
+ * tools, the two numbers on the rail, the readout and the link — goes into the
+ * places the declaration in `shell/views.ts` keeps for it. Six of those tools
+ * are `preview/ui/Panels.tsx`; the seventh is `preview/home/`, which holds a
+ * document of its own rather than a readout.
  *
  * **The two halves of the address meet here and nowhere else.** The shell owns
  * `tool` and `full`; the frame owns `d`, `o`, `z`, `w`, `h`, `t`, `s`, `check`,
@@ -114,7 +117,11 @@ export function Preview({ address, onAddress, wide, full }: ShellProps) {
         <State {...panels} />
       </Slot>
 
-      {/* Two marks on the rail, and nothing on the other four. A tool whose
+      <Slot id="home">
+        <HomeDocument />
+      </Slot>
+
+      {/* Two marks on the rail, and nothing on the other five. A tool whose
           number is zero, or which has no number, says nothing there. */}
       <Slot id="console:mark">
         <ConsoleMark {...panels} />
