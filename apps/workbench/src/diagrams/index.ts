@@ -1,8 +1,10 @@
+import { ArticlePath, ArticlePathDrawing } from './ArticlePath';
 import { CoreAndHost, CoreAndHostDrawing } from './CoreAndHost';
 import { DecisionsChain, DecisionsChainDrawing } from './DecisionsChain';
 import { InsideCore, InsideCoreDrawing } from './InsideCore';
 import { chainLayout } from './layout';
 import { Services, ServicesDrawing } from './Services';
+import { SignIn, SignInDrawing } from './SignIn';
 
 import docs from 'virtual:docs';
 import type { ReactNode } from 'react';
@@ -90,5 +92,23 @@ export const DIAGRAMS: DiagramMeta[] = [
     height: 746,
     Figure: InsideCore,
     Drawing: InsideCoreDrawing,
+  },
+  {
+    id: 'sign-in',
+    title: 'How somebody signs in, and what is behind the door',
+    lede: 'The door is real and everything past it is not. The root layout renders it instead of the route tree, and what it asks is a function that waits a second and a half and reads a table of email addresses. Above the red line is what this repository does; below it is what the whiteboard plans, drawn as an absence because that is what it is.',
+    width: 1100,
+    height: 864,
+    Figure: SignIn,
+    Drawing: SignInDrawing,
+  },
+  {
+    id: 'article-path',
+    title: 'Where an article comes from',
+    lede: 'Five rungs, tried in order, and the first that answers is the answer. The snapshot compiled into the app comes first, because the promise is that the reader opens with no Wi-Fi; the cache behind the second and the fifth is bounded three ways; and what reaches the screen is one string a WebView is handed.',
+    width: 1100,
+    height: 856,
+    Figure: ArticlePath,
+    Drawing: ArticlePathDrawing,
   },
 ];

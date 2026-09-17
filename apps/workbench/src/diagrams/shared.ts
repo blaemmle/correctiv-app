@@ -162,3 +162,20 @@ export const ALT = cn(
   '[&_s]:text-on-canvas-muted',
   PROSE_CODE,
 );
+
+/**
+ * Type on club yellow, which is the one place here a colour must NOT follow the
+ * scheme.
+ *
+ * `NODE_STRUCK` fills with `accent-alternative`, and that token is the same
+ * `#fde162` in both schemes on purpose. The text over it inherits `fill-on-canvas`
+ * from `DRAWING`, which is near-black in light and near-white in dark — so a chip
+ * that reads perfectly in one scheme is pale grey on yellow in the other. Found by
+ * looking at the dark rendering of the fifth drawing; `test/styles.test.ts` cannot
+ * see it, because both halves are tokens and neither is a colour literal.
+ *
+ * `neutral-700` is a primitive rather than a semantic role, which is the point:
+ * AGENTS.md reserves the primitives for exactly this case, "a label on club
+ * yellow", and the token package defines this one as `#333333` in both schemes.
+ */
+export const ON_ALTERNATIVE = 'fill-neutral-700';

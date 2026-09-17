@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import docsModule from 'virtual:docs';
 import type { RenderedDoc } from '../../plugin/markdown.ts';
 import type { ReactNode } from 'react';
+import { ArticlePath } from '../diagrams/ArticlePath';
 import { CoreAndHost } from '../diagrams/CoreAndHost';
 import { cn } from '../lib/cn';
 import { Slot } from '../shell/slots';
@@ -32,6 +33,13 @@ const DIAGRAMS: Record<string, ReactNode> = {
   // paragraph and again in a table, and three tellings of one fact is two too
   // many. `/diagrams` still shows the list, where the drawing is the page.
   'core-host': <CoreAndHost alt={false} />,
+  // With its list, and the asymmetry is not an oversight. The paragraphs around
+  // the cascade name rungs 3 and 4, the document builder and the CSS the host
+  // supplies; they name neither the bundle nor the three bounds on the cache. On
+  // the site the ASCII is gone, replaced by this, so anyone who cannot use the
+  // picture would be left with less than the Markdown has. That is the case the
+  // list exists for.
+  'article-path': <ArticlePath />,
 };
 
 /**
