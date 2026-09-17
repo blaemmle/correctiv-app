@@ -98,9 +98,12 @@ const percent = (value: number) => `${(value / MINUTES_IN_DAY) * 100}%`;
 export function HomeDocument({
   state,
   onChange,
+  outline,
 }: {
   state: PreviewState;
   onChange: (patch: Partial<PreviewState>) => void;
+  /** Outlines the section's element in the frame, or clears the outline on `null`. */
+  outline: (id: string | null) => void;
 }) {
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout);
   const [result, setResult] = useState<SaveResult | null>(null);
@@ -254,6 +257,7 @@ export function HomeDocument({
             onMove={(delta) => edit(moved(layout, section.id, delta))}
             onHidden={(hidden) => edit(withHidden(layout, point, section.id, hidden))}
             onSetting={(key, value) => edit(withSetting(layout, point, section.id, key, value))}
+            outline={outline}
           />
         ))}
       </ol>
@@ -587,6 +591,7 @@ function Row({
   onMove,
   onHidden,
   onSetting,
+  outline,
 }: {
   section: HomeSection;
   inherited: HomeSection;
@@ -597,6 +602,7 @@ function Row({
   onMove: (delta: -1 | 1) => void;
   onHidden: (hidden: boolean) => void;
   onSetting: (key: string, value: string | number | null | undefined) => void;
+  outline: (id: string | null) => void;
 }) {
   const { name, what } = moduleLabel(section.module);
   const off = Boolean(section.hidden);
@@ -604,7 +610,26 @@ function Row({
   const hiddenHere = point !== null && Boolean(inherited.hidden) !== off;
 
   return (
-    <li className={cn(CARD, 'flex flex-col gap-2xs p-xs', isChanged && 'border-accent')}>
+    // Nothing below makes the row operable; the handlers only relay whether the
+    // pointer or the focus is somewhere inside it, and every control a person can
+    // act on is one of its own buttons, checkboxes and labels.
+    //
+    // `outline` is called with `section.id` whether or not `off` is true, and this row
+    // does not check it first. A moment can hide a place at the point being previewed —
+    // `off` is exactly that fact — and the deliberate choice is to let the lookup in
+    // `frame/highlight.ts` discover the absence itself: it finds no matching element and
+    // clears whatever mark was there, which is the same quiet nothing a mistyped id or an
+    // unrendered module would produce. The `off` badge below already tells a person the
+    // row is not on screen; the outline does not need to say it twice, and a row cannot
+    // drift out of sync with a mechanism it does no filtering of its own.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <li
+      className={cn(CARD, 'flex flex-col gap-2xs p-xs', isChanged && 'border-accent')}
+      onPointerEnter={() => outline(section.id)}
+      onPointerLeave={() => outline(null)}
+      onFocus={() => outline(section.id)}
+      onBlur={() => outline(null)}
+    >
       <div className="flex min-w-0 items-start gap-xs">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2xs">

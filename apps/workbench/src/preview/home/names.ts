@@ -48,3 +48,17 @@ export const HOME_TIME_KEY = 'workbench:home-time';
  * whose slug somebody adds later.
  */
 export const HOME_LAYOUT_ENDPOINT = '/__workbench/home-layout';
+
+/**
+ * The address a section gets in the rendered tree, spelled a second time.
+ *
+ * The same string `placeTestID` in `apps/mobile/src/lib/home/modules.tsx` writes onto
+ * every section's wrapper — `data-testid` once React Native Web has rendered it — and
+ * the shell may not import that file to share the one function, for the reason this
+ * file's own doc comment gives. So this is the other half of the pair `HOME_LAYOUT_KEY`
+ * already is: two spellings of one key, kept apart rather than reconciled, because nothing
+ * enforces the two staying equal but reading them side by side.
+ */
+export function sectionTestId(id: string): string {
+  return `home-section-${id}`;
+}

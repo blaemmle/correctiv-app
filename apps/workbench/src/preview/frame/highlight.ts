@@ -85,3 +85,36 @@ export function clearHighlight(win: Window | null): void {
   only(doc, PICKED, null);
   only(doc, HOVERED, null);
 }
+
+/**
+ * The frame element carrying this `data-testid`, or none.
+ *
+ * A scan rather than an attribute selector: the ids this is given come from a
+ * document a person is editing, not from this module, and an attribute selector
+ * built from an untrusted string is a malformed-selector exception waiting for a
+ * quote mark. A home screen carries a dozen of these at most, so the scan costs
+ * nothing worth avoiding it for.
+ */
+function byTestId(doc: Document, testId: string): Element | null {
+  for (const node of doc.querySelectorAll('[data-testid]')) {
+    if (node.getAttribute('data-testid') === testId) return node;
+  }
+  return null;
+}
+
+/**
+ * The hover mark, reached by an id rather than by a pointer event.
+ *
+ * The picker (`locate.ts`) already has an `Element` in hand when it calls
+ * `markHovered` on every `pointermove`, because a pointer event carries one. A row
+ * in a panel carries only the id it was given, so this is the lookup that call
+ * site never needed, in front of the same mark. `null` clears it, and so does an
+ * id this build's frame has nothing for: a section that is switched off or
+ * outside the current part of the day is not drawn at all
+ * (`apps/mobile/src/app/(tabs)/index.tsx`, `sectionsAt`), so there is no element
+ * to outline and this quietly outlines nothing rather than guessing at one.
+ */
+export function outlineByTestId(win: Window | null, testId: string | null): void {
+  const doc = win?.document;
+  markHovered(win, testId && doc ? byTestId(doc, testId) : null);
+}

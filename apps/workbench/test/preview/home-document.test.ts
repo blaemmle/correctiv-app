@@ -24,6 +24,7 @@ import {
   moved,
   movedMoment,
   pointAt,
+  sectionTestId,
   SETTING_LABELS,
   settingLabel,
   SHIPPED,
@@ -423,6 +424,14 @@ describe('the three ends of the seam', () => {
 
     const clock = source('apps/workbench/src/preview/home/clock.ts');
     expect(clock).toContain('window.localStorage.removeItem(HOME_TIME_KEY)');
+  });
+
+  it('spells a section’s testID the way the app renders it', () => {
+    const app = source('apps/mobile/src/lib/home/modules.tsx');
+    expect(app).toContain(
+      'export const placeTestID = (id: string): string => `home-section-${id}`;',
+    );
+    expect(sectionTestId('hero')).toBe('home-section-hero');
   });
 
   it('answers on the address the dev server listens on', () => {
