@@ -1,4 +1,4 @@
-# Publishes the workbench and the app to GitHub Pages — https://faktenforum.github.io/correctiv-app/
+# Publishes the workbench and the app to GitHub Pages — https://correctiv.github.io/correctiv-app/
 #
 # TWO BUILDS, ONE ARTIFACT. The site root is the workbench: the repository's own
 # documentation, the source inventory, the diagrams and the reference, rendered as
@@ -25,7 +25,7 @@
 # switched from `main:/docs` to GitHub Actions. Settings → Pages → Build and
 # deployment → Source: GitHub Actions, or:
 #
-#     gh api -X POST repos/faktenforum/correctiv-app/pages -f build_type=workflow
+#     gh api -X POST repos/correctiv/correctiv-app/pages -f build_type=workflow
 #
 # `actions/configure-pages` below only creates a site when none exists — it reads an
 # existing one and leaves its build type alone — so until the switch is made,
@@ -101,7 +101,7 @@ jobs:
       #
       # apps/mobile/app.config.js turns EXPO_BASE_URL into experiments.baseUrl.
       # Without it every asset URL is absolute from the domain root and resolves to
-      # faktenforum.github.io/_expo/…, which is a blank page served by a green build.
+      # correctiv.github.io/_expo/…, which is a blank page served by a green build.
       # The value now carries the /app suffix as well, and experiments.baseUrl takes
       # any depth.
       - name: Export the app

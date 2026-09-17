@@ -10,7 +10,7 @@ import { withoutComments } from './support/source';
  * the room left over, so a row built from it is correct exactly while there IS
  * room left over — and at 200 % system font there is none. The accessibility tour
  * photographed four of those in one walk
- * ([#158](https://github.com/faktenforum/correctiv-app/issues/158)): Home's date
+ * ([#158](https://github.com/correctiv/correctiv-app/issues/158)): Home's date
  * off the right edge, `SPOTLIGHTAlle Ausgaben →` as one word, the door's two
  * footer links overlapping with the second half of the second one off screen.
  * `SplitRow` holds the two things they were each missing, a gap that cannot

@@ -105,7 +105,7 @@ export default function TabsLayout() {
           /**
            * A minimum gap between two tabs, which is the same thing `ui/SplitRow`
            * gives every two-sided row this app draws
-           * ([#158](https://github.com/faktenforum/correctiv-app/issues/158)). On
+           * ([#158](https://github.com/correctiv/correctiv-app/issues/158)). On
            * the native bar five German labels run into each other above 130 %
            * system font; here they cannot, because **the web has no system font
            * scale**. React Native Web draws in px and a browser's zoom scales the

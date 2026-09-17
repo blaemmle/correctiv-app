@@ -1,8 +1,8 @@
 // app.json holds the config; this file adds the one value that cannot be static.
 //
-// GitHub Pages serves this app from https://faktenforum.github.io/correctiv-app/,
+// GitHub Pages serves this app from https://correctiv.github.io/correctiv-app/,
 // not from a domain root. A default export writes absolute URLs — `/_expo/...`,
-// `/assets/...` — which resolve to faktenforum.github.io/_expo/... there and 404,
+// `/assets/...` — which resolve to correctiv.github.io/_expo/... there and 404,
 // giving a blank page from a green build. `experiments.baseUrl` prefixes them, and
 // expo-router uses the same value for its own hrefs and history.
 //

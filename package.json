@@ -6,10 +6,10 @@
   "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/faktenforum/correctiv-app.git"
+    "url": "git+https://github.com/correctiv/correctiv-app.git"
   },
   "bugs": {
-    "url": "https://github.com/faktenforum/correctiv-app/issues"
+    "url": "https://github.com/correctiv/correctiv-app/issues"
   },
   "engines": {
     "node": ">=24"

@@ -7,7 +7,7 @@ import ts from 'typescript';
  * A box drawn around text does not get a fixed height.
  *
  * This is the third form of the fault
- * [#158](https://github.com/faktenforum/correctiv-app/issues/158) photographed, and
+ * [#158](https://github.com/correctiv/correctiv-app/issues/158) photographed, and
  * the one [ADR 0034](../../../adr/0034-one-component-for-the-two-sided-row.md)
  * describes in its context and leaves without a check. The search entry point on
  * Entdecken carried `style={{ height: 44 }}`; at 200 % system font its placeholder

@@ -9,7 +9,7 @@ tokens they are drawn with, and the site that publishes all of it.
 
 ## Start with the workbench
 
-**[faktenforum.github.io/correctiv-app](https://faktenforum.github.io/correctiv-app/)**
+**[correctiv.github.io/correctiv-app](https://correctiv.github.io/correctiv-app/)**
 is the front door, and the app is a link inside it. One site carries the repository's
 documentation, the inventory of what the app reads, the architecture diagrams, a
 reference generated from the core, and the running app in a device frame. It renders
@@ -18,10 +18,10 @@ to `main`. Addresses worth going to directly:
 
 | | |
 | --- | --- |
-| [`/preview`](https://faktenforum.github.io/correctiv-app/preview) | The app itself in a phone or tablet frame, with an inspector for its state, its console, its palette and its layout. No install, no emulator. |
-| [`/sources`](https://faktenforum.github.io/correctiv-app/sources) | What each part of the app reads: a live source, sample data standing in for an API that does not exist yet, or nothing at all. |
-| [`/decisions`](https://faktenforum.github.io/correctiv-app/decisions) | Every architecture record, and which of their claims a later one has made false. |
-| [`/architecture`](https://faktenforum.github.io/correctiv-app/architecture) | One core, its ports, and the article path end to end. |
+| [`/preview`](https://correctiv.github.io/correctiv-app/preview) | The app itself in a phone or tablet frame, with an inspector for its state, its console, its palette and its layout. No install, no emulator. |
+| [`/sources`](https://correctiv.github.io/correctiv-app/sources) | What each part of the app reads: a live source, sample data standing in for an API that does not exist yet, or nothing at all. |
+| [`/decisions`](https://correctiv.github.io/correctiv-app/decisions) | Every architecture record, and which of their claims a later one has made false. |
+| [`/architecture`](https://correctiv.github.io/correctiv-app/architecture) | One core, its ports, and the article path end to end. |
 
 The screens work end to end and the backends behind them do not exist yet. Sign-in,
 the club join, the callouts and the Faktenforum claims run on typed sample data shaped

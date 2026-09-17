@@ -5,7 +5,7 @@ app reads, the architecture drawn, a reference generated from the core and from 
 app's components, and the app itself in a device frame.
 
 It is what answers at the root of
-[faktenforum.github.io/correctiv-app](https://faktenforum.github.io/correctiv-app/).
+[correctiv.github.io/correctiv-app](https://correctiv.github.io/correctiv-app/).
 `pages.yml` publishes the app's web export beneath it, at `/app/`.
 
 ```
@@ -85,7 +85,7 @@ the error boundary standing in for a route that threw, and the browser logged no
 They exist because the two paths compile the same source differently and disagreed for
 a day without a single check noticing: `npm run build:workbench` was green,
 `npm run workbench` served nothing, and a `require()` in one file of `apps/mobile` was
-the whole difference ([#160](https://github.com/faktenforum/correctiv-app/issues/160),
+the whole difference ([#160](https://github.com/correctiv/correctiv-app/issues/160),
 and `vite.app.mjs` for what it does about it).
 [ADR 0035](../../adr/0035-a-check-that-opens-the-page.md) has the argument and what the
 two modes cost, measured.

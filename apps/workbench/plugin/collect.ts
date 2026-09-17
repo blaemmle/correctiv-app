@@ -9,7 +9,7 @@ import { buildProvenance, PROVENANCE_SOURCE, provenanceMarkdown } from './proven
 import { adrNumber, adrRoute, DOCUMENTS, type DocumentSource } from './registry.ts';
 
 export const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
-export const REPO = 'https://github.com/faktenforum/correctiv-app';
+export const REPO = 'https://github.com/correctiv/correctiv-app';
 
 /**
  * The commit the workbench was built from, so a link into the source is stable.

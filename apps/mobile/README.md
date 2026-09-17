@@ -42,7 +42,7 @@ is produced by `expo prebuild`.
 
 ### The static export
 
-`dist/` is what gets published to <https://faktenforum.github.io/correctiv-app/> on
+`dist/` is what gets published to <https://correctiv.github.io/correctiv-app/> on
 every push to `main` (`.github/workflows/pages.yml`). Serve it with the repo's own
 server, never a plain one.
 

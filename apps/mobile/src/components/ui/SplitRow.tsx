@@ -36,7 +36,7 @@ export type SplitRowProps = {
  * do not stop at each other — they meet, and then they overlap, and then the
  * right-hand one leaves the screen. Four of those were photographed at 200 %
  * system font by `screens/tools/tour-a11y.sh`
- * ([#158](https://github.com/faktenforum/correctiv-app/issues/158)): the door's
+ * ([#158](https://github.com/correctiv/correctiv-app/issues/158)): the door's
  * two footer links with no space between them and the second half off the right
  * edge, `SPOTLIGHTAlle Ausgaben →` as one word, Home's date leaving the screen.
  * None of them is visible at 100 %, and none of them is visible to `npm run
