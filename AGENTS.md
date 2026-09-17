@@ -129,6 +129,13 @@ a section naming every statement it retires, so the two halves cannot drift apar
 Do not strike through a claim that is merely old. Only one that is now **false**,
 where someone reading it would act on it and be wrong.
 
+**A record can also be wrong on the day it was written**, rather than overtaken, and that
+is struck the same way with one difference: the clause says so plainly, with the day it
+was measured, and links nothing. There is no later record to link, and a citation invented
+to fill that slot is worse than the empty slot. `apps/workbench/plugin/decisions.ts` reads
+the clause for record numbers, so one that names none leaves the record struck and voided
+by nobody, which is the true picture rather than a gap in the board.
+
 ## Facts that expire
 
 **First ask whether the figure needs to be there at all.** "The ports", not "the five

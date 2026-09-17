@@ -27,6 +27,23 @@ import { HOME_TIME_KEY } from './names';
  * time; whether that tool is open or shut is not what decides whether a `tm=` in the
  * address means anything, and a simulated clock that outlived the panel would be a frame
  * showing an hour with nothing on screen saying so.
+ *
+ * ## The view going away, and the page going away
+ *
+ * They are two events and the second one was not handled, which left the exit above
+ * standing: an effect on `state.time` and an unmount are both things that happen while
+ * this page is alive, and closing a tab runs neither. Measured on the assembled site —
+ * `tm=23:00`, then the whole page navigated elsewhere on the same origin, and the key
+ * still `"23:00"`. It matters because `frame/handle.ts` makes `BASE` the site's own
+ * `/app`, so `usePreview`'s `onRaw` opens the published app in a tab of its own on this
+ * origin: set an hour, open raw, shut the workbench, and `<site>/app/` is pinned to that
+ * hour for that browser for ever.
+ *
+ * `usePreview` listens for `pagehide` as well, which is a tab close, a navigation away
+ * and a freeze into the back/forward cache all at once; only the last of those comes
+ * back, and `pageshow` writes `state.time` again when it does. `scripts/home-live.mjs`
+ * holds both halves against the assembled site, because a document going away is
+ * something only a browser has.
  */
 
 /**

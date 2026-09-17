@@ -226,6 +226,88 @@ describe('the vocabulary the editor offers', () => {
     expect(momentAt(early, AT(9))!.changes).toEqual([{ id: 'callout-lifted', hidden: false }]);
   });
 
+  /**
+   * The same rule, reached the way the controls reach it.
+   *
+   * The test above clears a setting with `undefined`, and no control sends that: the
+   * picker sends `null` for "The newest investigation (no pin)" and the number field
+   * sends a number. Both are values equal to what the point inherits when nothing else
+   * has been chosen — `null` is `HERO_PIN`'s fallback, five is `RESEARCH_COUNT`'s — and
+   * both were written into the document and badged SET HERE, because an absent inherited
+   * value was read as "nothing to compare against" rather than as the module's default.
+   */
+  it('writes no setting equal to the module’s own fallback', () => {
+    // "The newest investigation (no pin)", at the day's start and at a moment, with
+    // nothing pinned anywhere: the state the place is already in, so nothing is written.
+    expect(differs(withSetting(SHIPPED, null, 'hero', 'pin', null))).toBe(false);
+    expect(differs(withSetting(SHIPPED, AT(11), 'hero', 'pin', null))).toBe(false);
+
+    // The counts, typed back to the number the module draws when nobody has chosen.
+    expect(differs(withSetting(SHIPPED, null, 'latest-research', 'count', 5))).toBe(false);
+    expect(differs(withSetting(SHIPPED, AT(14), 'fact-checks', 'count', 8))).toBe(false);
+
+    // And the direction that must still be written: a pin taken off at a later moment is
+    // ADR 0036 §3's rule coming back, which is one change and not the deletion of one.
+    const pinned = withSetting(SHIPPED, null, 'hero', 'pin', 'https://x/');
+    const evening = withSetting(pinned, AT(14), 'hero', 'pin', null);
+    expect(momentAt(evening, AT(14))!.changes).toContainEqual({
+      id: 'hero',
+      settings: { pin: null },
+    });
+  });
+
+  /**
+   * The fallback is what the DAY'S START is edited against, and nothing else is.
+   *
+   * A section's own value is what a person at the day's start is editing, not what they
+   * inherit; comparing against it would make typing the number already in the field
+   * delete the field and drop the place back to five.
+   */
+  it('keeps a value at the day’s start when it is typed again', () => {
+    const three = withSetting(SHIPPED, null, 'latest-research', 'count', 3);
+    expect(withSetting(three, null, 'latest-research', 'count', 3)).toEqual(three);
+
+    // And at a moment, three IS what is inherited, so it is not written there.
+    expect(
+      momentAt(withSetting(three, AT(11), 'latest-research', 'count', 3), AT(11))!.changes,
+    ).toEqual(momentAt(three, AT(11))!.changes);
+  });
+
+  /**
+   * An edit at one point changes what the points after it inherit, so they are re-checked.
+   *
+   * `callout-lifted` starts the day hidden, 11:00 brings it back and 14:00 hides it
+   * again. Show it at the day's start and 11:00's change is a line saying "look here,
+   * something happens" where nothing does.
+   */
+  it('takes out a later change the edit has made a restatement', () => {
+    const shown = withHidden(SHIPPED, null, 'callout-lifted', false);
+
+    expect(momentAt(shown, AT(11))!.changes).toEqual([{ id: 'callout', hidden: true }]);
+    // 14:00 still differs from what it inherits, so it stays exactly as it was.
+    expect(momentAt(shown, AT(14))!.changes).toEqual([
+      { id: 'callout-lifted', hidden: true },
+      { id: 'callout', hidden: false },
+    ]);
+  });
+
+  /**
+   * And a gesture on the track does not, because a person repeats and reverses those.
+   *
+   * Dragging a point past another and back would otherwise lose whatever it made
+   * redundant on the way out, and there is no undo here to get it back with.
+   */
+  it('leaves the later moments alone when a point is moved or removed', () => {
+    const later = movedMoment(SHIPPED, AT(11), AT(15));
+    expect(momentAt(later, AT(14))!.changes).toEqual([
+      { id: 'callout-lifted', hidden: true },
+      { id: 'callout', hidden: false },
+    ]);
+    expect(movedMoment(later, AT(15), AT(11))).toEqual(SHIPPED);
+
+    expect(momentAt(withoutMoment(SHIPPED, AT(11)), AT(14))!.changes).toHaveLength(2);
+  });
+
   it('takes a change out of the document when its last field goes', () => {
     const pinned = withSetting(SHIPPED, AT(14), 'hero', 'pin', 'https://x/');
     expect(pinned.moments.find((m) => m.minute === AT(14))!.changes).toContainEqual({
@@ -421,6 +503,17 @@ describe('the three ends of the seam', () => {
     const preview = source('apps/workbench/src/preview/Preview.tsx');
     expect(preview).toContain('useEffect(() => applyHomeTime(state.time), [state.time])');
     expect(preview).toContain('useEffect(() => () => applyHomeTime(null), [])');
+
+    /*
+     * And the third exit, which neither of those two is: the DOCUMENT going away. Both
+     * of them run while the page is alive, so closing the tab left the key behind and
+     * pinned `<site>/app/` to that hour for the whole origin. The assertion is the
+     * listener rather than what it does, because what was missing was ever attaching
+     * one; `scripts/home-live.mjs` is what proves it works, against a real browser,
+     * which is the only thing that has a document to lose.
+     */
+    expect(preview).toContain("window.addEventListener('pagehide', hide)");
+    expect(preview).toContain("window.addEventListener('pageshow', show)");
 
     const clock = source('apps/workbench/src/preview/home/clock.ts');
     expect(clock).toContain('window.localStorage.removeItem(HOME_TIME_KEY)');

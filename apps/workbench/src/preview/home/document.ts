@@ -241,24 +241,26 @@ export function withHidden(
   hidden: boolean,
 ): HomeLayout {
   if (point === null) {
-    return withSection(layout, id, (section) => {
+    const atStart = withSection(layout, id, (section) => {
       if (!hidden) {
         const { hidden: _hidden, ...rest } = section;
         return rest;
       }
       return { ...section, hidden: true };
     });
+    return settled(atStart, point);
   }
 
   const before = inheritedAt(layout, point).find((section) => section.id === id);
   const inherits = Boolean(before?.hidden) === hidden;
-  return withChange(layout, point, id, (change) => {
+  const edited = withChange(layout, point, id, (change) => {
     if (inherits) {
       const { hidden: _hidden, ...rest } = change;
       return rest;
     }
     return { ...change, hidden };
   });
+  return settled(edited, point);
 }
 
 /**
@@ -272,6 +274,14 @@ export function withHidden(
  * A value equal to the inherited one is taken out rather than written, and a settings
  * object with nothing left in it is taken out with it. That is what makes the diff of a
  * day readable: a moment lists what is different about it and nothing else.
+ *
+ * **An absent inherited value is a value**, and reading it as "nothing to compare
+ * against" is how this wrote changes that say nothing. Choosing "The newest investigation
+ * (no pin)" sends `null`, which is `HERO_PIN`'s own fallback and the state the place is
+ * already in; typing a count back to five is `RESEARCH_COUNT`'s. Both were written into
+ * the moment, and then badged SET HERE, because `settings?.[key]` was `undefined` and
+ * `undefined` compares equal to nothing. `inheritedSetting` below is what the comparison
+ * asks now, and the spec's `fallback` is the half it was missing.
  */
 export function withSetting(
   layout: HomeLayout,
@@ -280,24 +290,134 @@ export function withSetting(
   key: string,
   value: SettingValue | undefined,
 ): HomeLayout {
-  const before = inheritedAt(layout, point).find((section) => section.id === id);
-  const inherited = before?.settings?.[key];
-
-  if (point === null) {
-    return withSection(layout, id, (section) =>
-      withKey(section, key, value === undefined ? undefined : value),
-    );
-  }
-
+  const inherited = inheritedSetting(layout, point, id, key);
   const same = value !== undefined && inherited !== undefined && sameValue(inherited, value);
-  return withChange(layout, point, id, (change) =>
-    withKey(change, key, same || value === undefined ? undefined : value),
-  );
+  const next = same || value === undefined ? undefined : value;
+
+  const edited =
+    point === null
+      ? withSection(layout, id, (section) => withKey(section, key, next))
+      : withChange(layout, point, id, (change) => withKey(change, key, next));
+  return settled(edited, point);
+}
+
+/**
+ * What a point inherits for one setting: what the fold leaves it, or the module's default.
+ *
+ * Two questions in one, and the day's start is why they cannot be a single lookup. At a
+ * moment the inherited value is what every earlier point left behind, which is
+ * `inheritedAt`. At the day's start there is no earlier point at all, so the thing a
+ * person is editing away from is the module's own rule — and `inheritedAt(layout, null)`
+ * answers there with the sections as written, which is the value being edited rather than
+ * the one it is inherited from. Asking it there would make typing the number that is
+ * already in the field delete the field.
+ *
+ * `fallback` is the one the app draws with (`home-settings.ts`, ADR 0039 §4), so the
+ * editor and the module agree on what "nobody has chosen" means without either of them
+ * spelling out five.
+ */
+function inheritedSetting(
+  layout: HomeLayout,
+  point: Point,
+  id: string,
+  key: string,
+): SettingValue | undefined {
+  const declared = layout.sections.find((section) => section.id === id);
+  if (!declared) return undefined;
+  if (point === null) return fallbackOf(declared.module, key);
+  const before = inheritedAt(layout, point).find((section) => section.id === id);
+  return before ? valueOf(before, key) : fallbackOf(declared.module, key);
+}
+
+/** What a module falls back to for one key, or `undefined` where it declares no such key. */
+function fallbackOf(module: string, key: string): SettingValue | undefined {
+  return settingsFor(module).find((spec) => spec.key === key)?.fallback;
+}
+
+/**
+ * What a section shows for one setting: the value it holds, or its module's fallback.
+ *
+ * `??` will not do here. `null` is a held value and not an absence — it is ADR 0036 §3's
+ * "no override, so the rule runs" — and the two are the same answer only for a pin, which
+ * is where it would never be noticed.
+ */
+function valueOf(section: HomeSection, key: string): SettingValue | undefined {
+  const held = section.settings?.[key];
+  return held !== undefined ? held : fallbackOf(section.module, key);
 }
 
 /** Two setting values, compared the way a document compares them. */
 function sameValue(a: SettingValue, b: SettingValue): boolean {
   return a === b;
+}
+
+/**
+ * Every moment after an edit, re-checked against what it now inherits.
+ *
+ * An edit at a point does not only write where it lands: it changes what every later
+ * point is handed. Take `hidden` off a section at the day's start and the moment that
+ * used to bring it back is a change restating what it now inherits — nobody sees a
+ * difference, and the file has grown a line that says "look here, something happens"
+ * where nothing does. Pin an article at eleven that six o'clock already pins, and the
+ * same thing happens one rung along.
+ *
+ * Only after the edited point, because nothing before it inherits from it. And only after
+ * an edit to a VALUE: moving a point along the track or taking one out changes what the
+ * points after it inherit as well, but those are gestures a person repeats and reverses,
+ * and a prune on each would make the reverse lossy — drag a moment past another and back,
+ * and the changes it made redundant on the way out would not return.
+ *
+ * Inheritance is read from the layout this is handed rather than moment by moment as it
+ * goes. Taking out a change that restates what it inherits cannot change what anything
+ * inherits, which is the whole reason it is safe to take out.
+ */
+function settled(layout: HomeLayout, point: Point): HomeLayout {
+  const after = point ?? -1;
+
+  return {
+    ...layout,
+    moments: layout.moments.map((moment) => {
+      if (moment.minute <= after) return moment;
+      const inherited = new Map(
+        inheritedAt(layout, moment.minute).map((section) => [section.id, section]),
+      );
+      const changes = moment.changes
+        .map((change) => settledChange(change, inherited.get(change.id)))
+        .filter((change): change is HomeChange => change !== null);
+      const same =
+        changes.length === moment.changes.length &&
+        changes.every((change, index) => change === moment.changes[index]);
+      return same ? moment : { ...moment, changes };
+    }),
+  };
+}
+
+/**
+ * One change with every field that restates its inheritance taken out, or null when
+ * nothing is left of it.
+ *
+ * A change about a place the document has not got is left exactly as it is: that is a
+ * fault the parser reports (`change-id-unknown`), and quietly tidying it away here would
+ * take the evidence with it.
+ */
+function settledChange(change: HomeChange, inherited: HomeSection | undefined): HomeChange | null {
+  if (!inherited) return change;
+
+  let next = change;
+  if (next.hidden !== undefined && Boolean(inherited.hidden) === next.hidden) {
+    const { hidden: _hidden, ...rest } = next;
+    next = rest;
+  }
+  for (const key of Object.keys(next.settings ?? {})) {
+    const held = next.settings?.[key];
+    const was = valueOf(inherited, key);
+    if (held !== undefined && was !== undefined && sameValue(was, held)) {
+      next = withKey(next, key, undefined);
+    }
+  }
+
+  // One key left is the id alone: a change naming a section and changing nothing about it.
+  return Object.keys(next).length <= 1 ? null : next;
 }
 
 /** One key onto a section or a change's `settings`, dropping the object when it empties. */

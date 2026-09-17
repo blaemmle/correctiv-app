@@ -624,6 +624,33 @@ describe('parseHomeLayout, on the moments', () => {
     expect(parse.layout?.moments[0]?.changes).toEqual([]);
   });
 
+  /**
+   * What dropping a change costs, which is the half of ADR 0039 §6 a problem code cannot
+   * show: the place is still there, still drawn, and holding what the point before it
+   * left. That is the decision rather than an accident of the code, and the record was
+   * struck on 2026-09-17 where it said otherwise, so it is asserted here.
+   */
+  it('leaves a place holding what it inherited when its change is refused', () => {
+    const parse = parseHomeLayout({
+      version: HOME_LAYOUT_VERSION,
+      sections: [{ id: 'hero', module: 'article-hero', settings: { pin: 'https://morning/' } }],
+      moments: [
+        {
+          at: '18:00',
+          changes: [{ id: 'hero', settings: { pin: 'https://evening/', tone: 'x' } }],
+        },
+      ],
+    });
+
+    expect(codes(parse)).toEqual(['change-setting-unknown']);
+    expect(parse.layout?.moments[0]?.changes).toEqual([]);
+    // Not the evening's pin, and not no pin either: the morning's, all evening.
+    expect(stateAt(parse.layout!, AT(18))[0]?.settings).toEqual({ pin: 'https://morning/' });
+    // And the place is still drawn, which is what makes dropping the change the smaller
+    // cost than dropping the section would be.
+    expect(sectionsAt(parse.layout!, AT(18)).map((s) => s.id)).toEqual(['hero']);
+  });
+
   it('carries the time in both spellings, and only the parsed one is derived', () => {
     const parse = withMoments([{ at: '09:30', changes: [] }]);
     expect(parse.layout?.moments[0]).toEqual({ at: '09:30', minute: 570, changes: [] });
