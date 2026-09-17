@@ -1,5 +1,5 @@
 /**
- * Which module Home lifts to the top right now, as a function of the clock.
+ * What part of the day it is, as a function of the clock.
  *
  * The requirements ask for this and call it the app's own idea: "Time-based features,
  * pushed to the top of the home screen between certain hours, after they drop into the
@@ -7,6 +7,23 @@
  * "Was zählt", and Mitmachen around lunchtime, which "has its own section the rest of
  * the time" — that last clause is the whole mechanism in one line. A module does not
  * appear and disappear; it moves.
+ *
+ * ## What this file no longer decides
+ *
+ * It used to name the module each daypart lifts (`WANTED`), the modules a host can
+ * draw (`AVAILABLE`) and the answer composed from the two (`timedModuleAt`). All three
+ * are `lib/home-layout.ts` now: a section in the home document carries `dayparts`, and
+ * a module the host cannot draw is dropped by the parser with a report
+ * ([ADR 0036](../../../../adr/0036-the-home-screen-becomes-data.md)). What is left here
+ * is the clock, which is the only part of it that was never configuration.
+ *
+ * The morning podcast and the evening briefing have no section in that document, and
+ * that is the same silence they had here. There is no morning podcast in the app, and
+ * the evening slot wants Spotlight together with "Was zählt", a real podcast since
+ * 22 June 2026 that is not connected. A gap we chose, know about and can read in
+ * `SOURCES.md` is not a fault to report on every launch — ADR 0036 §7 draws exactly
+ * that line — so the two stay out of the document rather than sitting in it as
+ * sections nothing can draw.
  *
  * ## Why this is a pure function and not a store
  *
@@ -22,6 +39,28 @@
 
 /** The named parts of a day, plus everything the requirements do not name. */
 export type Daypart = 'morning' | 'midday' | 'evening' | 'off-hours';
+
+/**
+ * Every daypart as a value, so a document can be checked against the union at runtime.
+ *
+ * A `Record<Daypart, true>` rather than an array, because an array of four strings
+ * agrees with the union without being complete: adding a fifth daypart to the type and
+ * forgetting it here has to be a compile error, or `isDaypart` quietly starts calling a
+ * real daypart unknown and the parser drops the sections that name it.
+ */
+const EVERY_DAYPART: Record<Daypart, true> = {
+  morning: true,
+  midday: true,
+  evening: true,
+  'off-hours': true,
+};
+
+export const DAYPARTS = Object.keys(EVERY_DAYPART) as readonly Daypart[];
+
+/** Whether a value out of a document is one of the dayparts. */
+export function isDaypart(value: unknown): value is Daypart {
+  return typeof value === 'string' && Object.hasOwn(EVERY_DAYPART, value);
+}
 
 /**
  * The boundaries, inclusive of the first hour and exclusive of the last.
@@ -55,50 +94,14 @@ export function daypartAt(now: number | Date): Daypart {
 }
 
 /**
- * The modules the requirements want lifted, one per daypart.
- *
- * `morning-podcast` and `evening-briefing` are the two the requirements mark as MVP,
- * and the app can render neither: there is no morning podcast in the app, and the
- * evening slot wants Spotlight together with "Was zählt", which is a real podcast since
- * 22 June 2026 and is not connected. Both are named here rather than left out, because
- * the gap is the point: the mechanism is ready and the sources are the open question.
- *
- * `participate` is the one slot the app can fill today, from `data/callouts`. It is
- * also the one the requirements do NOT mark as MVP, which is worth knowing before
- * anyone reads a working lunchtime module as the feature being delivered.
- */
-export type TimedModule = 'morning-podcast' | 'participate' | 'evening-briefing';
-
-const WANTED: Record<Daypart, TimedModule | null> = {
-  morning: 'morning-podcast',
-  midday: 'participate',
-  evening: 'evening-briefing',
-  'off-hours': null,
-};
-
-/** The modules a host can actually render. The rest resolve to nothing. */
-const AVAILABLE: ReadonlySet<TimedModule> = new Set(['participate']);
-
-/**
- * The module to lift right now, or null to leave Home in its ordinary order.
- *
- * Returns null for a daypart whose module has no source yet, rather than lifting an
- * empty slot: a heading over nothing is worse than no heading.
- */
-export function timedModuleAt(now: number | Date): TimedModule | null {
-  const wanted = WANTED[daypartAt(now)];
-  return wanted !== null && AVAILABLE.has(wanted) ? wanted : null;
-}
-
-/**
  * The next moment at which `daypartAt` changes its answer, as a timestamp.
  *
- * For a host that reads the clock on render. Home computes `timedModuleAt` when it
- * renders, and nothing re-renders a mounted tab on the hour, so without this the
- * block moved on the next feed load or cold start rather than at the boundary. One
- * timer to this moment, cancelled with the screen, is what makes the screen agree
- * with the table. Local hours, like everything else here: `Date`'s local constructor
- * absorbs a daylight-saving shift on the day it happens.
+ * For a host that reads the clock on render. Home picks its sections when it renders,
+ * and nothing re-renders a mounted tab on the hour, so without this the lifted block
+ * moved on the next feed load or cold start rather than at the boundary. One timer to
+ * this moment, cancelled with the screen, is what makes the screen agree with the
+ * table. Local hours, like everything else here: `Date`'s local constructor absorbs a
+ * daylight-saving shift on the day it happens.
  */
 export function nextDaypartChange(now: number | Date): number {
   const at = new Date(now);

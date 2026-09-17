@@ -188,8 +188,13 @@ export interface AudioBackend {
  * Codes are unique WITHIN a domain, never across it. That is what lets each union
  * of codes live beside the code that dispatches it, the way `AudioError` does,
  * instead of in one central list here that nobody owns and everybody appends to.
+ *
+ * `layout` is the second member from the core and the argument ADR 0036 §7 made for
+ * it: the home screen's document is fetched, so a section the app cannot read is a
+ * fault nobody but the core can see, and it means a reader is looking at a screen
+ * the newsroom believes it filled. `lib/home-layout.ts` dispatches it.
  */
-export type ErrorDomain = 'render' | 'podcasts';
+export type ErrorDomain = 'render' | 'podcasts' | 'layout';
 
 /**
  * One fault, in the shape a machine wants it rather than a reader.

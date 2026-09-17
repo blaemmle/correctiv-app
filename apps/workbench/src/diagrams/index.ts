@@ -85,7 +85,7 @@ export const DIAGRAMS: DiagramMeta[] = [
   {
     id: 'inside-core',
     title: 'Inside the core',
-    lede: '55 TypeScript files in seven layers. Imports point down the stack, the contracts sit at the bottom, and below them is a line nothing in the package crosses.',
+    lede: '56 TypeScript files in seven layers. Imports point down the stack, the contracts sit at the bottom, and below them is a line nothing in the package crosses.',
     width: 1040,
     height: 746,
     Figure: InsideCore,

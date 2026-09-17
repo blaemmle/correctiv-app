@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { DAYPART_HOURS, daypartAt, nextDaypartChange, timedModuleAt } from '../src/lib/daypart';
+import {
+  DAYPART_HOURS,
+  DAYPARTS,
+  daypartAt,
+  isDaypart,
+  nextDaypartChange,
+} from '../src/lib/daypart';
 
 /** Local time, because the function reads local hours and so does a reader's day. */
 const at = (hour: number, minute = 0) => new Date(2026, 8, 3, hour, minute, 0, 0);
@@ -59,24 +65,22 @@ describe('daypartAt', () => {
   });
 });
 
-describe('timedModuleAt', () => {
-  it('lifts the participate module at lunchtime', () => {
-    expect(timedModuleAt(at(12))).toBe('participate');
+/**
+ * `DAYPARTS` is what the layout parser checks a document's `dayparts` against, so a
+ * daypart missing from it is a section silently dropped rather than a type error.
+ */
+describe('DAYPARTS', () => {
+  it('holds every answer daypartAt can give across a day', () => {
+    const reachable = new Set<string>();
+    for (let hour = 0; hour < 24; hour++) reachable.add(daypartAt(at(hour)));
+    expect([...DAYPARTS].sort()).toEqual([...reachable].sort());
   });
 
-  /**
-   * The two slots the requirements mark as MVP are the two the app cannot fill: there
-   * is no morning podcast in the app, and the evening slot wants "Was zählt", which is
-   * not connected. Null rather than a heading over nothing.
-   */
-  it('lifts nothing in a daypart whose module has no source', () => {
-    expect(timedModuleAt(at(7))).toBeNull();
-    expect(timedModuleAt(at(19))).toBeNull();
-  });
-
-  it('lifts nothing outside the named hours', () => {
-    expect(timedModuleAt(at(3))).toBeNull();
-    expect(timedModuleAt(at(15))).toBeNull();
+  it('recognises its own members and nothing else', () => {
+    for (const part of DAYPARTS) expect(isDaypart(part)).toBe(true);
+    for (const other of ['Morning', 'night', '', 'toString', 42, null, undefined, {}]) {
+      expect(isDaypart(other)).toBe(false);
+    }
   });
 });
 

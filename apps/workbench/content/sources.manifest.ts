@@ -471,7 +471,7 @@ export const SOURCES: SourceEntry[] = [
     status: 'no-source',
     mvp: true,
     module: 'packages/app-core/src/lib/daypart.ts',
-    note: 'The mechanism exists. Both MVP slots, the morning podcast and the evening Spotlight, resolve to nothing because of the row above.',
+    note: 'The mechanism exists: a section of the home layout document restricts itself to a daypart, and this file is the clock under it (ADR 0036). Both MVP slots, the morning podcast and the evening Spotlight, have no section at all because of the row above.',
     questions: [6, 7],
   },
   {
