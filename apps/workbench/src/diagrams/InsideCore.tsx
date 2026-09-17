@@ -62,7 +62,7 @@ export function InsideCoreDrawing({ alt = false }: { alt?: boolean } = {}) {
         packages/app-core
       </text>
       <text x="700" y="56" textAnchor="end" className={cn(MUTED, T12)}>
-        57 TypeScript files
+        58 TypeScript files
       </text>
 
       <rect x="56" y="80" width="648" height="84" rx="6" className={CHIP} />
@@ -342,7 +342,7 @@ export function InsideCore({ alt = true }: { alt?: boolean }) {
       }
     >
       <p>
-        <code>packages/app-core</code>, 57 TypeScript files. Imports point down the stack. Layers
+        <code>packages/app-core</code>, 58 TypeScript files. Imports point down the stack. Layers
         from the top:
       </p>
       <ol>

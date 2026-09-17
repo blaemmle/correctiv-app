@@ -67,7 +67,7 @@ import {
   sectionsAt,
   type HomeLayout,
 } from '@correctiv/app-core/lib/home-layout';
-import { MODULE_SETTINGS } from '@correctiv/app-core/lib/home-settings';
+import { HOME_MODULE_SETTINGS } from '@/lib/home/settings';
 import { resetStore } from '@correctiv/app-core/stores/store';
 
 import { render, walkHostNodes } from './support/rendering';
@@ -142,12 +142,17 @@ describe('the shipped home document', () => {
   });
 
   /**
-   * The settings table is in the core and the renderers are here, so nothing but this
-   * holds them together: a module the core declares settings for and this app cannot
-   * draw is a configuration surface for a block that does not exist.
+   * The declarations are keyed by a string, because typing them against `HOME_MODULES`
+   * would mean importing the React Native tree into a file Node has to be able to read
+   * (ADR 0045 §9). So nothing but this holds the two together: a module with a setting
+   * declared and no renderer here is a configuration surface for a block that does not
+   * exist.
    */
-  it('can draw every module the core declares a setting for', () => {
-    expect(Object.keys(MODULE_SETTINGS).filter((module) => !(module in HOME_MODULES))).toEqual([]);
+  it('can draw every module a setting is declared for', () => {
+    const undrawable = Object.keys(HOME_MODULE_SETTINGS).filter(
+      (module) => !(module in HOME_MODULES),
+    );
+    expect(undrawable).toEqual([]);
   });
 });
 

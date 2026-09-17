@@ -11,7 +11,11 @@ import {
   type ModuleSettings,
   type SettingValue,
 } from '@correctiv/app-core/lib/home-layout';
-import { settingsFor, type SettingSpec } from '@correctiv/app-core/lib/home-settings';
+import {
+  settingsFor,
+  type CountSetting,
+  type SettingSpec,
+} from '@correctiv/app-core/lib/home-settings';
 
 /**
  * The home document, as a thing that can be edited and printed.
@@ -132,7 +136,7 @@ export function settingLabel(module: string, spec: SettingSpec): { name: string;
   );
 }
 
-export { formatTimeOfDay, settingsFor, type SettingSpec };
+export { formatTimeOfDay, settingsFor, type CountSetting, type SettingSpec };
 
 // --- where in the day -----------------------------------------------------------
 

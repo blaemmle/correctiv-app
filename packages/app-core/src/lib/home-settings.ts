@@ -1,24 +1,40 @@
 /**
- * What a place on the home screen may be configured to show.
+ * What a place on the home screen may be configured to show: the kinds a setting comes
+ * in, and the two accessors a module reads one with.
  *
  * ADR 0036 §2 made the *arrangement* data and left what each place draws to the module
  * that draws it. [ADR 0039](../../../../adr/0039-the-home-screen-is-a-day-not-a-timetable.md)
  * §4 opens the second half: a section carries a `settings` object, its shape depends on
  * its module, and a moment can change one setting without restating the rest.
  *
- * ## Why the table is here and not in the host
+ * ## Why the table is in this package, and why it is not written here
  *
  * The parser has to refuse a setting a module does not understand, the way it already
  * refuses a key a section does not understand — a fetched document is somebody else's
  * file, and a place configured by a rule this app cannot apply is a place the newsroom
  * believes it configured. Refusing means knowing, so **which keys exist is part of the
- * document's grammar**, and the grammar is this package's.
+ * document's grammar**, and the grammar is this package's: `parseHomeLayout(document)`
+ * answers the same way in a test, in a check, in the configurator and in the app, with
+ * nothing booted first.
  *
- * What is NOT here is which modules a host can draw: that is the host's, it arrives as
- * `renderable` in `parseHomeLayout`, and the two questions are asked separately. Nor are
- * the words an editor reads. A label is how the workbench asks a person for a value, so
- * it lives beside the module labels the workbench already keeps, and
- * `apps/workbench/test/preview/home-document.test.ts` holds the two lists together in
+ * What it is NOT is a thing to write here.
+ * [ADR 0045](../../../../adr/0045-the-home-editor-arranges-the-blocks-it-draws.md) §9 puts
+ * the declaration beside the module that reads it, in `apps/mobile/src/lib/home/settings.ts`,
+ * and has `apps/mobile/scripts/generate-home-settings.mjs` carry it here into
+ * `home-settings.generated.ts`. A generator rather than an import, because this package is
+ * a dependency of that app and an import the other way is a cycle; a generator rather than
+ * registration at startup, because a table handed over at boot is a parser that answers
+ * differently depending on what ran first.
+ *
+ * So `MODULE_SETTINGS` below is re-exported rather than declared. Its members are not:
+ * `HERO_PIN` and the two counts live in the app now, because a module that READS a
+ * setting needs its exact kind and not the union.
+ *
+ * What is NOT here either way is which modules a host can draw: that is the host's, it
+ * arrives as `renderable` in `parseHomeLayout`, and the two questions are asked
+ * separately. Nor are the words an editor reads. A label is how the workbench asks a
+ * person for a value, so it lives beside the module labels the workbench already keeps,
+ * and `apps/workbench/test/preview/home-document.test.ts` holds the two lists together in
  * both directions.
  *
  * ## Why every setting carries its default
@@ -26,13 +42,15 @@
  * `latest-research` drew five items because `slice(1, 6)` said so in the app. The moment
  * an editor can change that number, "five" is a fact in two places — the module that
  * slices and the editor that has to show what happens when nobody has chosen. It is one
- * place, here, and both read it.
+ * place, in the declaration, and both read it.
  *
- * A module with no entry below understands no settings, which is most of them. That is
- * not an omission to fill in: a setting exists because somebody named an editorial
- * question it answers, and inventing one because a module looked bare is how a
+ * A module with no entry in the table understands no settings, which is most of them.
+ * That is not an omission to fill in: a setting exists because somebody named an
+ * editorial question it answers, and inventing one because a module looked bare is how a
  * configuration surface grows fields nobody uses and everybody has to keep working.
  */
+
+import { MODULE_SETTINGS } from './home-settings.generated';
 
 /** A choice of one item, by the address the app already addresses it with. */
 export interface ArticleSetting {
@@ -61,44 +79,13 @@ export interface CountSetting {
 export type SettingSpec = ArticleSetting | CountSetting;
 
 /**
- * The settings themselves, each named, then the table that says whose they are.
- *
- * Named rather than written inline in the table below, because a module that READS one
- * needs its exact kind and not the union: `pinnedItem(settings, HERO_PIN)` type-checks
- * and `pinnedItem(settings, MODULE_SETTINGS['article-hero'][0])` does not, since the
- * table is keyed by a string and answers with the union. Two constants and a table built
- * from them is one fact in one place either way.
- */
-export const HERO_PIN: ArticleSetting = { key: 'pin', kind: 'article', fallback: null };
-
-export const RESEARCH_COUNT: CountSetting = {
-  key: 'count',
-  kind: 'count',
-  min: 1,
-  max: 8,
-  fallback: 5,
-};
-
-export const FACT_CHECK_COUNT: CountSetting = {
-  key: 'count',
-  kind: 'count',
-  min: 1,
-  max: 12,
-  fallback: 8,
-};
-
-/**
  * Module name, as the document writes it, to the settings it understands.
  *
- * Three settings over two kinds, which is deliberately the smallest table that proves
- * the mechanism: different blocks want different settings, and one of them is the
- * "which article does this block highlight" the product side asked for by name.
+ * Generated from the declarations beside the modules, and re-exported here because this
+ * is the module the parser, the app and the workbench all already import. The file it
+ * comes from is the artefact; this is its address.
  */
-export const MODULE_SETTINGS: Readonly<Record<string, readonly SettingSpec[]>> = {
-  'article-hero': [HERO_PIN],
-  'latest-research': [RESEARCH_COUNT],
-  'faktencheck-rail': [FACT_CHECK_COUNT],
-};
+export { MODULE_SETTINGS };
 
 /** What a module understands, which for most of them is nothing. */
 export function settingsFor(module: string): readonly SettingSpec[] {
