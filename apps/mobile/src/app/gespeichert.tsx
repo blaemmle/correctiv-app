@@ -109,10 +109,16 @@ function SavedRow({ article }: { article: SavedArticle }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={intl.formatMessage(COPY.remove, { title: article.title })}
-        hitSlop={8}
         onPress={() => actions.savedArticles.remove(article.url)}
         className="items-center justify-center active:opacity-70"
-        style={{ width: sizes.iconButtonSmall, height: sizes.iconButtonSmall }}
+        /*
+         * The box rather than `hitSlop={8}` around a 36 dp one (#102). The slop
+         * read as 52 on the phone, as 36 in the browser — and this control sits at
+         * the right edge of a row whose left three quarters is a second control
+         * that opens the article, so an invisible rectangle around it is exactly
+         * the overlap the issue warns about. 44 is drawn, so it cannot overlap.
+         */
+        style={{ width: sizes.tapTarget, height: sizes.tapTarget }}
       >
         <Ionicons name="close" size={18} color={colors['grey-500']} />
       </Pressable>

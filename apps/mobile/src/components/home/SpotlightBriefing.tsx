@@ -7,6 +7,7 @@ import { formatDateShortDe } from '@correctiv/app-core/lib/format';
 import { Card, Hairline, Overline, SplitRow, Typo } from '@/components/ui';
 import { openExternal } from '@/lib/openExternal';
 import { useSpotlight } from '@/lib/store/core';
+import { sizes } from '@/lib/theme';
 
 /**
  * The card's own words, in ENGLISH; the German ships in
@@ -58,10 +59,15 @@ export function SpotlightBriefing({ onOpenArchive }: { onOpenArchive: () => void
         <Overline label="Spotlight" color="on-canvas" />
         <Pressable
           onPress={onOpenArchive}
-          hitSlop={8}
           accessibilityRole="link"
           accessibilityLabel={intl.formatMessage(COPY.allSpotlightIssues)}
-          className="active:opacity-60"
+          className="justify-center active:opacity-60"
+          /*
+           * 21 dp of link with an 8 dp slop around it before #102. The row is
+           * centred rather than bottom-aligned, so the box is too, and the card's
+           * header grows around the words instead of moving them.
+           */
+          style={{ minHeight: sizes.tapTarget }}
         >
           <Typo variant="text-s" weight="bold" color="accent">
             {intl.formatMessage(COPY.allIssues)} →
@@ -93,6 +99,14 @@ function IssueRow({ issue }: { issue: SpotlightIssue }) {
         accessibilityRole="link"
         accessibilityLabel={issue.subject}
         className="flex-row gap-s pt-s active:opacity-70"
+        /*
+         * A date and a subject on one line: 35 dp, and three of them stacked in the
+         * card, which is the shape a thumb misses (#102). The row keeps React
+         * Native's own `stretch`, so the words stay at the top where they were and
+         * the nine dp arrive underneath them. `minHeight` and not `height`, so a
+         * two-line subject still makes its own room.
+         */
+        style={{ minHeight: sizes.tapTarget }}
       >
         <Typo variant="text-s" weight="bold" color="on-canvas-muted">
           {formatDateShortDe(issue.date)}

@@ -96,7 +96,6 @@ export function MiniPlayer() {
           accessibilityRole="button"
           accessibilityLabel={intl.formatMessage(COPY.stop)}
           onPress={stop}
-          hitSlop={8}
           className="ml-2xs items-center justify-center active:opacity-70"
           style={{ width: sizes.iconButton, height: sizes.iconButton }}
         >

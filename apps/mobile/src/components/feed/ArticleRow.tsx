@@ -13,7 +13,22 @@ export function ArticleRow({
   onPress: (item: FeedItem) => void;
 }) {
   return (
-    <Pressable onPress={() => onPress(item)} className="py-s active:opacity-70">
+    <Pressable
+      onPress={() => onPress(item)}
+      /*
+       * A LINK, and named by its headline. Without the role TalkBack reads the
+       * three lines of this row as text and offers no "double tap to activate",
+       * and the rotor does not list it at all — a whole section of Home that a
+       * screen reader passes over on its way down (#102).
+       *
+       * The name is the headline alone: the author and the date below it are
+       * spoken after it as the row's own content, and folding them into the name
+       * would say them twice.
+       */
+      accessibilityRole="link"
+      accessibilityLabel={item.title}
+      className="py-s active:opacity-70"
+    >
       <Typo variant="headline-s" numberOfLines={3}>
         {item.title}
       </Typo>

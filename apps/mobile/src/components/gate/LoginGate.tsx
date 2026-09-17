@@ -11,7 +11,7 @@ import { accessShortfall, type AccessShortfall } from '@correctiv/app-core/store
 import { TIER_LABELS } from '@/lib/membership/tierLabel';
 import { openExternal } from '@/lib/openExternal';
 import { useCoreActions, useSession } from '@/lib/store/core';
-import { typography, useColors } from '@/lib/theme';
+import { sizes, typography, useColors } from '@/lib/theme';
 
 /**
  * Everything a person reads on the door, in one place.
@@ -449,8 +449,15 @@ function TextLink({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      hitSlop={8}
-      className="py-2xs active:opacity-60"
+      className="justify-center py-2xs active:opacity-60"
+      /*
+       * The door's two footer links were 33 dp tall with an 8 dp slop around them,
+       * which is 49 on the phone and 33 in the browser, because react-native-web
+       * draws no slop rectangle at all (#102). They sit at opposite ends of a
+       * `SplitRow` and the slop never reached far enough to overlap, so what the
+       * box buys here is the browser and the system font, not the neighbour.
+       */
+      style={{ minHeight: sizes.tapTarget }}
     >
       <Typo
         variant="text-s"

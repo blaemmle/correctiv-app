@@ -2,6 +2,7 @@ import { Pressable } from 'react-native';
 
 import { SplitRow } from './SplitRow';
 import { Typo } from './Typo';
+import { sizes } from '@/lib/theme';
 
 export type SectionHeaderProps = {
   title: string;
@@ -33,10 +34,20 @@ export function SectionHeader({ title, actionLabel, onAction, className }: Secti
       {actionLabel ? (
         <Pressable
           onPress={onAction}
-          hitSlop={8}
           accessibilityRole="link"
           accessibilityLabel={actionLabel}
-          className="active:opacity-60"
+          className="justify-end active:opacity-60"
+          /*
+           * One line of `text-s` is a 21 dp target, and `hitSlop={8}` made it 37 on
+           * the phone and left it at 21 in the browser (#102).
+           *
+           * `justify-end` inside the box, under the row's own `align="end"`: the
+           * words stay exactly where they were, on the heading's bottom edge, and
+           * the box grows UPWARDS into the space above the heading, which holds
+           * nothing. Centring them instead would lift the link off that edge and
+           * break the one alignment this row exists to make.
+           */
+          style={{ minHeight: sizes.tapTarget }}
         >
           <Typo variant="text-s" color="accent">
             {actionLabel} →
