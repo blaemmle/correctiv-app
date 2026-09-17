@@ -11,7 +11,13 @@ import { fileKey } from '@correctiv/app-core/services/cache.service';
 import { PERSISTED_KEYS as SESSION_KEYS } from '@correctiv/app-core/stores/session';
 import { PERSISTED_KEYS as SETTINGS_KEYS } from '@correctiv/app-core/stores/settings';
 
-import { applyFixture, FIXTURES, holdTheDoorOpen, SEEDED_KEY } from '../../src/preview/frame/seed';
+import {
+  applyFixture,
+  ensureOnboarded,
+  FIXTURES,
+  holdTheDoorOpen,
+  SEEDED_KEY,
+} from '../../src/preview/frame/seed';
 
 /** Every source file under a directory, so a new one is checked without being listed. */
 function sources(dir: string, out: string[] = []): string[] {
@@ -248,6 +254,72 @@ describe('holding the door open', () => {
     } as unknown as Storage;
 
     expect(() => holdTheDoorOpen(blocked)).not.toThrow();
+  });
+});
+
+/**
+ * `Preview.tsx`'s frame starts at `/`, where the root layout redirects an admitted
+ * but not-yet-onboarded session to onboarding — the one screen `holdTheDoorOpen`
+ * alone traded the sign-in form for, on the plain `/preview` link `RELEASE.md`
+ * hands out. `AppFrame.tsx`'s routes are never `/`, so this never mattered there.
+ */
+describe('completing onboarding for a held-open door', () => {
+  it('does nothing to a session it did not open', () => {
+    const store = new FakeStorage() as unknown as Storage;
+    const mine = {
+      account: { email: 'me@example.org', name: 'Me' },
+      entitlement: { tier: 'paid', appAccess: true },
+    };
+    store.setItem(`${STATE_PREFIX}store.session`, JSON.stringify(mine));
+    // A real, in-progress onboarding — not this function's to skip.
+    store.setItem(`${STATE_PREFIX}store.settings`, JSON.stringify({ onboardingDone: false }));
+
+    ensureOnboarded(store);
+
+    expect(payload(store, 'settings')).toEqual({ onboardingDone: false });
+  });
+
+  it('marks onboarding done for the door it just held open', () => {
+    const store = new FakeStorage() as unknown as Storage;
+    holdTheDoorOpen(store);
+
+    ensureOnboarded(store);
+
+    expect(payload(store, 'settings').onboardingDone).toBe(true);
+  });
+
+  it('keeps every other field a held-open session already had', () => {
+    const store = new FakeStorage() as unknown as Storage;
+    holdTheDoorOpen(store);
+    store.setItem(`${STATE_PREFIX}store.settings`, JSON.stringify({ textScale: 1.15 }));
+
+    ensureOnboarded(store);
+
+    expect(payload(store, 'settings')).toEqual({ textScale: 1.15, onboardingDone: true });
+  });
+
+  it('writes nothing once onboarding is already done', () => {
+    const store = new FakeStorage() as unknown as Storage;
+    holdTheDoorOpen(store);
+    store.setItem(`${STATE_PREFIX}store.settings`, JSON.stringify({ onboardingDone: true }));
+    const before = store.getItem(`${STATE_PREFIX}store.settings`);
+
+    ensureOnboarded(store);
+
+    expect(store.getItem(`${STATE_PREFIX}store.settings`)).toBe(before);
+  });
+
+  it('says nothing when the store refuses both the read and the write', () => {
+    const blocked = {
+      getItem: () => {
+        throw new Error('The operation is insecure.');
+      },
+      setItem: () => {
+        throw new Error('The operation is insecure.');
+      },
+    } as unknown as Storage;
+
+    expect(() => ensureOnboarded(blocked)).not.toThrow();
   });
 });
 

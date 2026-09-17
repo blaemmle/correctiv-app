@@ -302,10 +302,13 @@ export function applyFixture(store: Storage, id: string): void {
  * developer looking at a framed component can tell a held door from a sign-in.
  * A door that quietly opens is worse than one that asks.
  *
- * `settings` is deliberately left alone: the onboarding redirect fires only from
- * `/`, and nothing this is used for starts there. What it writes does outlive the
- * page, like every fixture — the next visit to `/preview` that names no fixture
- * finds this session rather than the door.
+ * `settings` is deliberately left alone here: the onboarding redirect fires only
+ * from `/`, and nothing on `/components/<group>/<name>` starts there. What it
+ * writes does outlive the page, like every fixture — the next visit to `/preview`
+ * that names no fixture finds this session rather than the door. `/preview`'s own
+ * main frame DOES start at `/`, so it calls `ensureOnboarded` alongside this one
+ * below rather than widening this function's contract for a caller that never
+ * needed it.
  *
  * **Two `try` blocks and not one.** A store that cannot be read is the ordinary
  * case, and the answer to it is to write; a store that cannot be *written* is a
@@ -332,5 +335,36 @@ export function holdTheDoorOpen(store: Storage): void {
     store.setItem(SEEDED_KEY, new Date().toISOString());
   } catch {
     // Site data switched off. Nothing can be seeded, and nothing may throw.
+  }
+}
+
+/**
+ * Marks onboarding done for the session `holdTheDoorOpen` admitted, so the
+ * root layout's redirect does not trade the sign-in form for "Los geht's".
+ *
+ * A door held open with no completed onboarding is the same fault one screen
+ * later: still nothing behind it for a tool built to show the Home screen —
+ * `/preview` with the home tool open and no `s=` landed here, edits reaching
+ * storage and no screen for them to redraw. `AppFrame.tsx`'s routes are never
+ * `/`, so onboarding never entered play there and `holdTheDoorOpen` was right
+ * to leave `settings` alone for it; `/preview`'s own frame starts at `/` and
+ * needs both.
+ *
+ * Gated on `SEEDED_KEY`, the same marker `holdTheDoorOpen` writes, so this
+ * only ever completes the synthetic "Handbuch" account's onboarding — never a
+ * real visitor's own progress, which is exactly as much theirs to skip as
+ * their sign-in is. Additive like `holdTheDoorOpen`: an existing `settings`
+ * value keeps every field it already had.
+ */
+export function ensureOnboarded(store: Storage): void {
+  try {
+    if (!store.getItem(SEEDED_KEY)) return;
+    const raw = store.getItem(`${STATE_PREFIX}store.settings`);
+    const settings = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    if (settings.onboardingDone === true) return;
+    kv(store, 'settings', { ...settings, onboardingDone: true });
+  } catch {
+    // Unparsable or unwritable: the same two faults `holdTheDoorOpen` guards
+    // against, and the same answer — nothing here may throw.
   }
 }
