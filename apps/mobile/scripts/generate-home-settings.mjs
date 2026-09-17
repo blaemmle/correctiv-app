@@ -107,16 +107,19 @@ function packageRootNamed(name) {
   }
 }
 
-const APP = packageRootNamed(APP_PKG_NAME);
-const REPO = packageRootNamed(REPO_PKG_NAME);
+/**
+ * The two roots, exported for the same reason `OUT` below is: so that the drift check
+ * spells no path of its own. It reads the declarations, this package's manifest and the
+ * root's, and the first version of it counted `..` from `__dirname` for all three —
+ * inside the file written to police the opposite, in the commit that wrote the walk.
+ */
+export const APP = packageRootNamed(APP_PKG_NAME);
+export const REPO = packageRootNamed(REPO_PKG_NAME);
 
 /** The declarations, as a path rather than a specifier, because it is a `.ts` file. */
 const DECLARATIONS = resolve(APP, 'src/lib/home/settings.ts');
 
-/**
- * Where the artefact goes, exported so the drift check reads one path rather than
- * counting its own `..`s to the same file.
- */
+/** Where the artefact goes, exported so the check reads a path rather than spelling it. */
 export const OUT = resolve(REPO, 'packages/app-core/src/lib/home-settings.generated.ts');
 
 /**
