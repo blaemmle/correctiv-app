@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Forty-four records shaped this repo. Read them when you want to know *why* something
+Forty-five records shaped this repo. Read them when you want to know *why* something
 is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it is.
 
 | | Decision | Status |
@@ -40,7 +40,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0033](0033-one-text-size-for-the-whole-app-the-systems-by-default.md) | One text size for the whole app, the system's by default | accepted, **not built**; retires the article scale's meaning, needs #158 first, and names the one opt-out the accessibility check has to excuse |
 | [0034](0034-one-component-for-the-two-sided-row.md) | One component for the two-sided row, and a tab bar that stops pretending at 130 % | accepted and carried out the same day; retires the every-label claim in 0013, and is the prerequisite 0033 names |
 | [0035](0035-a-check-that-opens-the-page.md) | A check that opens the page, because nobody forgot anything | accepted, built; retires nothing, and argues why 0031's four mechanisms could not have caught a page that mounted nothing |
-| [0036](0036-the-home-screen-becomes-data.md) | The home screen becomes data, and the app survives what it does not know | accepted, partly built in #177 — the document, its parser and its default layout; the fetch, the configurator and the workbench's scenarios are **not built**; sixteen decisions from a product interview, retires nothing, narrows #163 to its last question and leaves that one to the source decision; five of its own claims retired by 0039 |
+| [0036](0036-the-home-screen-becomes-data.md) | The home screen becomes data, and the app survives what it does not know | accepted, partly built in #177 — the document, its parser and its default layout; the fetch, the configurator and the workbench's scenarios are **not built**; sixteen decisions from a product interview, retires nothing, narrows #163 to its last question and leaves that one to the source decision; five of its own claims retired by 0039 and four of §2's by 0045 |
 | [0037](0037-the-whole-site-is-the-workbench.md) | The whole site is the workbench, and the device frame is `/preview` | accepted and carried out the same day; retires two of 0024's, renames nothing in here, and is why the note below exists |
 | [0038](0038-one-tool-at-a-time-in-a-rail.md) | One tool at a time, in a rail | accepted and carried out the same day; six decisions, retires four of 0028's claims and names one it read and left standing, two open items named |
 | [0039](0039-the-home-screen-is-a-day-not-a-timetable.md) | The home screen is a day, not a timetable | accepted and carried out the same day; eleven decisions, replaces the dayparts with a sequence of moments and deletes `lib/daypart.ts`, retires five of 0036's claims and names three it read and left standing, three open items named |
@@ -49,6 +49,7 @@ is the way it is; [`../ARCHITECTURE.md`](../ARCHITECTURE.md) describes *what* it
 | [0042](0042-the-timeline-belongs-to-the-stage.md) | The timeline belongs to the stage, not the tools | accepted, **not built**; five decisions, moves 0039 §10's track out of the tool panel and keeps it in `full` above 64rem only, strikes nothing and says which sentence the carrying-out will strike, two open items named |
 | [0043](0043-two-concepts-become-packages-and-the-shell-stays.md) | Two concepts become packages, and the shell stays | accepted, **not built**; seven decisions, two capabilities surveyed and declined as already published, Backstage measured and rejected, two gaps recorded as deliberately unfilled, four open items named |
 | [0044](0044-the-workbench-drives-a-real-device.md) | The workbench drives a real device, in the same view | accepted in shape, **not built** and not measured; five decisions, the ground it stands on measured over Android and nothing at all on iOS, names the one experiment that decides whether the shape is worth building, four open items named |
+| [0045](0045-the-home-editor-arranges-the-blocks-it-draws.md) | The home editor arranges the blocks it draws, and a module declares its own settings | accepted, **not built**, and the same piece of work as 0042; ten decisions, makes the day's arrangement the editor's and gives each module a declaration a generator carries into the core, retires four claims in 0036 §2 and names 0039 §3 read and left untouched, five open items named |
 
 Ten notes for readers of the older ones:
 

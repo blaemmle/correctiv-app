@@ -88,17 +88,30 @@ But the **document** is designed as though the newsroom already owned it: no fie
 "the person editing this knows the codebase". Then handing it over is a step and not a
 rebuild, and everything below can be built today without waiting for the answer.
 
-### 2. Fixed places that get filled, not blocks that get arranged
+### 2. Fixed places that get filled, ~~not blocks that get arranged~~, voided by [ADR 0045](0045-the-home-editor-arranges-the-blocks-it-draws.md) §4
 
-The configuration says what goes in each named place. It does not say where the places are
-or how many there are.
+The configuration says what goes in each named place. ~~It does not say where the places are
+or how many there are.~~ It says both, and has since
+[#177](https://github.com/faktenforum/correctiv-app/pull/177) made `sections` an ordered
+list that `home-layout.ts` calls "Ordered: the host draws them in this order and adds no
+order of its own"; the editor has rewritten that order since
+[#184](https://github.com/faktenforum/correctiv-app/pull/184).
+[ADR 0045](0045-the-home-editor-arranges-the-blocks-it-draws.md) §4 is the record that
+makes it deliberate and adds adding and removing to it.
 
 Free arrangement would mean a layout engine in the app, a rendering rule for every
 combination, and a default layout that is itself a program. Fixed places mean the app draws
 what it already draws, the default is a short literal, and an unknown arrangement cannot
-exist because arrangement is not configurable.
+exist ~~because arrangement is not configurable~~ — because an arrangement can only name
+modules the app ships, and one it cannot draw is dropped and reported by §7 below. The
+conclusion stands and its reason does not, voided by
+[ADR 0045](0045-the-home-editor-arranges-the-blocks-it-draws.md) §4.
 
-The cost is real and accepted: a new place is an app release, not a configuration change.
+~~The cost is real and accepted: a new place is an app release, not a configuration change.~~
+Voided by [ADR 0045](0045-the-home-editor-arranges-the-blocks-it-draws.md) §4, and already
+false before it: a new **module** is an app release, and a place naming a module the app
+already holds is a line in the document — which is what the callout's two sections have
+been since [#177](https://github.com/faktenforum/correctiv-app/pull/177).
 That is the right way round for a screen of this length, and it is the arrangement
 `daypart.ts` already has — its two positions for the callout are both written in the
 screen, and only the choice between them is data.

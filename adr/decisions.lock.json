@@ -247,7 +247,10 @@
     "slugs": ["the-home-screen-becomes-data"],
     "decisions": {
       "1": ["The configurator is built for us, and the document is designed for the newsroom"],
-      "2": ["Fixed places that get filled, not blocks that get arranged"],
+      "2": [
+        "Fixed places that get filled, not blocks that get arranged",
+        "Fixed places that get filled, ~~not blocks that get arranged~~, voided by [ADR 0045](0045-the-home-editor-arranges-the-blocks-it-draws.md) §4"
+      ],
       "3": ["A place carries either a pinned item or a rule, and the rule is what runs unattended"],
       "4": ["A small document the app fetches and stores"],
       "5": ["Fetched at launch and on every return to the foreground, with a floor between tries"],
@@ -363,6 +366,23 @@
       "3": ["A tool that cannot reach the device is visibly disabled and says why"],
       "4": ["A native-reachable seam for the two overrides, fenced the way Rozenite is"],
       "5": ["The first experiment, and what it settles"]
+    }
+  },
+  "0045": {
+    "slugs": ["the-home-editor-arranges-the-blocks-it-draws"],
+    "decisions": {
+      "1": ["The list is the day, the frame is the moment"],
+      "2": ["A block that is not on screen at the playhead collapses to its row"],
+      "3": ["The blocks are drawn, not described"],
+      "4": ["The arrangement is the document's, and the editor writes it: add, remove, reorder"],
+      "5": ["`hidden` stays in the document and leaves the interface"],
+      "6": ["An insertion mark between two blocks, offering the modules drawn the same way"],
+      "7": ["One handle, two ways, and the arrow buttons go"],
+      "8": ["Settings expand under their block, and a count is a slider"],
+      "9": [
+        "A module declares its settings beside itself, and a generator carries them into the core"
+      ],
+      "10": ["The gallery gets a module's settings with the declaration"]
     }
   }
 }
