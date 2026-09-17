@@ -60,6 +60,7 @@
     "build:workbench": "npm run build -w @correctiv/workbench",
     "workbench:renders": "npm run renders -w @correctiv/workbench",
     "workbench:renders:dist": "npm run renders:dist -w @correctiv/workbench",
+    "workbench:home-live": "npm run home-live -w @correctiv/workbench",
     "app": "npm run web -w @correctiv/mobile",
     "prepare": "husky || true"
   },

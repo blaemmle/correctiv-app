@@ -12,6 +12,7 @@
     "measure-direct": "node scripts/measure-direct.mjs",
     "renders": "node scripts/renders.mjs dev",
     "renders:dist": "node scripts/renders.mjs dist",
+    "home-live": "node scripts/home-live.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "measure-sources": "node scripts/measure-sources.mjs"

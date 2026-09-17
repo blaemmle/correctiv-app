@@ -238,6 +238,31 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      # The home-tool check needs the export pages.yml actually deploys — based
+      # under /app/, not root — so it is re-exported after the plain one above is
+      # already uploaded: an export with the wrong base 404s every asset under
+      # /app/, a different, already-guarded failure (TROUBLESHOOTING.md, "A
+      # default export writes URLs absolute from the domain root"). Metro's
+      # cache is warm from the export at the top of this job.
+      - name: Export the app again, based for the workbench's /app/
+        working-directory: apps/mobile
+        env:
+          EXPO_BASE_URL: /app
+        run: npm run build:web
+
+      # `apps/workbench/dist` alone, which is all `workbench:renders:dist` above
+      # ever serves, has no `/app/` under it — so it could not have caught this,
+      # and did not: a first visit to `/preview` with the home tool open and no
+      # `s=` fixture (the plain link RELEASE.md hands out) opened the app frame
+      # on the sign-in door, and every edit in the tool reached storage with no
+      # screen behind the door to redraw it. `scripts/home-live.mjs` assembles
+      # both halves the way `pages.yml` does, opens exactly that address, and
+      # drives the tool the way a person would.
+      - name: Assert a fresh visit to the home tool actually redraws the app frame
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: npm run workbench:home-live
+
   android:
     name: Android build
     runs-on: ubuntu-latest

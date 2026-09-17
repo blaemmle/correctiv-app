@@ -21,7 +21,7 @@ import { applyTheme, BASE, driveRoute, frameRoute, keepFramePath, navigate } fro
 import { armPicker, openInEditor, type Located } from './frame/locate';
 import { audit, setOutline, type Finding } from './frame/measure';
 import { waitReady } from './frame/ready';
-import { applyFixture } from './frame/seed';
+import { applyFixture, ensureOnboarded, holdTheDoorOpen } from './frame/seed';
 import { apply as applyTokens, type Scheme } from './frame/tokens';
 import { addLog, clearLogs, getLogs, subscribeLogs } from './logs';
 import { HOST_DEVICE } from './devices';
@@ -145,6 +145,25 @@ export function usePreview() {
       applyFixture(window.localStorage, state.seed);
       seeded.current = state.seed;
       reseed = true;
+    } else if (state.seed === null) {
+      // "Must not wipe" is not "must show a stranger the sign-in form". A
+      // first visit to that plain link has nothing stored yet, so the door —
+      // and then onboarding behind it — stood between it and every tool on
+      // this page, the Home layout editor included: every edit landed in
+      // storage and never reached a screen, because there was no screen
+      // behind either gate to redraw. That read as "moving a block does not
+      // redraw the app" and was reported as one, on the published site, from
+      // a visitor who had never opened it before. `AppFrame.tsx` already
+      // carries `holdTheDoorOpen` for every component page and the reasoning
+      // for it: "a frame that draws the door is worse than one that draws a
+      // component"; `ensureOnboarded` is the same argument one screen later,
+      // needed here and not there because this frame, unlike that one, starts
+      // at `/`. Both are idempotent and touch nothing once a session —
+      // seeded or real — is already held, so this changes nothing for a
+      // returning visitor and nothing for `s=fresh` or `s=no-access`, which
+      // choose the door on purpose and take the branch above instead.
+      holdTheDoorOpen(window.localStorage);
+      ensureOnboarded(window.localStorage);
     }
 
     const moving = reseed || frameRoute(frame.contentWindow) !== state.route;

@@ -72,14 +72,38 @@ npm run workbench:renders        # starts the dev server, asserts the page rende
 npm run build:workbench && npm run workbench:renders:dist
 ```
 
-`apps/workbench/scripts/renders.mjs` is what those run, and it is the only check in the
-repository that opens a browser. Three things have to hold, and the second is the one
-that is not obvious: the shell mounted, what mounted is not the error boundary standing
-in for a route that threw — it wraps the main area only, so a broken route still leaves
-a header, a rail and a page full of words — and the browser logged no error. The second
-command is in that order on purpose: `renders:dist` reads `dist/` and refuses to judge
-one older than the working tree. It says in its own header what it cannot see, which is
-everything about how the page looks.
+`apps/workbench/scripts/renders.mjs` is what those run. Three things have to hold, and
+the second is the one that is not obvious: the shell mounted, what mounted is not the
+error boundary standing in for a route that threw — it wraps the main area only, so a
+broken route still leaves a header, a rail and a page full of words — and the browser
+logged no error. The second command is in that order on purpose: `renders:dist` reads
+`dist/` and refuses to judge one older than the working tree. It says in its own header
+what it cannot see, which is everything about how the page looks — and one thing it
+cannot see at all is inside the app frame, because it serves `apps/workbench/dist`
+alone and `/app/` is not under it. `apps/workbench/scripts/home-live.mjs` is the second
+check that opens a browser, for exactly that gap.
+
+**A first visit to `/preview` with the home tool open opened on the sign-in door, and
+every edit was silently lost to it.** `/preview` with no `s=` — the plain link
+`RELEASE.md` hands out — leaves storage exactly as a first-time visitor's browser has
+it: nothing. The root layout renders the door instead of the router until a session is
+admitted, so the app frame showed the sign-in form, and the Home layout tool's every
+edit reached `localStorage` (`preview/home/write.ts` never stopped working) with no
+screen behind the door to redraw. That read as "moving a block does not redraw the
+app" and was reported as one, from the published site. `AppFrame.tsx` already calls
+`holdTheDoorOpen` for every `/components/<group>/<name>` page and says why: "a frame
+that draws the door is worse than one that draws a component" — but nothing called it
+for `/preview`'s own frame, which is the gap. Holding the door open alone still left
+the frame on "Los geht's": the root layout also redirects an admitted-but-unonboarded
+session to onboarding, which `AppFrame.tsx` never meets because none of its routes are
+`/`, and `/preview`'s frame starts there. → `preview/Preview.tsx` now calls both
+`holdTheDoorOpen` and `preview/frame/seed.ts`'s new `ensureOnboarded` when no fixture is
+named, gated on the same `SEEDED_KEY` marker so a real visitor's own session or
+progress is never touched, and `s=fresh` / `s=no-access` — which choose the door on
+purpose — take a different branch entirely.
+`apps/workbench/scripts/home-live.mjs` assembles the workbench and the app the way
+`pages.yml` does, opens `/preview#/?tool=home` with no fixture, and fails if the frame
+is still on the door or if moving a block does not change what it draws.
 
 ## Expo / React Native
 
