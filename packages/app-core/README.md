@@ -12,8 +12,8 @@ No `react`, `react-native`, `expo`, `vue`, `zustand` or `node:*` import, ever. `
 and names the offender.
 
 If something needs a platform, it becomes a **port**: an interface in
-`src/ports/index.ts` that the host implements. There are four, and that file is the
-whole cost of adding a host. See [ARCHITECTURE.md](../../ARCHITECTURE.md#the-four-ports).
+`src/ports/index.ts` that the host implements. There are five, and that file is the
+whole cost of adding a host. See [ARCHITECTURE.md](../../ARCHITECTURE.md#the-five-ports).
 
 ## Layout
 
@@ -28,7 +28,7 @@ import type { Article } from '@correctiv/app-core/articles/types';
 ```
 
 ```
-src/ports/       KeyValueStore · BlobStore · ContentBundle · AudioBackend
+src/ports/       KeyValueStore · BlobStore · ContentBundle · AudioBackend · ErrorReporter
 src/types/       FeedItem, Video, AudioTrack, MediaChannel
 src/articles/    the Article model, the fact-check vocabulary, page meta,
                  the reader document, the load cascade, the offline collector
@@ -71,7 +71,7 @@ npm test -w @correctiv/app-core        # vitest, ~0.5 s
 npm run test:watch                     # from the repo root
 ```
 
-197 tests against real captured correctiv.org pages and feeds, plus two
+421 tests against real captured correctiv.org pages and feeds, plus two
 architectural guards: the platform boundary, and the agreement between the two
 extraction backends (they must produce the same article from the same page, or the
 choice of backend has become a fork).

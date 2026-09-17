@@ -1,8 +1,11 @@
 # ADR 0036 — The home screen becomes data, and the app survives what it does not know
 
 Status: accepted, 2026-09-16, decided by the product side after an interview that closed
-every question but one. **Not built.** The open question is named at the end and hangs on
-the source decision `SOURCES.md` still carries.
+every question but one. ~~**Not built.**~~ Partly built, in
+[#177](https://github.com/faktenforum/correctiv-app/pull/177): the document, its parser and
+its default layout carry §2, §6, §7, §10 and §14. Fetching one (§4, §5), the configurator
+(§1, §15) and scenarios in the workbench (§11–§13) are not. The open question is named at
+the end and hangs on the source decision `SOURCES.md` still carries.
 
 ## Context
 
@@ -18,11 +21,15 @@ most of this decision:
 - `DAYPART_HOURS` is a table of **editorial numbers**, and its own comment says why it is
   a table: *"so moving them is an edit and not a rewrite, and so a reviewer can argue with
   the numbers without reading the code."* That is a configuration. It is compiled in.
-- `WANTED` is a `Record<Daypart, TimedModule | null>` — a closed set the compiler checks,
+- ~~`WANTED` is a `Record<Daypart, TimedModule | null>` — a closed set the compiler checks,
   which is mechanism 1 of [ADR 0031](0031-four-mechanisms-for-this-must-not-be-forgotten.md)
-  already in place for this exact question.
-- `timedModuleAt` returns `null` for a module the app cannot render, rather than lifting
-  an empty slot. The app **already** draws what it knows and skips the rest.
+  already in place for this exact question.~~ Moved to `home.layout.json` and
+  `lib/home-layout.ts` by [#177](https://github.com/faktenforum/correctiv-app/pull/177); the
+  closed set is `HomeSection['dayparts']` against the `Daypart` union now, and `daypart.ts`
+  no longer declares `WANTED` at all.
+- ~~`timedModuleAt` returns `null` for a module the app cannot render, rather than lifting
+  an empty slot.~~ Renamed `sectionsAt`, in the same move, in the same file. The app
+  **already** draws what it knows and skips the rest.
 
 So this record is not "build a dynamic home screen". It is: **that table stops being
 source and becomes a document, and it grows from one place to all of them.** Everything
@@ -134,8 +141,11 @@ fully understand breaks every time the configuration is ahead of it, which is ev
 anything new ships. Drawing past is the only behaviour that survives its own release
 schedule.
 
-Reporting is the other half, and it is the half `daypart.ts` does not have: its `AVAILABLE`
-set silently resolves two of its three named modules to nothing. **That silence is correct
+Reporting is the other half. ~~It is the half `daypart.ts` does not have: its `AVAILABLE`
+set silently resolves two of its three named modules to nothing.~~ It was the half
+`daypart.ts` did not have: its `AVAILABLE` set silently resolved two of its three named
+modules to nothing, until [#177](https://github.com/faktenforum/correctiv-app/pull/177)
+deleted `AVAILABLE` along with `WANTED` and `timedModuleAt`. **That silence was correct
 there and would be wrong here**, and the difference is worth naming so the code is not
 copied along with its reasoning. A module with no source yet is a known gap, deliberate,
 recorded in a comment, and true on every launch — reporting it would be reporting our own
@@ -187,7 +197,10 @@ The rendering, the validator and the default layout are three copies of one fact
 generated from a single definition, so a new place without a rendering is a **compile
 error** — mechanism 1 in ADR 0031, a `Record<PlaceId, …>` over a closed union.
 
-`WANTED` is already exactly this shape for the daypart table. The gallery catalogue is the
+~~`WANTED` is already exactly this shape for the daypart table.~~ `WANTED` was already
+exactly this shape for the daypart table, before
+[#177](https://github.com/faktenforum/correctiv-app/pull/177) carried this section out and
+gave the shape to `HomeSection['dayparts']` instead. The gallery catalogue is the
 same move one rung further along the same ladder: `components.generated.ts` reads the
 component folder into a union, which is mechanism 2, and `gallery/catalogue.tsx` is held
 against that union, so a component with no entry does not compile. Both are chosen for the

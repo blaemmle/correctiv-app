@@ -62,7 +62,7 @@ export function SignInDrawing({ alt = false }: { alt?: boolean } = {}) {
       </defs>
 
       {/*
-        The upper half is drawn the way the other four drawings draw a fact: a
+        The upper half is drawn the way four of the other drawings draw a fact: a
         solid frame, solid boxes, ordinary weight. Everything below the red line
         is dashed. That is the one distinction this picture has to carry, because
         a reader in a meeting takes an undifferentiated diagram as built.
