@@ -24,6 +24,20 @@
 export const HOME_LAYOUT_KEY = 'workbench:home-layout';
 
 /**
+ * Where the app looks for a time somebody else is pretending it is.
+ *
+ * The same string as `HOME_TIME_OVERRIDE_KEY` in `apps/mobile/src/lib/home/clock.ts`,
+ * and the app's file is where the argument for it lives. It is here rather than beside
+ * the tool that writes it for the same reason the layout key is: this file has no
+ * imports, so the dev server can read a name out of it without loading the core.
+ *
+ * `test/preview/home-document.test.ts` holds the two spellings together, because the
+ * failure is silent in the same way — the timeline would move, the frame would go on
+ * showing whatever hour it actually is, and nothing anywhere would say why.
+ */
+export const HOME_TIME_KEY = 'workbench:home-time';
+
+/**
  * The endpoint `plugin/home-layout.ts` answers on, in development and nowhere else.
  *
  * `__workbench` is a prefix no route, no document and no proxy rule in `vite.config.ts`

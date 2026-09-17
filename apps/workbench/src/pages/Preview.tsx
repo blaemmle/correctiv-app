@@ -118,7 +118,7 @@ export function Preview({ address, onAddress, wide, full }: ShellProps) {
       </Slot>
 
       <Slot id="home">
-        <HomeDocument />
+        <HomeDocument state={state} onChange={preview.onChange} />
       </Slot>
 
       {/* Two marks on the rail, and nothing on the other five. A tool whose

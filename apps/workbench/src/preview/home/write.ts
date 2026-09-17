@@ -1,7 +1,7 @@
 import { parseHomeLayout, type HomeLayout } from '@correctiv/app-core/lib/home-layout';
 
 import {
-  changed,
+  differs,
   formatLayoutDocument,
   HOME_LAYOUT_ENDPOINT,
   HOME_LAYOUT_KEY,
@@ -33,7 +33,7 @@ import {
  */
 export function publish(layout: HomeLayout): void {
   try {
-    if (changed(layout).length === 0) window.localStorage.removeItem(HOME_LAYOUT_KEY);
+    if (!differs(layout)) window.localStorage.removeItem(HOME_LAYOUT_KEY);
     else window.localStorage.setItem(HOME_LAYOUT_KEY, formatLayoutDocument(layout));
   } catch {
     // Site data switched off. Nothing can be previewed, and nothing may throw.
