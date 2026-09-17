@@ -299,9 +299,11 @@ jobs:
   # stale configuration list is the exact failure the other half exists to catch. The
   # second `npm ci` is part of that honesty: it leaves the tree npm would have
   # installed had the directory never been there, which drops the workspace symlink
-  # AND the packages only the workbench declares (57 of them, measured 2026-09-17).
-  # An app that builds only because a developer tool's dependencies happen to be
-  # hoisted to the root is depending on that tool, and no source read can see it.
+  # AND the packages only the workbench declares. How many that is on the day is in
+  # the two "added N packages" lines this job prints, and no number is typed here,
+  # because it is a different number on a runner and on a laptop. An app that builds
+  # only because a developer tool's dependencies happen to be hoisted to the root is
+  # depending on that tool, and no source read can see it.
   #
   # WHY IT COMPARES THE EXPORT RATHER THAN JUST BUILDING IT. "It still builds" cannot
   # see the silent-contribution shapes above at all. Every bundle `expo export`
