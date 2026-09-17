@@ -603,7 +603,21 @@ export function Decisions() {
               nothing visible out there.
             */}
             <div className="relative mt-s min-w-0 overflow-x-auto rounded-md border border-stroke">
-              <table className="w-full min-w-[40rem] border-collapse text-left">
+              {/*
+                `min-w-[56rem]`, raised from `40rem` for issue #173. Auto table
+                layout does not treat a column's `w-[13rem]` as a floor: below the
+                table's own content minimum — measured at 756px, because the
+                widest cell is a record's chips laid out on one line — every
+                column sits on ITS OWN minimum instead, and `Struck claims`
+                collapses to under half its declared width. Each chip then wraps
+                to a row of its own, so a record with several strikes grows a row
+                past 200px tall, mostly off the right edge of this box at a narrow
+                window: a screenshot of the visible half reads as empty space.
+                Forcing the table wider than its own content minimum is what lets
+                the declared width apply again; the box above still scrolls, so
+                the page itself never does.
+              */}
+              <table className="w-full min-w-[56rem] border-collapse text-left">
                 <caption className="border-b border-stroke bg-surface px-s py-xs text-left text-s text-on-canvas-muted">
                   Every architecture decision record in <code className="font-mono">adr/</code>,
                   with what has since been struck inside it.

@@ -990,7 +990,20 @@ export function Sources() {
             stops it: a positioned ancestor is what the spans then resolve against.
           */}
             <div className="relative mt-s min-w-0 overflow-x-auto rounded-md border border-stroke">
-              <table className="w-full min-w-[44rem] border-collapse text-left">
+              {/*
+                `min-w-[70rem]`, raised from `44rem` for issue #173, the sibling of
+                the bug this file's own comment measured above: the table's content
+                minimum was already 936px, past `44rem` (704px), so that class did
+                nothing and every column, "Reads from" included, sat on its own
+                minimum rather than the widths declared below. A row wrapped its
+                module path across several lines and grew past 129px tall, mostly
+                scrolled out of this box at a narrow window, which reads as an
+                empty row rather than a wrapped one. `70rem` matches the table's
+                own preferred width — what it already draws at a window wide
+                enough to give it room — so a row is 84.5px tall at every width
+                measured, narrow included, and the box above is what scrolls.
+              */}
+              <table className="w-full min-w-[70rem] border-collapse text-left">
                 <caption className="border-b border-stroke bg-surface px-s py-xs text-left text-s text-on-canvas-muted">
                   Every content source the app reads, stands in for, or still wants. Figures from
                   the run of <span className={FIGURE}>{MEASURED_ON}</span>.
