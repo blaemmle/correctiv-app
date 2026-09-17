@@ -1,7 +1,9 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+
+import { filesUnder, floorFaults } from '@correctiv/prose-and-code';
 
 import { IMPORT_RE, specifier } from './support/source';
 
@@ -62,19 +64,13 @@ const FORBIDDEN = [
  * file the walk skips is a file every assertion below passes over. The `no JSX`
  * test is what actually rejects one; this is what stops it being invisible first.
  */
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) return sourceFiles(full);
-    return /\.(tsx|jsx|ts|mts|mjs|js)$/.test(entry) && !entry.endsWith('.d.mts') ? [full] : [];
-  });
-}
+const SOURCE = /^(?!.*\.d\.mts$).*\.(tsx|jsx|ts|mts|mjs|js)$/;
 
 describe('core stays platform-free', () => {
-  const files = sourceFiles(SRC);
+  const files = filesUnder(SRC, SOURCE);
 
   it('finds source files to check (guards against a silently empty scan)', () => {
-    expect(files.length).toBeGreaterThan(25);
+    expect(floorFaults({ 'files under src/': { found: files.length, atLeast: 25 } })).toEqual([]);
   });
 
   /**
@@ -119,7 +115,9 @@ describe('core stays platform-free', () => {
 
     // And that it still finds them in the real thing, not only in the fixture.
     const found = files.flatMap((full) => [...readFileSync(full, 'utf8').matchAll(IMPORT_RE)]);
-    expect(found.length).toBeGreaterThan(50);
+    expect(
+      floorFaults({ 'imports the net matched': { found: found.length, atLeast: 50 } }),
+    ).toEqual([]);
   });
 
   it('holds no JSX file (guards against a view layer the imports cannot show)', () => {

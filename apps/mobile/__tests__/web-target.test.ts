@@ -1,5 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+
+import { filesUnder, floorFaults } from '@correctiv/prose-and-code';
 
 /**
  * Guards the web target against the one failure mode that does not announce
@@ -64,14 +66,6 @@ const PLATFORM_PAIRED = [
   'app/(tabs)/_layout.tsx',
 ];
 
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) return sourceFiles(full);
-    return /\.[jt]sx?$/.test(entry) ? [full] : [];
-  });
-}
-
 /**
  * The `COPY = defineMessages({…})` block of a file, one string per descriptor:
  * `key: id = English default`. Read out of the source rather than imported,
@@ -88,10 +82,10 @@ function tabLabels(rel: string): string[] {
 }
 
 describe('web target', () => {
-  const files = sourceFiles(SRC);
+  const files = filesUnder(SRC, /\.[jt]sx?$/);
 
   it('finds source files to check', () => {
-    expect(files.length).toBeGreaterThan(20);
+    expect(floorFaults({ 'files under src/': { found: files.length, atLeast: 20 } })).toEqual([]);
   });
 
   it('imports react-native-webview only from native-only or platform-paired files', () => {
@@ -166,7 +160,9 @@ describe('web target', () => {
       return rel.startsWith('app/') && /\[[^\]]+\]\.tsx$/.test(rel);
     });
 
-    expect(dynamicRoutes.length).toBeGreaterThan(0);
+    expect(
+      floorFaults({ 'dynamic routes found': { found: dynamicRoutes.length, atLeast: 1 } }),
+    ).toEqual([]);
 
     const offenders = dynamicRoutes.filter(
       (file) => !/export\s+function\s+generateStaticParams\b/.test(readFileSync(file, 'utf8')),

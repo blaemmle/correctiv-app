@@ -2,7 +2,9 @@
 
 Status: accepted, 2026-09-17, from the architecture meeting in
 [#200](https://github.com/correctiv/correctiv-app/issues/200) and the survey it asked for.
-**Not built.**
+**One of the two packages in §1 is built**, the smaller one: the checks that hold prose
+to code are [`packages/prose-and-code`](../packages/prose-and-code), Apache-2.0, used
+from this repository and not published. The decision-record package is **not built**.
 
 ## Context
 

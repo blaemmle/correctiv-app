@@ -1,11 +1,17 @@
 import { execSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join, relative, resolve, sep } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 
 import { de } from '@/i18n/catalogue/de';
 
-import { withEscapesDecoded, withoutComments } from './support/source';
+import {
+  filesUnder,
+  floorFaults,
+  under,
+  withEscapesDecoded,
+  withoutComments,
+} from '@correctiv/prose-and-code';
 
 /**
  * The localisation seam, and the two things about it that can rot silently.
@@ -39,19 +45,19 @@ interface Extracted {
 
 const english = JSON.parse(readFileSync(ENGLISH, 'utf8')) as Record<string, Extracted>;
 
-/** Every file under a directory, at any depth. */
-function filesUnder(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const full = join(dir, entry);
-    return statSync(full).isDirectory() ? filesUnder(full) : [full];
-  });
-}
+/**
+ * Every file, whatever it is called: this walk is looking for a German character
+ * and a string can be written in a file with any extension.
+ */
+const ANY_FILE = /./;
 
 describe('every id exists on both sides', () => {
   it('finds messages at all (guards against a silently empty extraction)', () => {
     // An extraction that matched no file writes `{}`, and every assertion below
     // would pass over it.
-    expect(Object.keys(english).length).toBeGreaterThan(0);
+    expect(
+      floorFaults({ 'ids in en.json': { found: Object.keys(english).length, atLeast: 1 } }),
+    ).toEqual([]);
   });
 
   it('has a German string for every extracted id', () => {
@@ -192,7 +198,7 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
  * second time in the same file is a second decision and shows up here.
  *
  * The comments go first, because a comment is not a string a user reads
- * (`support/source.ts`, shared with `colour-tiers.test.ts`). The cost is real and
+ * (`@correctiv/prose-and-code`, shared with `colour-tiers.test.ts`). The cost is real and
  * worth naming: a comment written in German — a regression, not a leftover, since
  * 2026-08-12 — is invisible here. It always was, since every file this would have
  * caught sat on the list below for a different reason. So is a German string
@@ -216,8 +222,8 @@ function germanLines(source: string, excused: string[]): string[] {
 
 describe('German lives in the catalogue', () => {
   /** Every file under `src/`, as a path relative to it, with `/` on every OS. */
-  const sources = filesUnder(SRC)
-    .map((full) => relative(SRC, full).split(sep).join('/'))
+  const sources = filesUnder(SRC, ANY_FILE)
+    .map((full) => under(SRC, full))
     .filter(
       (path) =>
         !path.startsWith('i18n/catalogue/de/') && !CONTENT.has(path) && !DEVELOPER_ONLY.test(path),
@@ -226,7 +232,7 @@ describe('German lives in the catalogue', () => {
   const read = (path: string) => readFileSync(join(SRC, path), 'utf8');
 
   it('reads the app it is checking (guards against a silently empty walk)', () => {
-    expect(sources.length).toBeGreaterThan(50);
+    expect(floorFaults({ 'files under src/': { found: sources.length, atLeast: 50 } })).toEqual([]);
   });
 
   it('holds German in the catalogue, and in two strings that say why not', () => {
@@ -279,13 +285,11 @@ const CONTAINER = /^(COPY|[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*_(?:LABELS|COPY))$/;
 
 describe('descriptors live under one name', () => {
   it('names every `defineMessages` block COPY or <DOMAIN>_LABELS', () => {
-    const offenders = filesUnder(SRC)
-      .filter((full) => /\.tsx?$/.test(full))
-      .flatMap((full) =>
-        [...readFileSync(full, 'utf8').matchAll(/\bconst (\w+)(?::[^=]+)? = defineMessages\(/g)]
-          .filter(([, name]) => !CONTAINER.test(name))
-          .map(([, name]) => `${relative(SRC, full).split(sep).join('/')}: ${name}`),
-      );
+    const offenders = filesUnder(SRC, /\.tsx?$/).flatMap((full) =>
+      [...readFileSync(full, 'utf8').matchAll(/\bconst (\w+)(?::[^=]+)? = defineMessages\(/g)]
+        .filter(([, name]) => !CONTAINER.test(name))
+        .map(([, name]) => `${under(SRC, full)}: ${name}`),
+    );
 
     expect(offenders).toEqual([]);
   });

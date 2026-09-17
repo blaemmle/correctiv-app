@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
+import { filesUnder, floorFaults, ratchet, under } from '@correctiv/prose-and-code';
 import ts from 'typescript';
 
 /**
@@ -42,18 +43,7 @@ const SRC = join(__dirname, '..', 'src');
  */
 const DEVELOPER_ONLY = /^gallery\//;
 
-/** Path under `src/`, with `/` on every OS. */
-const under = (path: string) => relative(SRC, path).split(sep).join('/');
-
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) return sourceFiles(path);
-    return entry.endsWith('.tsx') ? [path] : [];
-  });
-}
-
-const FILES = sourceFiles(SRC).filter((path) => !DEVELOPER_ONLY.test(under(path)));
+const FILES = filesUnder(SRC, /\.tsx$/).filter((path) => !DEVELOPER_ONLY.test(under(SRC, path)));
 
 /**
  * The elements that take a touch. React Native's four, by the name they are written
@@ -238,7 +228,7 @@ function read(): Reading {
   };
 
   for (const path of FILES) {
-    const file = under(path);
+    const file = under(SRC, path);
     const source = ts.createSourceFile(
       path,
       readFileSync(path, 'utf8'),
@@ -316,9 +306,13 @@ describe('a control reaches a screen reader', () => {
     // passes over it. Three numbers rather than one, because each rule reads a
     // different part of the tree and a parser that returned only opening tags
     // would still satisfy the first.
-    expect(FILES.length).toBeGreaterThan(50);
-    expect(app.controls.length).toBeGreaterThan(30);
-    expect(app.childTags.size).toBeGreaterThan(5);
+    expect(
+      floorFaults({
+        'files under src/': { found: FILES.length, atLeast: 50 },
+        'controls found': { found: app.controls.length, atLeast: 30 },
+        'kinds of child element': { found: app.childTags.size, atLeast: 5 },
+      }),
+    ).toEqual([]);
   });
 
   it('names every control, from a label or from its own text', () => {
@@ -379,11 +373,10 @@ const WITHOUT_A_ROLE: Record<string, string> = {};
 
 describe('the controls that still announce as text only', () => {
   const missing = app.controls.filter((control) => !control.role && !control.spread).map(at);
+  const { arrivals, stale } = ratchet(missing, WITHOUT_A_ROLE);
 
   it('acquires no new control without a role', () => {
-    const arrivals = missing.filter((where) => !WITHOUT_A_ROLE[where]);
-
-    expect(arrivals.sort()).toEqual([]);
+    expect(arrivals).toEqual([]);
   });
 
   it('excuses nothing that has since been given one', () => {
@@ -395,9 +388,7 @@ describe('the controls that still announce as text only', () => {
     // line. That is deliberate. A line number in an excuse is the thing that goes
     // quietly wrong — the entry stays, the control it named has gone, and the next
     // control to land on that line inherits the permission.
-    const stale = Object.keys(WITHOUT_A_ROLE).filter((where) => !missing.includes(where));
-
-    expect(stale.sort()).toEqual([]);
+    expect(stale).toEqual([]);
   });
 });
 
@@ -418,26 +409,23 @@ describe('the controls that still announce as text only', () => {
 const IMAGES_WITHOUT_A_DECISION: Record<string, string> = {};
 
 describe('every image is named or marked decorative', () => {
-  it('finds images at all (guards against a walk that matched no <Image>)', () => {
-    expect(app.images.length).toBeGreaterThan(0);
-  });
-
   const undeclared = app.images
     .filter((image) => !image.props.some((name) => DECORATIVE.has(name)))
     .map(at);
+  const { arrivals, stale } = ratchet(undeclared, IMAGES_WITHOUT_A_DECISION);
+
+  it('finds images at all (guards against a walk that matched no <Image>)', () => {
+    expect(floorFaults({ '<Image> elements': { found: app.images.length, atLeast: 1 } })).toEqual(
+      [],
+    );
+  });
 
   it('acquires no new undeclared image', () => {
-    const arrivals = undeclared.filter((where) => !IMAGES_WITHOUT_A_DECISION[where]);
-
-    expect(arrivals.sort()).toEqual([]);
+    expect(arrivals).toEqual([]);
   });
 
   it('excuses nothing that has since been declared', () => {
-    const stale = Object.keys(IMAGES_WITHOUT_A_DECISION).filter(
-      (where) => !undeclared.includes(where),
-    );
-
-    expect(stale.sort()).toEqual([]);
+    expect(stale).toEqual([]);
   });
 });
 

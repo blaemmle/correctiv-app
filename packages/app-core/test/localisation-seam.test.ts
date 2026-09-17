@@ -1,10 +1,16 @@
-import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { basename, join, relative, sep } from 'node:path';
+import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { withEscapesDecoded, withoutComments } from './support/source';
+import {
+  filesUnder,
+  floorFaults,
+  under,
+  withEscapesDecoded,
+  withoutComments,
+} from '@correctiv/prose-and-code';
 
 /**
  * German in the core, and why this file exists at all.
@@ -123,7 +129,7 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
 };
 
 /**
- * Every source file under a directory, at any depth.
+ * Every extension a source file in the core can carry.
  *
  * `cts` and `cjs` are in the list although the core has none: an extension the
  * walk does not know is a file the walk does not read, and a check that silently
@@ -131,13 +137,7 @@ const GERMAN_OUTSIDE_THE_CATALOGUE: Record<string, string[]> = {
  * and CommonJS spellings produce, so adding a `.cjs` shim here cannot also add a
  * blind spot.
  */
-function sourceFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) return sourceFiles(full);
-    return /\.(tsx|jsx|ts|mts|cts|mjs|cjs|js)$/.test(entry) ? [full] : [];
-  });
-}
+const SOURCE = /\.(tsx|jsx|ts|mts|cts|mjs|cjs|js)$/;
 
 /**
  * The lines of a file that still carry German, once its excused fragments are
@@ -156,7 +156,7 @@ function sourceFiles(dir: string): string[] {
  *    slips through — and the one the core still renders is `Min.` in
  *    `src/lib/format.ts`, named in that function's own comment.
  *  - A German string after a ` //` inside a string literal, which `withoutComments`
- *    takes for a comment and truncates. Named in `test/support/source.ts`, where
+ *    takes for a comment and truncates. Named in `@correctiv/prose-and-code`, where
  *    the function is, because every check that reads source shares it.
  *  - German inside `src/data/`, excluded by path — see `CONTENT` and
  *    `UI_VOCABULARY_IN_DATA` above for what that does and does not claim.
@@ -173,14 +173,14 @@ function germanLines(source: string, excused: string[]): string[] {
 }
 
 describe('German lives in the catalogue', () => {
-  const sources = sourceFiles(SRC)
-    .map((full) => relative(SRC, full).split(sep).join('/'))
+  const sources = filesUnder(SRC, SOURCE)
+    .map((full) => under(SRC, full))
     .filter((path) => !CONTENT.test(path));
 
   const read = (path: string) => readFileSync(join(SRC, path), 'utf8');
 
   it('reads the core it is checking (guards against a silently empty walk)', () => {
-    expect(sources.length).toBeGreaterThan(25);
+    expect(floorFaults({ 'files under src/': { found: sources.length, atLeast: 25 } })).toEqual([]);
   });
 
   it('holds German in the catalogue, and in three inputs that say why not', () => {
@@ -208,8 +208,8 @@ describe('German lives in the catalogue', () => {
   it('excludes the content directory and nothing else', () => {
     // The exclusion is a path rule, so it is the one part of this file that can
     // widen by accident. Named here, so widening it is a visible edit.
-    const excluded = sourceFiles(SRC)
-      .map((full) => relative(SRC, full).split(sep).join('/'))
+    const excluded = filesUnder(SRC, SOURCE)
+      .map((full) => under(SRC, full))
       .filter((path) => CONTENT.test(path));
 
     expect(excluded.every((path) => path.startsWith('data/'))).toBe(true);
@@ -246,7 +246,7 @@ describe('German lives in the catalogue', () => {
     writeFileSync(join(dir, 'x.json'), '{}');
 
     expect(
-      sourceFiles(dir)
+      filesUnder(dir, SOURCE)
         .map((full) => basename(full))
         .sort(),
     ).toEqual(extensions.map((extension) => `x.${extension}`).sort());

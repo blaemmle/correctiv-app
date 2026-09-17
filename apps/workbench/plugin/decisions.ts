@@ -1,3 +1,5 @@
+import { floorFaults, ratchet } from '@correctiv/prose-and-code';
+
 import { plain, type RenderedDoc, type RetiredClaim } from './markdown.ts';
 import { adrNumber, adrRoute, isRecordFile } from './registry.ts';
 
@@ -374,63 +376,71 @@ function guard(records: DecisionRecord[], sources: ReadonlyMap<string, string>):
   if (records.length !== files.length) {
     faults.push(`${files.length} record files were read and ${records.length} became records`);
   }
-  // A record is never deleted, so this floor only ever rises and never needs
-  // raising.
-  if (files.length < 34) faults.push(`only ${files.length} record files were read`);
-
-  const struck = records.filter((record) => record.struck.length > 0).length;
-  const voided = records.filter((record) => record.voidedBy.length > 0).length;
-  const withCaveat = records.filter((record) => record.caveats.length > 0).length;
-
-  // A quarter, an eighth and a tenth of the set, taken from the proportions the
-  // records actually carry: a strike is common, a named voider less so, a caveat
-  // rarer still. Each may fall by roughly half before it fires, and none of them
-  // can be satisfied by a single record, which is what they were.
-  if (struck < records.length / 4) {
-    faults.push(`only ${struck} of ${records.length} records carry a struck claim`);
-  }
-  if (voided < records.length / 8) {
-    faults.push(`only ${voided} of ${records.length} records name a record that voided a claim`);
-  }
-  if (withCaveat < records.length / 10) {
-    faults.push(`only ${withCaveat} of ${records.length} index rows name something unbuilt`);
-  }
+  // The floors, in the shape `@correctiv/prose-and-code` gives them, because this
+  // is the file that taught the package the rule: a floor of "at least one" against
+  // a set where most records qualify is not a guard at all. A record is never
+  // deleted, so the absolute floor only ever rises and never needs raising; the
+  // other three are a quarter, an eighth and a tenth of the set, taken from the
+  // proportions the records actually carry. A strike is common, a named voider less
+  // so, a caveat rarer still. Each may fall by roughly half before it fires, and
+  // none of them can be satisfied by a single record, which is what they were.
+  faults.push(
+    ...floorFaults({
+      'record files read': { found: files.length, atLeast: 34 },
+      'records carrying a struck claim': {
+        found: records.filter((record) => record.struck.length > 0).length,
+        atLeast: records.length / 4,
+      },
+      'records naming a record that voided a claim': {
+        found: records.filter((record) => record.voidedBy.length > 0).length,
+        atLeast: records.length / 8,
+      },
+      'index rows naming something unbuilt': {
+        found: records.filter((record) => record.caveats.length > 0).length,
+        atLeast: records.length / 10,
+      },
+    }),
+  );
   if (records.some((record) => record.note === '')) {
     faults.push('an index row has an empty note column');
   }
 
-  const clauseless = records
-    .filter((record) => record.struck.some((claim) => claim.clause === ''))
-    .map((record) => record.number);
-  const unexpected = clauseless.filter((number) => !CLAUSE_IS_ELSEWHERE.includes(number));
-  const fixed = CLAUSE_IS_ELSEWHERE.filter((number) => !clauseless.includes(number));
-  if (unexpected.length > 0) {
+  const clauseless = ratchet(
+    records
+      .filter((record) => record.struck.some((claim) => claim.clause === ''))
+      .map((record) => record.number),
+    CLAUSE_IS_ELSEWHERE,
+  );
+  if (clauseless.arrivals.length > 0) {
     faults.push(
-      `ADR ${unexpected.join(', ')} strikes a claim with no clause after it. Put the clause in the same paragraph as the strike, or add the number to CLAUSE_IS_ELSEWHERE with its reason`,
+      `ADR ${clauseless.arrivals.join(', ')} strikes a claim with no clause after it. Put the clause in the same paragraph as the strike, or add the number to CLAUSE_IS_ELSEWHERE with its reason`,
     );
   }
-  if (fixed.length > 0) {
-    faults.push(`ADR ${fixed.join(', ')} no longer needs CLAUSE_IS_ELSEWHERE; take it out`);
+  if (clauseless.stale.length > 0) {
+    faults.push(
+      `ADR ${clauseless.stale.join(', ')} no longer needs CLAUSE_IS_ELSEWHERE; take it out`,
+    );
   }
 
-  const disagreeing = records
-    .filter((record) => record.standing !== 'withdrawn')
-    .filter((record) => {
-      const stated = indexStatus(record.note).toLowerCase();
-      const own = record.status.toLowerCase();
-      return !stated.includes(own) && !own.includes(stated);
-    })
-    .map((record) => record.number);
-  const newlyDisagreeing = disagreeing.filter((number) => !INDEX_DISAGREES.includes(number));
-  const agreed = INDEX_DISAGREES.filter((number) => !disagreeing.includes(number));
-  if (newlyDisagreeing.length > 0) {
+  const disagreeing = ratchet(
+    records
+      .filter((record) => record.standing !== 'withdrawn')
+      .filter((record) => {
+        const stated = indexStatus(record.note).toLowerCase();
+        const own = record.status.toLowerCase();
+        return !stated.includes(own) && !own.includes(stated);
+      })
+      .map((record) => record.number),
+    INDEX_DISAGREES,
+  );
+  if (disagreeing.arrivals.length > 0) {
     faults.push(
-      `ADR ${newlyDisagreeing.join(', ')} states a status its row in ${INDEX_FILE} does not. Fix one of the two, or add the number to INDEX_DISAGREES with its reason`,
+      `ADR ${disagreeing.arrivals.join(', ')} states a status its row in ${INDEX_FILE} does not. Fix one of the two, or add the number to INDEX_DISAGREES with its reason`,
     );
   }
-  if (agreed.length > 0) {
+  if (disagreeing.stale.length > 0) {
     faults.push(
-      `ADR ${agreed.join(', ')} agrees with its index row now; take it out of INDEX_DISAGREES`,
+      `ADR ${disagreeing.stale.join(', ')} agrees with its index row now; take it out of INDEX_DISAGREES`,
     );
   }
 
