@@ -45,53 +45,126 @@
  * Run: npm run home-settings
  */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-/** How the emitted file names itself, so a reader of the artefact lands here. */
+/**
+ * How the emitted file names itself, so a reader of the artefact lands here.
+ *
+ * Typed, because the one thing this module cannot work out is where it is: under
+ * babel-jest `import.meta` is rewritten to a registry that is not there, so
+ * `import.meta.url` is not a string and there is no path to derive. What holds it to the
+ * tree is `__tests__/home-settings.test.ts`, which opens the file this names.
+ */
 const SCRIPT = 'apps/mobile/scripts/generate-home-settings.mjs';
-/** The one spelling of the command, printed in the artefact's header. */
+/**
+ * The one spelling of the command, printed in the artefact's header.
+ *
+ * Also typed, in `package.json` twice, and the drift check holds all three together by
+ * finding the script that runs THIS file and reading its key. A renamed npm script would
+ * otherwise leave the artefact telling people to run a command that does not exist, and
+ * every check green while it did.
+ */
 const COMMAND = 'npm run home-settings';
 
-/** This package, by its own name, so nothing above the repo can answer instead. */
+/** This package and the workspace root, by their own names, so a marker answers. */
 const APP_PKG_NAME = '@correctiv/mobile';
+const REPO_PKG_NAME = 'correctiv-app';
 
 /**
- * Where this app is, found rather than counted in `..`s.
+ * A package root, found by walking up to the `package.json` that names it.
  *
- * The same walk `generate-component-ids.mjs` does, and for the same reason: this module
- * is loaded two ways, as real ESM by `npm run home-settings` and transpiled to CommonJS
- * by babel-jest for the drift check. Under the latter `import.meta.url` is **null**, so
- * reading it unguarded throws before any test can run.
+ * Found rather than counted in `..`s, which TROUBLESHOOTING.md records as an incident
+ * rather than a preference: a hard-coded depth silently broke the token bridge the day
+ * the app moved into `apps/*`. So the repository root is a marker too, and the core is
+ * spelled from it — this script writes into a package it is not in, and the distance
+ * between the two is exactly the thing a move changes.
  *
+ * The walk starts from this file when it can and from the working directory when it
+ * cannot, because the module is loaded two ways: as real ESM by `npm run home-settings`,
+ * and transpiled to CommonJS by babel-jest for the drift check. Under the latter
+ * `import.meta` is rewritten to Expo's registry, which jest does not define, so
+ * `import.meta.url` is **not a string** and reading it unguarded throws before any test
+ * can run. The working directory is inside this package for jest (cwd = rootDir) and
+ * inside the repository for a `node` invocation from anywhere.
+ *
+ * @param {string} name
  * @returns {string}
  */
-function findAppRoot() {
+function packageRootNamed(name) {
   const self = typeof import.meta?.url === 'string' ? import.meta.url : null;
   const from = self ? resolve(dirname(fileURLToPath(self)), '..') : process.cwd();
   for (let dir = from; ; dir = dirname(dir)) {
     const pkg = join(dir, 'package.json');
     try {
-      if (JSON.parse(readFileSync(pkg, 'utf8')).name === APP_PKG_NAME) return dir;
+      if (JSON.parse(readFileSync(pkg, 'utf8')).name === name) return dir;
     } catch {
-      // No package.json here, or an unreadable one — not this app, keep walking.
+      // No package.json here, or an unreadable one — not the one we want, keep walking.
     }
     if (dirname(dir) === dir) {
-      throw new Error(`${SCRIPT}: no ${APP_PKG_NAME} package.json at or above ${from}`);
+      throw new Error(`${SCRIPT}: no ${name} package.json at or above ${from}`);
     }
   }
 }
 
-const APP = findAppRoot();
+const APP = packageRootNamed(APP_PKG_NAME);
+const REPO = packageRootNamed(REPO_PKG_NAME);
+
 /** The declarations, as a path rather than a specifier, because it is a `.ts` file. */
 const DECLARATIONS = resolve(APP, 'src/lib/home/settings.ts');
-const OUT = resolve(APP, '../../packages/app-core/src/lib/home-settings.generated.ts');
+
+/**
+ * Where the artefact goes, exported so the drift check reads one path rather than
+ * counting its own `..`s to the same file.
+ */
+export const OUT = resolve(REPO, 'packages/app-core/src/lib/home-settings.generated.ts');
+
+/**
+ * A path as this repository spells one: from the root, with `/` on every OS.
+ *
+ * @param {string} path
+ * @returns {string}
+ */
+const fromRoot = (path) => relative(REPO, path).split(sep).join('/');
 
 /**
  * Where the declarations are, spelled from the repository root for the artefact's header
  * and for a failure message, so both name a file somebody can open.
+ *
+ * Derived rather than typed. It was typed, and a second spelling of a path is the copy
+ * that goes quietly wrong: move the file and `DECLARATIONS` fails loudly while the label
+ * goes on naming the old place in every artefact and every error.
  */
-const DECLARATIONS_LABEL = 'apps/mobile/src/lib/home/settings.ts';
+const DECLARATIONS_LABEL = fromRoot(DECLARATIONS);
+
+/**
+ * A name from the declarations, as a single-quoted TypeScript string, or a refusal.
+ *
+ * **Not `JSON.stringify`**, which would escape whatever it was given and emit it happily.
+ * Everything here goes into a source file, so a name carrying a quote is an artefact that
+ * either fails to parse or, worse, parses as something else: measured, a key spelled
+ * `x': [], 'evil` emitted a **valid** file declaring a module the declarations do not
+ * have. The drift check compares text and is blind to that by construction.
+ *
+ * So the names this can write are the ones the document already uses — the spelling of
+ * every module name and every setting key in the tree — and anything else stops the
+ * generator where the declaration is, rather than being escaped into a shape nobody
+ * chose.
+ *
+ * @param {string} value
+ * @param {string} what
+ * @returns {string}
+ */
+function name(value, what) {
+  if (!/^[a-z][\da-z-]*$/i.test(value)) {
+    throw new Error(
+      `${SCRIPT}: ${DECLARATIONS_LABEL} declares ${what} spelled \`${value}\`. ` +
+        `A name goes into a source file as it is written, so it has to be a plain one: ` +
+        `a letter, then letters, digits and hyphens.`,
+    );
+  }
+  return `'${value}'`;
+}
 
 /**
  * One setting, serialised with its fields named rather than run through
@@ -109,11 +182,11 @@ const DECLARATIONS_LABEL = 'apps/mobile/src/lib/home/settings.ts';
  */
 function renderSpec(spec) {
   if (spec.kind === 'article') {
-    return `{ key: '${spec.key}', kind: 'article', fallback: null }`;
+    return `{ key: ${name(spec.key, 'a setting key')}, kind: 'article', fallback: null }`;
   }
   if (spec.kind === 'count') {
     return (
-      `{ key: '${spec.key}', kind: 'count', ` +
+      `{ key: ${name(spec.key, 'a setting key')}, kind: 'count', ` +
       `min: ${spec.min}, max: ${spec.max}, fallback: ${spec.fallback} }`
     );
   }
@@ -132,7 +205,8 @@ function renderSpec(spec) {
  * declaration's own, because that is the order somebody reading the app's file sees and
  * an alphabetical artefact would answer a question nobody asked; what is sorted is
  * nothing, and what makes it deterministic is that a JavaScript object keeps its string
- * keys in insertion order.
+ * keys in insertion order — except keys that spell a whole number, which come first and
+ * in numeric order, and which `name` below refuses anyway.
  *
  * @param {Readonly<Record<string, readonly import('@correctiv/app-core/lib/home-settings').SettingSpec[]>>} table
  * @returns {string}
@@ -146,7 +220,7 @@ export function render(table) {
     throw new Error(`${SCRIPT}: ${DECLARATIONS_LABEL} declares no module with settings`);
   }
   const rows = modules.map(
-    ([module, specs]) => `  '${module}': [${specs.map(renderSpec).join(', ')}],`,
+    ([module, specs]) => `  ${name(module, 'a module')}: [${specs.map(renderSpec).join(', ')}],`,
   );
   return `// AUTO-GENERATED by ${SCRIPT} — do not edit by hand.
 // Source: ${DECLARATIONS_LABEL} · Regenerate: ${COMMAND}
@@ -190,10 +264,7 @@ async function main() {
   const table = await declarations();
   writeFileSync(OUT, render(table));
   const settings = Object.values(table).reduce((total, specs) => total + specs.length, 0);
-  console.log(
-    `${relative(resolve(APP, '../..'), OUT)}: ` +
-      `${settings} settings over ${Object.keys(table).length} modules`,
-  );
+  console.log(`${fromRoot(OUT)}: ${settings} settings over ${Object.keys(table).length} modules`);
 }
 
 /**

@@ -41,9 +41,16 @@ import type {
  * The generator reads it by IMPORTING it, with Node's own type stripping, so nothing here
  * may survive that stripping into a runtime import. `import type` above is erased; an
  * ordinary import of the core, of a component, of anything under `@/`, would be a module
- * Node has to resolve at a path it has no resolver for. That is the whole reason the
- * declarations are a file of their own rather than a block at the top of `modules.tsx`,
- * which imports React Native on its first line.
+ * Node has to resolve at a path it has no resolver for. Nothing in `npm run check` sees
+ * that by itself — jest resolves this file through babel and the tsconfig paths, so it
+ * imports happily while the generator is dead — which is why
+ * `__tests__/home-settings.test.ts` reads the import SHAPES here as source.
+ *
+ * That is also why the declarations are a file of their own rather than a block at the
+ * top of `modules.tsx`, and there are two obstacles rather than one. The second is the
+ * one usually named: that file imports React Native on its first line. The first is that
+ * Node's type stripping does not handle `.tsx` at all, so the file is refused before a
+ * single import in it is resolved.
  *
  * ## Why every setting carries its default
  *
