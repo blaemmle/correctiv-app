@@ -4,29 +4,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { ROOT } from '../plugin/collect.ts';
+import { code } from './source.ts';
 
 const WORKBENCH = join(ROOT, 'apps/workbench');
 const APP = join(ROOT, 'apps/mobile');
 
 const PREVIEW = readFileSync(join(WORKBENCH, 'src/components/DirectPreview.tsx'), 'utf8');
 
-/**
- * The same source with its prose taken out.
- *
- * The assertions below are about what this file DOES, and a file that explains why
- * it no longer calls something has to be able to name the thing it no longer calls.
- * Without this, the docblock saying "applying it is the app's business, not this
- * file's" fails the check that this file does not apply it — which is the comment
- * being punished for being accurate. Block comments and whole comment lines only,
- * so a `//` inside a string is left where it is.
- */
-function code(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => !/^\s*(\/\/|\*)/.test(line))
-    .join('\n');
-}
 const ENVIRONMENT = readFileSync(join(APP, 'src/lib/env/AppEnvironment.tsx'), 'utf8');
 const ENV_FONTS = readFileSync(join(APP, 'src/lib/env/fonts.ts'), 'utf8');
 const LAYOUT = readFileSync(join(APP, 'src/app/_layout.tsx'), 'utf8');

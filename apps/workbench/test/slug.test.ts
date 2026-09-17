@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -7,6 +7,7 @@ import { collectDocs, ROOT } from '../plugin/collect.ts';
 import { decisionNumber } from '../plugin/markdown.ts';
 import { FEEDS } from '../content/sources.manifest.ts';
 import { feedId, slug } from '../src/lib/slug.ts';
+import { filesUnder } from './source.ts';
 
 const WORKBENCH = join(ROOT, 'apps/workbench');
 
@@ -97,7 +98,7 @@ describe('the fragment identifier', () => {
     // is a dead anchor: correct-looking code on both sides of a link.
     const offenders: string[] = [];
     for (const dir of ['src', 'plugin', 'content', 'scripts']) {
-      for (const file of sources(join(WORKBENCH, dir))) {
+      for (const file of filesUnder(join(WORKBENCH, dir), /\.(tsx?|mjs)$/)) {
         if (file.endsWith(join('src', 'lib', 'slug.ts'))) continue;
         const text = readFileSync(file, 'utf8');
         if (/\b(?:function|const|let)\s+slug\b/.test(text)) {
@@ -108,11 +109,3 @@ describe('the fragment identifier', () => {
     expect(offenders).toEqual([]);
   });
 });
-
-function sources(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sources(path);
-    return /\.(tsx?|mjs)$/.test(entry.name) ? [path] : [];
-  });
-}

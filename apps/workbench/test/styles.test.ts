@@ -1,23 +1,14 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
 import { ROOT } from '../plugin/collect.ts';
+import { filesUnder } from './source.ts';
 
 const SRC = join(ROOT, 'apps/workbench/src');
 
-/** Every source file under `src`, so a new one is checked without being listed. */
-function sources(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) sources(path, out);
-    else if (/\.(tsx?|css)$/.test(entry.name)) out.push(path);
-  }
-  return out;
-}
-
-const FILES = sources(SRC);
+const FILES = filesUnder(SRC, /\.(tsx?|css)$/);
 
 describe('colour, which this package does not decide', () => {
   it('has files to check', () => {
