@@ -1,8 +1,25 @@
 # ADR 0040 — The app does not depend on the workbench
 
 Status: accepted, 2026-09-17, from the architecture meeting held in
-[#200](https://github.com/correctiv/correctiv-app/issues/200). The direction is what the
-tree already has; the check that holds it is specified here and **not built**.
+[#200](https://github.com/correctiv/correctiv-app/issues/200). **Built the same day**, in
+both halves and in the places §2 left open.
+
+The configuration half is `apps/mobile/__tests__/no-workbench-dependency.test.ts`, in the
+suite and therefore in `npm run check`, because it is a source read that costs under a
+second and the mistake it catches is written at a desk. The build half is ci.yml's
+`independence` job, beside `web`, because it costs an install and two web exports and
+because **the deletion is real**: `apps/workbench` is moved out of the checkout, `npm ci`
+runs again so the tree is the one npm would have installed had the directory never been
+there, and the app's export is compared with the earlier one byte for byte. A runner's
+checkout can be destroyed and a working tree cannot, which is the whole of why that half
+is not in the suite. Simulating the deletion was rejected for the reason §2 gives for the
+configuration half existing at all: an exclusion list is a list, and a stale list is the
+failure being tested.
+
+Two of the three questions under "What is still open" are answered by that paragraph. The
+third, where the home document is served from, is untouched, and §4 stays a decision with
+a record rather than a check: nothing in either half can tell a URL the workbench operates
+from correctiv.org's REST API, and a check that cannot fail is not written.
 
 ## Context
 

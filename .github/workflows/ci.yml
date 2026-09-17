@@ -1,12 +1,16 @@
 # Quality gate for every PR and every push to main.
 #
-# Three jobs, cheapest first:
+# Four jobs, cheapest first:
 #   check         — typecheck every package, oxlint, oxfmt --check, headless tests
 #                   (~1 min incl. install; no Android SDK, no emulator)
 #   web           — static web export of apps/mobile, plus assertions that it is
 #                   not silently broken (see the job for why). Built for a domain
 #                   root; pages.yml rebuilds the same export under the Pages base
 #                   path and publishes it.
+#   independence  — the same export again with apps/workbench REALLY GONE, and the
+#                   two compared byte for byte (ADR 0040). Runs beside `web` rather
+#                   than inside it, because it is the one job that destroys its own
+#                   checkout and nothing after it could be trusted.
 #   android       — Android APK of the app, and only when the change could reach it.
 #                   It costs a quarter of an hour against the other two together
 #                   costing two minutes, and the workbench, the ADRs and the
@@ -262,6 +266,125 @@ jobs:
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: npm run workbench:home-live
+
+  # ADR 0040, the build half. The workbench may read the app; the app may never
+  # read the workbench.
+  #
+  # The configuration half is in the suite and runs in `check` above:
+  # apps/mobile/__tests__/no-workbench-dependency.test.ts reads the manifests, the
+  # tsconfigs, metro.config.js, jest.config.js, app.json and global.css and fails on
+  # a name or a path that reaches across. It has to exist separately from this job
+  # because the shapes that matter most go GREEN when the directory is gone rather
+  # than red: a Tailwind `@source`, a jest moduleNameMapper, a Metro watch folder and
+  # a `paths` alias all MATCH NOTHING and build, and what comes out is an app missing
+  # whatever that entry was contributing. `src/global.css` records that happening
+  # from the other side — a stylesheet that built green while dozens of the app's
+  # utilities were missing, so every row stood on end. An unused named import of the
+  # workbench escapes this job for a different reason, measured 2026-09-17: the
+  # transform elides a binding nothing reads, so it never reaches the resolver. A
+  # side-effect import and a used binding both fail the export here.
+  #
+  # And this half has to exist separately from that one because a list is a list: it
+  # names the files the app's toolchain reads TODAY, and the couplings nobody
+  # enumerated are the set that matters most. This job asks the real toolchain
+  # instead.
+  #
+  # WHY IT IS HERE AND NOT IN `npm run check`. It costs an install and two web
+  # exports, which is minutes against a check that ARCHITECTURE.md measures because
+  # it is short enough to run constantly. And the honest version DELETES A DIRECTORY,
+  # which is fine in a runner's checkout and is not fine in somebody's working tree.
+  #
+  # WHY THE DELETION IS REAL. The alternative is a build with the workspace excluded
+  # from a list somewhere, which is cheaper and is another configuration list — and a
+  # stale configuration list is the exact failure the other half exists to catch. The
+  # second `npm ci` is part of that honesty: it leaves the tree npm would have
+  # installed had the directory never been there, which drops the workspace symlink
+  # AND the packages only the workbench declares (57 of them, measured 2026-09-17).
+  # An app that builds only because a developer tool's dependencies happen to be
+  # hoisted to the root is depending on that tool, and no source read can see it.
+  #
+  # WHY IT COMPARES THE EXPORT RATHER THAN JUST BUILDING IT. "It still builds" cannot
+  # see the silent-contribution shapes above at all. Every bundle `expo export`
+  # writes carries a content hash in its own filename, so a stylesheet that lost half
+  # its utilities changes the manifest twice over. Measured on 2026-09-17: two
+  # exports of the same tree are byte-identical, and so is an export with
+  # apps/workbench removed — this comparison is a property of the output, not a
+  # coin toss.
+  independence:
+    name: The app builds without the workbench
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Export the web bundle with the workbench present
+        working-directory: apps/mobile
+        run: npm run build:web
+
+      # Content hashes and all. `sha256sum` over a sorted file list is the whole
+      # comparison; nothing about it needs to know what expo emits.
+      - name: Record what that export is
+        run: |
+          set -euo pipefail
+          ( cd apps/mobile/dist && find . -type f -print0 | sort -z | xargs -0 sha256sum ) \
+            > "$RUNNER_TEMP/with-workbench.txt"
+          echo "$(wc -l < "$RUNNER_TEMP/with-workbench.txt") files"
+
+      # `test -d` first, and it is not belt-and-braces: `mv` on a directory that is
+      # not there would fail the step with a message about mv, and a rename upstream
+      # of this job would otherwise read as "the app already builds without it".
+      - name: Remove the workbench, for real
+        run: |
+          set -euo pipefail
+          test -d apps/workbench || {
+            echo "::error::apps/workbench is not there to remove. If it moved, this job and ADR 0040 both need the new path."
+            exit 1
+          }
+          mv apps/workbench "$RUNNER_TEMP/workbench"
+          test ! -e apps/workbench
+
+      # The tree npm would have installed had the directory never existed. It prunes
+      # node_modules/@correctiv/workbench and every package only the workbench
+      # declares, so what follows resolves against the app's own dependencies alone.
+      - name: Re-install against the tree as it now is
+        run: |
+          set -euo pipefail
+          npm ci
+          test ! -e node_modules/@correctiv/workbench
+
+      - name: Typecheck and test the app and the packages without it
+        run: |
+          set -euo pipefail
+          npm run typecheck -w @correctiv/mobile
+          npm run typecheck -w @correctiv/app-core
+          npm run typecheck -w @correctiv/design-tokens
+          npm run test -w @correctiv/mobile
+          npm run test -w @correctiv/app-core
+          npm run test -w @correctiv/design-tokens
+
+      - name: Export the web bundle again, without it
+        working-directory: apps/mobile
+        run: npm run build:web
+
+      - name: Assert it is the same bundle
+        run: |
+          set -euo pipefail
+          ( cd apps/mobile/dist && find . -type f -print0 | sort -z | xargs -0 sha256sum ) \
+            > "$RUNNER_TEMP/without-workbench.txt"
+          if ! diff -u "$RUNNER_TEMP/with-workbench.txt" "$RUNNER_TEMP/without-workbench.txt"; then
+            echo "::error::the app's web export changes when apps/workbench is removed, so something in the app is reading it. A path into the workbench in a Tailwind @source, a jest moduleNameMapper, a Metro watchFolder or a tsconfig paths alias matches nothing when the directory is gone and builds a smaller bundle — apps/mobile/__tests__/no-workbench-dependency.test.ts is the check that names the file."
+            exit 1
+          fi
+          echo "identical — $(wc -l < "$RUNNER_TEMP/without-workbench.txt") files, with the workbench and without it"
 
   android:
     name: Android build

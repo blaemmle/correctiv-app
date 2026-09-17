@@ -4,7 +4,7 @@ GitHub Actions workflows live in `.github/workflows/`:
 
 | Workflow | File | Trigger | What it does |
 | --- | --- | --- | --- |
-| **CI** | `ci.yml` | every PR, push to `main` | Checks and the web export, always. An Android release APK as a compile check, only when the change could reach it: the first job reads the changed files, and a change confined to the workbench, `tools/`, the ADRs, the screenshots or a root `.md` skips a quarter of an hour. No secrets needed. |
+| **CI** | `ci.yml` | every PR, push to `main` | Checks and the web export, always. Beside them, the `independence` job: it moves `apps/workbench` out of the checkout, installs again, and rebuilds the app, so that a dependency from the app to the developer tool fails here rather than shipping (ADR 0040). An Android release APK as a compile check, only when the change could reach it: the first job reads the changed files, and a change confined to the workbench, `tools/`, the ADRs, the screenshots or a root `.md` skips a quarter of an hour. No secrets needed. |
 | **Pages** | `pages.yml` | push to `main` (or manual) | Builds the workbench and the Expo web export, assembles them into one artifact, and publishes it to <https://correctiv.github.io/correctiv-app/>. The workbench is the root; the app is at `/app/`. No secrets needed. |
 | **Release Android** | `release-android.yml` | push of a `v*` tag (or manual) | Builds the APK and signs it, with your upload key when the secrets are set and otherwise with the bundled **test key**. Attaches it to the GitHub Release. |
 
