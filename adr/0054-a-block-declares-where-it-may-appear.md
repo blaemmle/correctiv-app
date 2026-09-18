@@ -2,9 +2,12 @@
 
 Status: accepted in shape, 2026-09-18, from the review of
 [ADR 0048](0048-the-gallery-points-at-the-editor-rather-than-copying-it.md), which
-proposed a mechanism rather than disputing the outcome. Nothing here is built, and the
+proposed a mechanism rather than disputing the outcome. ~~Nothing here is built, and the
 last decision below says which part is worth writing before a second configurable screen
-exists and which part is waiting for one.
+exists and which part is waiting for one.~~ The second decision below, and the half of the
+last one that says to write the field now, are built in
+[#237](https://github.com/correctiv/correctiv-app/pull/237) the day after. What waits for
+a second configurable screen is the rest.
 
 The number is 0054 and not 0053 because 0053 was being written in the same working tree at
 the same time, where `npm run adr:new` cannot see it: the script reads `origin/main` and
@@ -152,7 +155,24 @@ read as unmeasured until then.
 
 ## What this retires
 
-Nothing is struck. Two claims are read and deliberately left standing:
+~~Nothing is struck.~~ One claim is, and this section said otherwise until the second
+decision above was carried out, one change later.
+
+[ADR 0046](0046-what-the-editor-may-add-and-what-a-block-is-called.md), **one claim in §1
+struck**.
+
+- **ADR 0046 §1's second protection, that the palette is built from the registry itself
+  so there is no second list to forget.** There is one now, and the second decision above
+  is what made it. What that sentence was really protecting — a module written and
+  reachable by nobody — is held instead by a pair of assertions that fail in both
+  directions, a module with no declaration and a declaration for no module. It is a weaker
+  rung than the one it replaces, which is the trade and is written down where the
+  declaration lives.
+
+  **This record did not see the retirement when it was written**, which is the honest
+  account and the argument for building a decision rather than only recording one.
+
+Two claims are read and deliberately left standing:
 
 - **ADR 0048 §1, that the modules stay out of the gallery and out of `src/components`.**
   Untouched. This record answers the question the review raised underneath it and reaches
