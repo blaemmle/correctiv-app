@@ -64,6 +64,7 @@ import {
   signIn,
 } from '@correctiv/app-core/stores/session';
 import { locale as selectLocale, settingsActions } from '@correctiv/app-core/stores/settings';
+import { SHIPPED_LOCALE } from '@/lib/locale';
 import {
   fetchIssues,
   recentIssues as selectRecentIssues,
@@ -151,6 +152,16 @@ function devToolsEnhancers(): StoreEnhancer[] {
 export const coreStore = createAppStore({
   enhancers: devToolsEnhancers(),
   devTools: false,
+  /*
+   * The language this host ships, named by this host (ADR 0049 §4). A phone set to
+   * English must not get an app half in English, so the app that ships to phones
+   * says which language that is, and the core stops carrying a constant about
+   * somebody else's product.
+   *
+   * `lib/locale.ts` and not a literal, because the static export's `<html lang>`
+   * needs the same answer and cannot reach a store to ask for it.
+   */
+  locale: SHIPPED_LOCALE,
 });
 
 /** Typed `useSelector`, so a selector's state argument is never `any`. */
@@ -176,7 +187,7 @@ export const useIsAdmitted = () => useAppSelector((s) => selectIsAdmitted(s.sess
 export const useActiveTab = () => useAppSelector((s) => s.settings.activeTab);
 export const useTextScale = () => useAppSelector((s) => s.settings.textScale);
 export const useTheme = () => useAppSelector((s) => s.settings.theme);
-/** The language to render in. Fixed at 'de'; `i18n/Localisation` is its one reader. */
+/** The language to render in. `'de'`, named by this host above; `i18n/Localisation` is its one reader. */
 export const useLocale = () => useAppSelector((s) => selectLocale(s.settings));
 
 export const useVideoIsActive = () => useAppSelector((s) => s.video.current !== null);

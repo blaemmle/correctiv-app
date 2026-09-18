@@ -343,21 +343,26 @@ lift the string out, once to find that it sat inside a condition.
 
 **German is what ships.** The language is fixed and there is no user-facing switch;
 a developer-only switch belongs in the workbench, which already carries route,
-appearance and app state in its address, and not in the app's settings. `locale` is
-therefore a fixed value in the store rather than something read from the device, and
-`expo-localization` is not needed for this step.
+appearance and app state in its address, and not in the app's settings. ~~`locale` is
+therefore a fixed value in the store~~ — it is supplied by the host at construction,
+voided by [ADR 0049](0049-the-catalogue-is-a-package.md) §4. The second half stands:
+it is still not read from the device, and the phone still passes `'de'` for the
+reason this paragraph gives. `expo-localization` is not needed for this step.
 
 **Where things live.** Message descriptors are plain objects — `{ id, defaultMessage }`
 — so they live wherever the string lives, screens in the app and core-owned
 vocabulary in the core, and the core imports no React, which
 `packages/app-core/test/boundary.test.ts` enforces. The `intl` instance and the
 provider are the host's. Extraction runs over both workspaces and ~~the compiled
-catalogues are build artifacts~~ — wrong on the day this was written and still wrong:
-nothing in this tree has ever compiled a catalogue. `formatjs extract` runs and
-writes `en.json`, which is read by a check and by nobody at run time; `formatjs
-compile` has no script, no CI step and no output anywhere. Measured 2026-09-18.
-The German that ships is hand-written data, which the rest of this section
-describes correctly. For `packages/app-core/src/data/`, which holds around
+catalogues are build artifacts~~ — wrong on the day this was written: nothing in this
+tree had ever compiled a catalogue. `formatjs extract` ran and wrote `en.json`, read
+by a check and by nobody at run time; `formatjs compile` had no script, no CI step
+and no output anywhere. Measured 2026-09-18, and **made true the same day** by
+[ADR 0049](0049-the-catalogue-is-a-package.md) §3, which compiles `en.generated.ts`
+and puts a drift check under it. The sentence stays struck because it was not true
+when it was written, and a reader who acted on it that morning would have gone
+looking for something that was not there. The German that ships is still
+hand-written data, which the rest of this section describes correctly. For `packages/app-core/src/data/`, which holds around
 230 German strings, the line is: *would this string still exist if the content came
 from a CMS?* If yes it is UI vocabulary in data's clothing and goes in the catalogue;
 if no it is content and follows the same rule as articles, which this record does not

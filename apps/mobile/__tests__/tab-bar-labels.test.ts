@@ -47,13 +47,15 @@ const MEASURED_THRESHOLD = '1.3';
 const SRC = join(__dirname, '..', 'src');
 const TABS_LAYOUT = join(SRC, 'app', '(tabs)', '_layout.tsx');
 /**
- * Both files left this app in
- * [ADR 0049](../../../adr/0049-the-catalogue-is-a-package.md). The German is a
- * package's now, and the registry of catalogues went with it — which is why the
- * second read below is of the package's index and not of the app's provider.
+ * The German left this app for a package in
+ * [ADR 0049](../../../adr/0049-the-catalogue-is-a-package.md) §1, so the first read
+ * below reaches out of the workspace. The second reads this host's own store
+ * binding, because §4 made the language a thing the host says rather than a
+ * constant anybody could read off the core.
  */
 const GERMAN_UI = join(SRC, '..', '..', '..', 'packages', 'catalogue', 'src', 'de', 'ui.ts');
-const REGISTRY = join(SRC, '..', '..', '..', 'packages', 'catalogue', 'src', 'index.ts');
+const SHIPPED = join(SRC, 'lib', 'locale.ts');
+const STORE = join(SRC, 'lib', 'store', 'core.ts');
 
 const read = (path: string) => withoutComments(readFileSync(path, 'utf8'));
 
@@ -70,6 +72,11 @@ describe('the tab labels the 1.3 threshold was measured against', () => {
     // empty record agrees with an empty record.
     expect(Object.keys(germanLabels(read(GERMAN_UI)))).toHaveLength(5);
     expect(read(TABS_LAYOUT)).toContain('LABELS_FIT_UP_TO');
+    // The third file this reads, added with the locale assertion below and named
+    // here for the same reason as the other two: a moved file empties a match
+    // rather than breaking it.
+    expect(read(SHIPPED)).toContain('SHIPPED_LOCALE');
+    expect(read(STORE)).toContain('createAppStore');
   });
 
   it('still ships exactly those five German words (re-measure with tour-a11y.sh if one changed)', () => {
@@ -94,14 +101,40 @@ describe('the tab labels the 1.3 threshold was measured against', () => {
     expect(read(TABS_LAYOUT)).toContain(`const LABELS_FIT_UP_TO = ${MEASURED_THRESHOLD};`);
   });
 
-  it('still ships one language, which is the other thing that moves the number', () => {
-    // A second locale does not touch a German word or the constant, and it moves
-    // the threshold anyway: the bar is as wide as its longest label in whatever
-    // language is on. `@correctiv/catalogue` names every catalogue there is, and
-    // did so from `Localisation.tsx` until ADR 0049 moved it.
-    const catalogues = read(REGISTRY).match(/const CATALOGUES[^=]*=\s*\{([^}]*)\}/);
+  it('still renders the language those words are in', () => {
+    /*
+     * The other thing that moves the number, and it is not how many catalogues
+     * exist. The bar is as wide as its longest label in whatever language is ON,
+     * so what has to hold is that this app still renders German.
+     *
+     * **It used to read the registry**, and asserted that `CATALOGUES` held `de`
+     * and nothing else. That was right while the locale was a constant in the core
+     * and a second catalogue could only mean a second shipped language. Since
+     * [ADR 0049](../../../adr/0049-the-catalogue-is-a-package.md) §3 and §4 the two
+     * are different questions: English is a catalogue so that the second language
+     * can be looked at, and this host names `'de'` at construction. A registry that
+     * grows now says nothing about the bar; the host's own line says everything.
+     *
+     * So this reads the one place the app names its shipped language. It read the
+     * store binding first, and a cold review showed the hole: any second object in
+     * that file holding `locale: 'de'` — a fixture, a default, a comment's leftover
+     * — answered for the real one. `lib/locale.ts` holds one export and nothing
+     * else, so the substring and the declaration are the same thing.
+     *
+     * If somebody ships English, the five words are not the five words any more and
+     * 1.3 is a number nobody measured.
+     */
+    expect(read(SHIPPED)).toMatch(/export const SHIPPED_LOCALE: Locale = 'de';/);
 
-    expect(catalogues?.[1].trim()).toBe('de');
+    /*
+     * And the store binding reaches for that constant rather than a literal, which
+     * is the other end of the same rule. Reading only one end leaves the other
+     * free: the constant could stay `'de'` while `createAppStore` is handed `'en'`
+     * directly, and the first version of this check moved that hole rather than
+     * closing it. Both ends, so there is nowhere to put the change.
+     */
+    expect(read(STORE)).toMatch(/locale:\s*SHIPPED_LOCALE/);
+    expect(read(STORE)).not.toMatch(/locale:\s*['"]/);
   });
 });
 
