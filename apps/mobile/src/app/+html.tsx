@@ -21,7 +21,13 @@ import { OWN_DOCUMENT_MARK } from '@/lib/ownDocument';
  * costs: with the host passing `'en'` the export still said `lang="de"`, because
  * the shell had read the CORE's answer rather than this host's.
  * `i18n/Localisation.tsx` corrects the attribute on the first render either way,
- * which is what an app that switches language at runtime would need anyway.
+ * which is what an app that switches language at runtime would need anyway — and
+ * it is the only thing that can follow `workbench:locale`, the preview's override
+ * (`lib/locale.ts`), because this file has already been written by the time a
+ * browser has a key at all. A framed page therefore arrives saying `lang="de"` and
+ * is corrected to what the store was built with — the frame is this export in an
+ * iframe, so it is the app's own document and carries the mark below, which is
+ * what lets the correction run there and nowhere else.
  *
  * **`OWN_DOCUMENT_MARK` is the other half of that correction.** The effect that
  * writes `<html lang>` runs wherever the app's provider is mounted, and the

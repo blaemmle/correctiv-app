@@ -7,6 +7,8 @@ import {
   useSyncExternalStore,
 } from 'react';
 
+import type { Locale } from '@correctiv/app-core/stores/settings';
+
 import {
   install,
   NO_FRAME,
@@ -25,6 +27,7 @@ import { audit, setOutline, type Finding } from './frame/measure';
 import { waitReady } from './frame/ready';
 import { applyFixture, ensureOnboarded, holdTheDoorOpen } from './frame/seed';
 import { apply as applyHomeTime } from './home/clock';
+import { apply as applyLocale } from './frame/locale';
 import { apply as applyTokens, type Scheme } from './frame/tokens';
 import { sectionTestId } from './home/names';
 import { addLog, clearLogs, getLogs, subscribeLogs } from './logs';
@@ -174,9 +177,48 @@ export function usePreview() {
    * the address was right to begin with.
    */
   const seeded = useRef<string | null>(null);
+  /**
+   * The language the frame was last BOOTED in, which is not what the address says
+   * until a load has happened.
+   *
+   * `undefined` until the frame has been booted once. The gate below is what makes
+   * that the same thing as "until the link has been read", so a cold arrival writes
+   * the key and boots, rather than booting and then reloading itself. After that a
+   * difference is a language somebody changed, and the only way to apply one is
+   * another boot.
+   */
+  const built = useRef<Locale | null | undefined>(undefined);
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
+    /*
+     * And not before the store has read the address, which is the gate
+     * `pages/Preview.tsx` already puts on writing one back and `started` argues in
+     * full: the first render holds `INITIAL`, because `start()` runs in an effect and
+     * effects run after a render.
+     *
+     * Without it this effect boots twice on a cold link and the docblock above is
+     * false. Measured on 2026-09-18 against `#/?d=iphone-15-pro&lg=en`: the first pass
+     * saw `lang: null`, removed the key and pointed the frame at the app; the pass
+     * after `start()` saw `en`, read that as a language somebody had changed and
+     * pointed it there again. Only the second navigation landing while the first had
+     * not committed yet kept that from being two loads, which is the browser being
+     * kind rather than this file being right — and the load it would have thrown away
+     * is the app in the wrong language.
+     */
+    if (!started) return;
+
+    /*
+     * The language, written before the frame is pointed anywhere, for the reason the
+     * fixture below is written here rather than in an effect of its own: the app reads
+     * it while its store is being constructed. `packages/app-core/src/stores/settings.ts`
+     * has no `setLocale` to dispatch afterwards and does not want one, so a change of
+     * language is a reload exactly as a reseed is, and folding it in here keeps one
+     * place deciding when the frame loads. `frame/locale.ts` has the rest.
+     */
+    const relanguage = built.current !== undefined && built.current !== state.lang;
+    applyLocale(state.lang);
+    built.current = state.lang;
 
     // No fixture means leave the storage alone, which is what the plain demo
     // asks for: `/preview` with no `s` is the link `RELEASE.md` hands out,
@@ -207,18 +249,19 @@ export function usePreview() {
       ensureOnboarded(window.localStorage);
     }
 
-    const moving = reseed || frameRoute(frame.contentWindow) !== state.route;
+    const moving = reseed || relanguage || frameRoute(frame.contentWindow) !== state.route;
     if (moving) clearLogs();
 
-    // A reseed has to reload, because the fixture is read while the app mounts.
-    // Everything else prefers the router: it keeps the screen's state, it is
-    // faster, and in a development build it is the only thing that works.
-    if (!reseed && driveRoute(frame.contentWindow, state.route)) return;
+    // A reseed has to reload, because the fixture is read while the app mounts, and a
+    // change of language has to for the same reason one turn earlier: the locale is
+    // construction state. Everything else prefers the router: it keeps the screen's
+    // state, it is faster, and in a development build it is the only thing that works.
+    if (!reseed && !relanguage && driveRoute(frame.contentWindow, state.route)) return;
     if (!moving) return;
 
     document.body.dataset.state = 'loading';
     navigate(frame, state.route);
-  }, [shape, state.route, state.seed, loaded]);
+  }, [started, shape, state.route, state.seed, state.lang, loaded]);
 
   /** The appearance setting, re-applied after every load because a reload resets it. */
   useEffect(() => {
@@ -280,6 +323,34 @@ export function usePreview() {
       window.removeEventListener('pageshow', show);
     };
   }, [state.time]);
+
+  /*
+   * And the language cleared on the same two exits, for the same reason and with one
+   * difference worth naming.
+   *
+   * The write is not here: it is in the boot effect above, because the app reads the key
+   * while it is mounting and a language applied after the fact would be a language
+   * applied to nothing. What is here is the pair of exits `applyHomeTime` argues at
+   * length — the view going away, and the DOCUMENT going away, which an unmount is not.
+   * `onRaw` opens `<site>/app/` in a tab of its own on this origin, so an hour left
+   * behind pins the published demo to an hour and a language left behind pins it to a
+   * language, and the second reads as the app having shipped wrong rather than as a tool
+   * having left something on.
+   *
+   * `pageshow` writes it back for a document restored from the back/forward cache, which
+   * is the one of `pagehide`'s three cases that returns.
+   */
+  useEffect(() => () => applyLocale(null), []);
+  useEffect(() => {
+    const hide = () => applyLocale(null);
+    const show = () => applyLocale(state.lang);
+    window.addEventListener('pagehide', hide);
+    window.addEventListener('pageshow', show);
+    return () => {
+      window.removeEventListener('pagehide', hide);
+      window.removeEventListener('pageshow', show);
+    };
+  }, [state.lang]);
 
   useEffect(
     () => applyTokens(win(), state.overrides, textPass),
