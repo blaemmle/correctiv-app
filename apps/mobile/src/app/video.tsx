@@ -19,19 +19,40 @@ import { colors } from '@/lib/theme';
  * still the German one and the count now picks its own noun.
  */
 const COPY = defineMessages({
-  screenTitle: { id: 'video.screenTitle', defaultMessage: 'Video' },
+  screenTitle: {
+    id: 'video.screenTitle',
+    defaultMessage: 'Video',
+    description:
+      "The video route's name. On the web target it is the browser tab's title; on iOS and Android the header does not draw it, so nobody sees it there. `video.kicker` is the word above the video's own title and `video.frameTitle` names the embed.",
+  },
   none: { id: 'video.none', defaultMessage: 'No video selected.' },
   unavailable: { id: 'video.unavailable', defaultMessage: 'Video unavailable' },
-  loading: { id: 'video.loading', defaultMessage: 'Loading …' },
+  loading: {
+    id: 'video.loading',
+    defaultMessage: 'Loading …',
+    description:
+      'On the video screen, in place of the native player while there is no stream address yet. Not the loading state itself, which is a spinner. `player.loading` is the same word in the mini player.',
+  },
   today: { id: 'video.today', defaultMessage: 'Today' },
   yesterday: { id: 'video.yesterday', defaultMessage: 'Yesterday' },
   views: {
     id: 'video.views',
     defaultMessage: '{count, plural, one {# view} other {# views}}',
+    description: "Under a video's title. {count} is how often it has been watched.",
   },
   newEpisode: { id: 'video.newEpisode', defaultMessage: 'New episode' },
-  kicker: { id: 'video.kicker', defaultMessage: 'Video' },
-  watchOn: { id: 'video.watchOn', defaultMessage: 'Watch on {host}' },
+  kicker: {
+    id: 'video.kicker',
+    defaultMessage: 'Video',
+    description:
+      "The kicker above a video's title, and only on a video older than seven days: anything newer gets `video.newEpisode` instead. `video.screenTitle` is the same word as the route's name, which on the web target is the browser tab.",
+  },
+  watchOn: {
+    id: 'video.watchOn',
+    defaultMessage: 'Watch on {host}',
+    description:
+      "The button that leaves the app for the platform the video is hosted on. {host} is that platform's host name, such as youtube.com.",
+  },
   watchOriginal: { id: 'video.watchOriginal', defaultMessage: 'Watch the original' },
 });
 

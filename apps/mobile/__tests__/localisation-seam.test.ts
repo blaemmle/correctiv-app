@@ -3,6 +3,8 @@ import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 
+import { parse, TYPE, type MessageFormatElement } from '@formatjs/icu-messageformat-parser';
+
 import { de } from '@/i18n/catalogue/de';
 
 import {
@@ -329,5 +331,180 @@ describe('the extracted English catalogue is current', () => {
     });
 
     expect(readFileSync(ENGLISH, 'utf8')).toEqual(readFileSync(fresh, 'utf8'));
+  });
+});
+
+/**
+ * Every ICU argument a message takes, by name, in the order the parser meets them.
+ *
+ * `{count}` and the `count` of `{count, plural, …}` are the same argument and are
+ * both wanted; the words inside a plural branch are not. That is why this is a
+ * parse and not a regular expression: `/\{(\w+)/` reads `{One contribution}` as an
+ * argument called `One`, which is a description nobody can write and a check that
+ * can only be switched off.
+ *
+ * The parser is `react-intl`'s own, declared here rather than borrowed through it,
+ * so the version this reads is the version the app formats with.
+ *
+ * `ignoreTag` because a rich-text tag is not an argument. Without it `<b>` comes
+ * back as an element whose `value` is `b`, the walk collects it, and the only way to
+ * make the check green is to write `{b}` in the description — which is the wrong
+ * spelling for a tag and tells a translator something untrue. No message carries an
+ * angle bracket today; the first one that does would have hit this.
+ */
+function argumentsOf(message: string): string[] {
+  const names = new Set<string>();
+  const walk = (elements: MessageFormatElement[]): void => {
+    for (const element of elements) {
+      // `#` inside a plural branch is an element with no name at all, which is why
+      // this asks whether there is a `value` rather than reading one.
+      if (
+        element.type !== TYPE.literal &&
+        'value' in element &&
+        typeof element.value === 'string'
+      ) {
+        names.add(element.value);
+      }
+      if ('options' in element) {
+        for (const option of Object.values(element.options)) walk(option.value);
+      }
+      if ('children' in element) walk(element.children);
+    }
+  };
+  walk(parse(message, { ignoreTag: true }));
+  return [...names];
+}
+
+/**
+ * The field a translator reads, and the two cases where the string cannot speak for
+ * itself.
+ *
+ * A `description` is never rendered. `@formatjs/cli` carries it into `en.json` and a
+ * translation tool prints it above the entry field — in a PO file it is the `#.`
+ * line. It is the only channel between the person who wrote a string and the person
+ * who has to write it again in another language, and it is worth a check because it
+ * is invisible everywhere else: a missing one costs nothing today and a wrong
+ * translation in a year.
+ *
+ * Not every id needs one. "Settings" as the heading of the settings screen says
+ * everything about itself. Two cases do not, and they are the two below:
+ *
+ *  - **An id whose English is word for word another id's.** Five ids read "Take
+ *    part" and five say "No identifier was passed." A translator handed one of them
+ *    has no way to know whether the other four are the same sentence in a different
+ *    place — where the language would want one word — or four different decisions
+ *    that happen to coincide in English. `callout.crowdnewsroom.countSoFar` and
+ *    `callout.detail.responses` are the case that proves it: identical today,
+ *    deliberately separate, and merging them would be wrong on one of the two
+ *    screens.
+ *  - **An id carrying a placeholder.** `{count}` could be anything. Whether the
+ *    sentence around it needs a plural, a case or a different word order is
+ *    answerable only by knowing what goes in the hole.
+ *
+ * Both are read off `en.json`, which is generated from the source and compared
+ * against a fresh extraction above, so neither can be satisfied by editing the file
+ * this test reads.
+ *
+ * "Word for word" is exact-string, deliberately. `Back` and `Back ` are two groups
+ * here and neither is required to be described. Widening it to a normalised
+ * comparison would start flagging pairs that differ on purpose, and the pair that
+ * matters — two ids a translator could take for one — is the one that is identical.
+ */
+describe('a translator is told what the string cannot tell them', () => {
+  const byMessage = new Map<string, string[]>();
+  for (const [id, message] of Object.entries(english)) {
+    const key = message.defaultMessage ?? '';
+    byMessage.set(key, [...(byMessage.get(key) ?? []), id]);
+  }
+
+  const described = (id: string) => Boolean(english[id]?.description?.trim());
+
+  it('describes every id whose English is word for word another id’s', () => {
+    const shared = [...byMessage.values()].filter((ids) => ids.length > 1).flat();
+    expect(
+      floorFaults({ 'ids sharing an English message': { found: shared.length, atLeast: 40 } }),
+    ).toEqual([]);
+    expect(shared.filter((id) => !described(id)).sort()).toEqual([]);
+  });
+
+  it('gives each id in a group a description of its own', () => {
+    /*
+     * Pairwise distinct inside a group, because the letter of the rule above can be
+     * satisfied without meeting any part of its purpose. A cold review copied one
+     * twin's description onto the other verbatim and everything stayed green, which
+     * left `callout.crowdnewsroom.countSoFar` carrying a sentence reading "identical
+     * to callout.crowdnewsroom.countSoFar" and the translator holding the same note
+     * twice for two strings they still could not tell apart.
+     *
+     * Copy-paste is the specific mistake a bulk description pass makes, and this
+     * file was written by one.
+     */
+    const copied = [...byMessage.entries()]
+      .filter(([, ids]) => ids.length > 1)
+      .flatMap(([, ids]) => {
+        const seen = new Map<string, string>();
+        return ids.flatMap((id) => {
+          const text = (english[id]?.description ?? '').trim();
+          const first = seen.get(text);
+          if (text === '') return [];
+          if (first === undefined) {
+            seen.set(text, id);
+            return [];
+          }
+          return [`${first} and ${id} share one description`];
+        });
+      })
+      .sort();
+
+    expect(copied).toEqual([]);
+  });
+
+  it('describes every id that carries a placeholder', () => {
+    const withArguments = Object.keys(english).filter(
+      (id) => argumentsOf(english[id]?.defaultMessage ?? '').length > 0,
+    );
+    expect(
+      floorFaults({ 'ids with a placeholder': { found: withArguments.length, atLeast: 40 } }),
+    ).toEqual([]);
+    expect(withArguments.filter((id) => !described(id)).sort()).toEqual([]);
+  });
+
+  it('names every placeholder in the description that carries it, and no other', () => {
+    /*
+     * The braced spelling, `{count}`, not the bare word. A description saying "the
+     * count" reads fine and leaves a translator guessing which of two arguments it
+     * meant; this is the difference between a field that is filled in and a field
+     * that is answered. Both descriptions on the impact card and one on a callout
+     * card were written without it and are the first reason this assertion exists.
+     *
+     * **Both directions**, and the second is the one a cold review had to point out.
+     * Forwards catches a description written for a message that has since gained an
+     * argument. Backwards catches the other half of a rename: the new name is added,
+     * the sentence about the old one is left behind, and the translator is told about
+     * a hole that does not exist — so they write a sentence around it and react-intl
+     * formats with a value nobody passes.
+     *
+     * A floor of its own rather than borrowed from the assertion above, because a
+     * damaged `argumentsOf` would otherwise leave this one green over an empty list
+     * and nothing here would say so.
+     */
+    const named = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!);
+
+    const pairs = Object.entries(english).flatMap(([id, message]) => {
+      const takes = argumentsOf(message.defaultMessage ?? '');
+      const says = named(message.description ?? '');
+      return [
+        ...takes.filter((name) => !says.includes(name)).map((name) => `${id}: {${name}} unnamed`),
+        ...says.filter((name) => !takes.includes(name)).map((name) => `${id}: {${name}} invented`),
+      ];
+    });
+
+    const carrying = Object.keys(english).filter(
+      (id) => argumentsOf(english[id]?.defaultMessage ?? '').length > 0,
+    ).length;
+    expect(
+      floorFaults({ 'ids whose placeholders are checked': { found: carrying, atLeast: 40 } }),
+    ).toEqual([]);
+    expect(pairs.sort()).toEqual([]);
   });
 });

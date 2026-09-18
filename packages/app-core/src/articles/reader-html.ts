@@ -71,11 +71,23 @@ export interface ReaderCopy {
  * Lesezeit" are one sentence each in German and two different shapes in English.
  */
 export const READER_COPY = {
-  factcheckBadge: coreMessage({ id: 'core.reader.factcheckBadge', defaultMessage: 'Fact check' }),
-  byline: coreMessage({ id: 'core.reader.byline', defaultMessage: 'by {authors}' }),
+  factcheckBadge: coreMessage({
+    id: 'core.reader.factcheckBadge',
+    defaultMessage: 'Fact check',
+    description:
+      "The badge on a fact check inside the article document. Uppercased by the code that builds the document, so write it in normal case. home.factCheckBadge is the same word on the home screen's rail.",
+  }),
+  byline: coreMessage({
+    id: 'core.reader.byline',
+    defaultMessage: 'by {authors}',
+    description:
+      'The byline in the article document the reader renders. {authors} is the list of authors, already joined.',
+  }),
   readingTime: coreMessage({
     id: 'core.reader.readingTime',
     defaultMessage: '{minutes} min read',
+    description:
+      'Part of the meta line in the article document, after the byline and the date and joined to them with ‘ · ’. {minutes} is a whole number of minutes. There is no plural here, unlike `article.readingTime` in the feed; say so if your language needs one.',
   }),
   support: coreMessage({
     id: 'core.reader.support',

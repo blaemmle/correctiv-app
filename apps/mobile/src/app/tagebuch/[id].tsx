@@ -16,10 +16,25 @@ import { formatDateShortDe } from '@correctiv/app-core/lib/format';
  * quotes differently should get its own pair.
  */
 const COPY = defineMessages({
-  screenTitle: { id: 'diary.screenTitle', defaultMessage: 'Research diary' },
+  screenTitle: {
+    id: 'diary.screenTitle',
+    defaultMessage: 'Research diary',
+    description:
+      "The diary route's name. On the web target it is the browser tab's title; on iOS and Android the header does not draw it. `backstage.diaryLabel` is the same words as the group heading over the diary entries on the Backstage screen.",
+  },
   notFound: { id: 'diary.notFound', defaultMessage: 'This entry does not exist' },
-  unknownId: { id: 'diary.unknownId', defaultMessage: 'Unknown identifier "{id}".' },
-  noId: { id: 'diary.noId', defaultMessage: 'No identifier was passed.' },
+  unknownId: {
+    id: 'diary.unknownId',
+    defaultMessage: 'Unknown identifier "{id}".',
+    description:
+      'Shown when the diary screen is opened with an identifier no entry has. {id} is that identifier, unchanged, in quotation marks. Three other screens say the same under `claim.unknownId`, `project.unknownId` and `series.unknownId`.',
+  },
+  noId: {
+    id: 'diary.noId',
+    defaultMessage: 'No identifier was passed.',
+    description:
+      'Shown when the diary screen is opened with no identifier at all. Four other screens say the same thing under callout.detail.noSlug, claim.noId, project.noId and series.noId.',
+  },
 });
 
 /** The diary entries are fixed — one file per entry in the static export. */

@@ -13,7 +13,12 @@ import { typography, useColors } from '@/lib/theme';
  */
 const COPY = defineMessages({
   answerPlaceholder: { id: 'form.answerPlaceholder', defaultMessage: 'Your answer …' },
-  fileAttached: { id: 'form.fileAttached', defaultMessage: '{file} attached ✓' },
+  fileAttached: {
+    id: 'form.fileAttached',
+    defaultMessage: '{file} attached ✓',
+    description:
+      "The file picker's own label in the participation form once something is attached, replacing `form.filePick` in the same control. {file} is the file's name. The tick is part of the message.",
+  },
   filePick: { id: 'form.filePick', defaultMessage: 'Choose a photo or document (simulated)' },
 });
 
