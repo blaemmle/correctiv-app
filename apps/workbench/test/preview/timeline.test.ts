@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { floorFaults } from '@correctiv/prose-and-code';
+
 import { ROOT } from '../../plugin/collect.ts';
 import { governs } from '../../src/preview/home/document';
 import { code } from '../source.ts';
@@ -47,6 +49,29 @@ const BLOCK = read('apps/workbench/src/preview/home/HomeBlock.tsx');
 const MINUTES = read('apps/workbench/src/preview/home/minutes.ts');
 const HOOK = read('apps/workbench/src/preview/Preview.tsx');
 const REVEAL = read('apps/workbench/src/preview/frame/reveal.ts');
+
+describe('the files this reads', () => {
+  it('read them, rather than matching nothing in an empty string', () => {
+    /*
+     * The first case in a file that reads the repository asserts that it READ it.
+     * `prose-and-code`'s README argues why: every assertion below is of the shape "the
+     * source says this" or "the source does not say that", and an empty source passes
+     * the second kind silently. A path that moved or a stripper that ate a file turns
+     * this suite green over a panel that is no longer there.
+     */
+    expect(
+      floorFaults({
+        'pages/Preview.tsx': { found: PAGE.length, atLeast: 1000 },
+        'preview/ui/Stage.tsx': { found: STAGE.length, atLeast: 1000 },
+        'preview/home/Timeline.tsx': { found: TIMELINE.length, atLeast: 3000 },
+        'preview/home/HomeDocument.tsx': { found: PANEL.length, atLeast: 8000 },
+        'preview/home/HomeBlock.tsx': { found: BLOCK.length, atLeast: 1000 },
+        'preview/home/minutes.ts': { found: MINUTES.length, atLeast: 500 },
+        'preview/frame/reveal.ts': { found: REVEAL.length, atLeast: 500 },
+      }),
+    ).toEqual([]);
+  });
+});
 
 describe('which routes the document governs', () => {
   /*
@@ -256,14 +281,28 @@ describe('the list is the day, and the blocks are drawn', () => {
     // ADR 0045 §1. Not the sections in effect at the playhead: the list is where the
     // document is, and a list that showed only what is on screen would make "remove"
     // mean two different things that look identical (§2).
-    expect(PANEL).toMatch(/layout\.sections\.map\(/);
+    //
+    // Still `layout` and not some second order, which ADR 0053 §2 is what now guarantees:
+    // a carry offsets the rows with a transform rather than reordering them, so there is
+    // one order in this file and it is the document's. `palette.test.ts` holds that half.
+    expect(PANEL).toMatch(/\{layout\.sections\.map\(/);
   });
 
-  it('collapses a block that is off at the playhead to its row', () => {
-    // §2: the header row stays and the drawing goes. The whole day stays visible and
-    // every block stays addressable; only the picture is spent on what is showing.
-    expect(PANEL).toMatch(/off \? \(/);
-    expect(PANEL).toMatch(/<HomeBlock\b/);
+  it('greys a block that is off at the playhead rather than collapsing it', () => {
+    /*
+     * ADR 0045 §2 kept the header row and took the drawing away. ADR 0053 §1 keeps the
+     * drawing and greys it: the list is the screen now, and a hole in a screen is the one
+     * thing a person cannot point at. What §2 was defending is untouched — the whole day
+     * is visible and every block stays addressable — and it is defended by more than it
+     * was, because an off block is now the same shape as an on one.
+     *
+     * So the panel draws the block unconditionally and `HomeBlock` is what greys it. The
+     * second half is the load-bearing one: a conditional left here would be the collapse
+     * coming back one branch at a time.
+     */
+    expect(PANEL).toMatch(/deviceWidth !== null && <HomeBlock section=\{section\}/);
+    expect(PANEL).not.toMatch(/off \? \(/);
+    expect(BLOCK).toMatch(/off && 'opacity-45 grayscale'/);
   });
 
   it('draws nothing while the panel is behind the rail', () => {

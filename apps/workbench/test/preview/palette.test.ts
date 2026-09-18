@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { createIntl } from 'react-intl';
 import { describe, expect, it } from 'vitest';
 
+import { floorFaults } from '@correctiv/prose-and-code';
+
 import { ROOT } from '../../plugin/collect.ts';
 import { de } from '../../src/i18n/catalogue/de';
 import { say } from '../../src/i18n/messages';
@@ -28,7 +30,31 @@ const read = (path: string): string => code(readFileSync(join(ROOT, path), 'utf8
 
 const PALETTE = read('apps/workbench/src/preview/home/Palette.tsx');
 const PANEL = read('apps/workbench/src/preview/home/HomeDocument.tsx');
+const BLOCK = read('apps/workbench/src/preview/home/HomeBlock.tsx');
 const APP_CHECK = read('apps/mobile/__tests__/home-layout.test.tsx');
+
+describe('the files this reads', () => {
+  it('read them, rather than matching nothing in an empty string', () => {
+    /*
+     * The first case in a file that reads the repository asserts that it READ it.
+     * `prose-and-code`'s README argues this at length and it is sharper here than
+     * usual: half the assertions below are of the shape "this token is not in the
+     * source", and every one of those is satisfied by a source that is the empty
+     * string. A path that moved, a comment stripper that ate a file, a rename — any
+     * of them turns this suite green over a panel that no longer exists.
+     *
+     * Floors far below the real figures, so nothing here needs maintaining.
+     */
+    expect(
+      floorFaults({
+        'preview/home/Palette.tsx': { found: PALETTE.length, atLeast: 2000 },
+        'preview/home/HomeDocument.tsx': { found: PANEL.length, atLeast: 8000 },
+        'preview/home/HomeBlock.tsx': { found: BLOCK.length, atLeast: 1000 },
+        'apps/mobile/__tests__/home-layout.test.tsx': { found: APP_CHECK.length, atLeast: 500 },
+      }),
+    ).toEqual([]);
+  });
+});
 
 describe('where a block is going, in words', () => {
   /*
@@ -184,10 +210,10 @@ describe('one handle for the pointer, and the arrows for the keyboard', () => {
    * has no keyboard mode; the arrow buttons stay and are the keyboard's; both end at
    * `moved`, so the document never learns there were two controls.
    *
-   * The arithmetic that turns a drop into a distance is `deltaTo` and
-   * `home-document.test.ts` runs it over every block and every gap of the shipped
-   * document. What is read here is that the two routes exist and that neither has grown
-   * the other's input.
+   * The arithmetic that turns a drop into a destination is `carry.ts` and `carry.test.ts`
+   * runs it, including the property ADR 0053 §2 turns on: a list that reflows under the
+   * pointer has to answer the same slot twice. What is read here is that the two routes
+   * exist and that neither has grown the other's input.
    */
   it('gives the handle a pointer and refuses it a key', () => {
     /*
@@ -236,9 +262,7 @@ describe('one handle for the pointer, and the arrows for the keyboard', () => {
     // ADR 0047 §3. A second way to reorder the document would be a difference between
     // the two inputs living below the interface, which is where it would be expensive.
     expect(PANEL).toMatch(/moved\(layout, section\.id, delta\)/);
-    expect(PANEL).toMatch(
-      /moved\(layout, held\.id, deltaTo\(held\.from, gapAt\(event\.clientY\)\)\)/,
-    );
+    expect(PANEL).toMatch(/moved\(layout, held\.id, held\.slot - held\.from\)/);
     expect(PANEL.match(/setLayout\(moved\(/g) ?? []).toHaveLength(2);
   });
 
@@ -256,31 +280,101 @@ describe('one handle for the pointer, and the arrows for the keyboard', () => {
     expect(PANEL).toMatch(/carrying\.current = next;/);
   });
 
-  it('shows the drop in the mark that is already at that gap', () => {
-    // Not a second line drawn over the list: the marks are one per gap, at exactly the
-    // places a block can land in, and two answers to "where are the gaps" would part the
-    // first time one of them moved.
-    expect(PANEL).toMatch(/dropping=\{carried !== null && carried\.gap === index\}/);
-    expect(PALETTE).toMatch(/dropping\?: boolean/);
+  it('shows the drop by moving every block, and draws no second answer beside it', () => {
+    /*
+     * ADR 0053 §2. Every block is drawn where a release would put it and the carried one
+     * glides to the place it would take; a hairline lit at a gap would be a second answer
+     * to "where does this go", and the two would part the first time one of them moved. So
+     * the mark lost its `dropping` state rather than gaining a rule about when to draw it.
+     */
+    expect(PALETTE).not.toMatch(/dropping/);
+    expect(PANEL).not.toMatch(/dropping/);
+    // The faded-but-coloured mark on the carried block, against `HomeBlock`'s greyed one
+    // for a block that is switched off. Two states that must not read as one at two
+    // strengths.
+    expect(PANEL).toMatch(/carried && 'z-10 opacity-60 shadow-xl'/);
+    expect(BLOCK).toMatch(/off && 'opacity-45 grayscale'/);
+    // And no mark is mounted at all while a block is being carried, so nothing offers to
+    // add into a list that is mid-answer.
+    expect(PANEL).toMatch(/carried === null \? \(\s*\n?\s*<InsertMark/);
   });
 
-  it('re-asks where the pointer is at the drop and at a scroll', () => {
+  it('moves the rows with a transform and never with the document’s own order', () => {
+    /*
+     * The half of ADR 0053 §2 that the browser showed and no check could have: a list that
+     * really reorders loses the pointer it is being dragged by, because React moves keyed
+     * children with `insertBefore`, the DOM performs that as a remove and an insert, and
+     * Chrome releases an implicit capture on removal. Measured on the dev server —
+     * `lostpointercapture` fired on the first move that changed the slot.
+     *
+     * So the list renders the document's own order and the offsets are a `transform`. What
+     * is read here is exactly that: the map is over `layout.sections`, the offset reaches
+     * the row as a style, and the transition is on `transform` alone rather than on `all`,
+     * which would catch the opacity beside it.
+     */
+    expect(PANEL).toMatch(/\{layout\.sections\.map\(/);
+    expect(PANEL).toMatch(/translateY\(\$\{shift\}px\)/);
+    expect(PANEL).toMatch(/dragging && 'transition-transform/);
+    /*
+     * And nothing that a carry hides is UNMOUNTED by it. A hairline or a button that holds
+     * the keyboard's focus when somebody else's pointer picks up a block would take that
+     * focus to `<body>` on the way out, and nothing puts it back. `opacity-0` leaves it
+     * where it is, so the two routes cannot collide.
+     */
+    expect(PANEL).toMatch(/dragging && 'pointer-events-none opacity-0'/);
+    expect(PANEL).toMatch(/carried && 'pointer-events-none opacity-0 group-hover:opacity-0'/);
+    expect(PANEL).not.toMatch(/carried && 'hidden'/);
+    expect(PANEL).toMatch(/setPointerCapture/);
+  });
+
+  it('leaves no gap between the rows for the seam arithmetic to lose', () => {
+    /*
+     * `measure()` sums the rows' heights and calls the running total their resting tops.
+     * That is only true while nothing stands between two rows: a `gap-*` or `space-y-*` on
+     * the list would put space in the layout that no height accounts for, and every seam
+     * below the first would be out by a growing amount. It would look like a drag that
+     * lands one place out more often the further down the day you go, and nothing else
+     * here would fail — `carry.test.ts` builds its own rows and never reads this class.
+     *
+     * The insertion marks are safe and are why this is worth stating rather than assuming:
+     * they sit inside a row, absolutely positioned and translated, so mounting and
+     * unmounting them mid-carry changes no height at all.
+     */
+    const list = PANEL.slice(PANEL.indexOf('<ol'), PANEL.indexOf('>', PANEL.indexOf('<ol')));
+    expect(list).toMatch(/ref=\{list\}/);
+    expect(list).not.toMatch(/\bgap-|\bspace-y-/);
+  });
+
+  it('re-asks where the pointer is on a scroll, and drops what the screen was showing', () => {
     /*
      * There was a check here asserting that `gapAt` measures rather than caches, by
      * looking for `getBoundingClientRect` in it. It could not fail: a cold review rewrote
      * `gapAt` to measure once per drag and cache for ever, and the token was still there.
      * Gone, because a check that cannot fail is worse than none.
      *
-     * What is held instead is the two moments where a stale gap showed: the drop reads
-     * the release's own `clientY` rather than what the last move left behind, and a
-     * scroll during a carry re-asks with the remembered one. Both are lines that can be
-     * deleted, so both can turn this red. That `gapAt` itself does not cache is held by
-     * looking, which this file's header already says is the weaker half.
+     * What replaced it was "the drop re-asks with the release's own `clientY`", which was
+     * right while a wheel was the only thing that could move the rows without a
+     * `pointermove`. It is wrong now, and a cold review of the drag found why: the panel
+     * scrolls itself while a block is held at its edge, at up to eighteen pixels a frame,
+     * and a re-ask at the release answers a frame the screen has not drawn. So the drop
+     * takes the slot the last painted frame showed, and the `scroll` listener is what
+     * keeps that current — for the wheel and for the panel's own scrolling alike.
+     *
+     * Both lines can be deleted, so both can turn this red.
      */
     const drop = PANEL.slice(PANEL.indexOf('onPointerUp:'), PANEL.indexOf('onPointerCancel:'));
-    expect(drop).toMatch(/gapAt\(event\.clientY\)/);
+    expect(drop).toMatch(/held\.slot - held\.from/);
+    expect(drop).not.toMatch(/aimed\(/);
     expect(PANEL).toMatch(/addEventListener\('scroll'/);
-    expect(PANEL).toMatch(/gapAt\(held\.y\)/);
+    expect(PANEL).toMatch(/aimed\(held, held\.y\)/);
+
+    /*
+     * And the guard that keeps one finger's release from putting down another finger's
+     * block: an event from a pointer that is not carrying returns before anything is
+     * cleared. Sliced to the drop, because `onPointerCancel` has the same shape and a
+     * check over the whole file would pass on that one alone.
+     */
+    expect(drop).toMatch(/if \(held === null\) return;/);
   });
 
   it('refuses a second pointer, a second button, and a release away from the list', () => {
