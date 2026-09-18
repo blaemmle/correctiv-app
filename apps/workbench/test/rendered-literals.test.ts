@@ -142,10 +142,12 @@ describe('the walk reads the site it is checking', () => {
     // NAME whether or not it still carries a literal.
     //
     // **There is no floor on text nodes**, and a cold review is why. There was one,
-    // at 400 against 889 — and 840 of those 889 are the literals this whole file
-    // exists to remove, 564 of them in the drawings alone. The pass the table below
-    // schedules would have taken the figure to 318 and had to lower its own floor,
-    // which is the opposite of what a floor is for. What guards that branch of the
+    // at 400 against 889 — and 840 of those 889 were the literals this whole file
+    // exists to remove, 564 of them in the drawings alone, measured on the day the
+    // floor came out. The pass the table below schedules would have taken the
+    // figure to 318 and had to lower its own floor, which is the opposite of what a
+    // floor is for. Three of the six drawings have been through that pass since, so
+    // the two figures are a reading and not a total. What guards that branch of the
     // walk instead is the fixture at the bottom of this file, which asserts a text
     // child is read at all.
     expect(
@@ -190,22 +192,31 @@ describe('the walk reads the site it is checking', () => {
  * language.
  */
 const STILL_IN_THE_MARKUP: Record<string, number> = {
-  // The six drawings. ADR 0052 §1 names their titles and captions, so they are in
-  // scope; a good part of each number is module and file names inside the boxes,
-  // which will stay. They are the largest single piece of this and want a pass of
-  // their own, because a label is sized by its text and a longer German word
-  // reflows a diagram.
+  // **English by decision, not by backlog** — ADR 0052 §6, taken on 2026-09-18.
+  // These three drawings are read by whoever is reading the code: they draw a
+  // load cascade's rungs, a sign-in's session states and the graph of which
+  // record struck which claim, in module names, file paths and millisecond
+  // budgets. And a check reads them: `test/drawn.ts`'s `drawnText` pulls a
+  // drawing's text out of its own source and holds it to the code, so a label
+  // that becomes a descriptor leaves `drawnText` and takes its check with it.
+  // Repairable, and the three that were translated proved it — but it moves
+  // where a check gets its truth, which is worth paying only for something
+  // somebody reads. What would change this is somebody outside development
+  // reading one of these pictures, and then the check comes first.
   'diagrams/ArticlePath.tsx': 117,
-  'diagrams/CoreAndHost.tsx': 102,
   'diagrams/DecisionsChain.tsx': 32,
-  'diagrams/InsideCore.tsx': 115,
-  'diagrams/Services.tsx': 47,
   'diagrams/SignIn.tsx': 151,
-  'diagrams/index.ts': 6,
   'diagrams/layout.ts': 6,
-  // The frame around a drawing rather than a drawing: the scroll region's name and
-  // the heading over the list underneath.
-  'diagrams/shared.tsx': 2,
+  // At its floor: two package paths, the eight directory chips, the five port
+  // interfaces and `Expo / React Native`.
+  'diagrams/CoreAndHost.tsx': 16,
+  // At its floor: two package paths, every directory and service module, the five
+  // port interfaces, `configurePlatform()`, four SDK names and a subpath import.
+  'diagrams/InsideCore.tsx': 33,
+  // At its floor: two package paths, a service module and `beabee`. The hosts and
+  // product names in its rows are string literals because `test/diagrams.test.ts`
+  // parses them off the source.
+  'diagrams/Services.tsx': 4,
   // At its floor. `canvas`, `surface`, `.tsx`, `.web.tsx` and an import line: this
   // site prints an identifier in its own spelling.
   'pages/ComponentDetail.tsx': 5,
@@ -231,9 +242,12 @@ const STILL_IN_THE_MARKUP: Record<string, number> = {
   'preview/frame/seed.ts': 2,
   // At its floor: the name of a browser panel, and a token prefix in monospace.
   'preview/ui/Panels.tsx': 2,
-  // The app's screen names. That file's own docblock argues they are marks — the
-  // app calls a route „Entdecken“ in German and nothing else — so some of this is a
-  // floor rather than debt, and separating the two is that pass's job.
+  // At its floor, and all 22 of it: the app's own screen names, from „Entdecken“
+  // to „Tagebuch“. The app ships in German, so these are what is written in its
+  // tab bar and what somebody typing into that picker is looking for; the file's
+  // own docblock argues it, and the three labels that ARE messages are the three
+  // this site named itself because the screen behind them has no name. Counted
+  // rather than inherited: every one of the 22 is a screen name.
   'preview/routes.ts': 22,
   // At its floor: the wordmark, and the wordmark with the product word after it.
   // `ui/Header.tsx` argues both as names, and a translator is not being asked to
