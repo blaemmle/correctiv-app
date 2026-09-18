@@ -200,28 +200,58 @@ export const FEEDS: Feed[] = [
 ];
 
 /**
- * What the last run found for one feed, as the two strings a row prints.
+ * What the last run found for one feed, as the two answers a row prints.
  *
  * A selector and not a field, because the figures belong to the run and the row
  * belongs to this file. `unknown` is a real answer and is drawn as one: it means
  * the source did not answer, which is different from a feed with no posts.
+ *
+ * **It hands out the finding and not the sentence**, which it did not always do.
+ * It used to return two ready strings, and one of them was
+ * `posts.toLocaleString('en-GB')`: a locale pinned in a ledger, which is the
+ * page's job done in the wrong place.
+ *
+ * It became visible while `/sources` was being translated, not before. The page
+ * migrated first and put its own figures through the formatter, so for one
+ * commit the German board grouped `7.822` its own way and `2.956` the English
+ * way, from two lines a few files apart. A first version of this paragraph told
+ * that as a fact about `main`, where both figures went through the same pinned
+ * locale and the page had no German at all; a cold review measured it and there
+ * was no such page to see it on. The bug was real, the story was not.
+ *
+ * This file is the ledger [ADR 0052](../../../adr/0052-the-sites-own-words-follow-the-setting.md) §4
+ * fences off, and that fence is around its WORDS. A number grouped for one
+ * language is not a word it wrote, it is the page's job done in the wrong place,
+ * so the shape moved here and the wording moved to `pages/Sources.tsx`.
  */
-export function feedFigures(feed: Feed): { posts: string; newest: string; measured: boolean } {
+export type FeedCount =
+  | { kind: 'everyPost' }
+  | { kind: 'none' }
+  | { kind: 'unknown' }
+  | { kind: 'count'; posts: number };
+
+export type FeedNewest = { kind: 'none' } | { kind: 'unknown' } | { kind: 'day'; day: string };
+
+export function feedFigures(feed: Feed): {
+  posts: FeedCount;
+  newest: FeedNewest;
+  measured: boolean;
+} {
   const document = PROBES.get(`feed:${feed.key}`);
   const archive = PROBES.get(`category:${feed.key}`);
 
-  const posts =
+  const posts: FeedCount =
     archive === undefined
       ? // Only `recherchen` has no category, because it is every post.
-        'every post'
+        { kind: 'everyPost' }
       : archive.ok && archive.posts !== undefined
         ? // `available: 0` is the slug lookup coming back empty, which is the
           // category not existing. The row already says so in its own column, so
           // this one states the consequence and does not repeat the sentence.
           archive.available === 0
-          ? 'none'
-          : archive.posts.toLocaleString('en-GB')
-        : 'unknown';
+          ? { kind: 'none' }
+          : { kind: 'count', posts: archive.posts }
+        : { kind: 'unknown' };
 
   /*
    * Three answers, and the middle one is the one worth having. A feed that
@@ -229,10 +259,14 @@ export function feedFigures(feed: Feed): { posts: string; newest: string; measur
    * `unknown` is reserved for a feed that did not answer at all, so the page
    * never dresses an outage up as an empty category.
    */
-  const newest =
+  const newest: FeedNewest =
     document?.ok === true
-      ? (document.newest ?? (document.items === 0 ? 'none' : 'unknown'))
-      : 'unknown';
+      ? document.newest !== undefined
+        ? { kind: 'day', day: document.newest }
+        : document.items === 0
+          ? { kind: 'none' }
+          : { kind: 'unknown' }
+      : { kind: 'unknown' };
 
   return { posts, newest, measured: document?.ok === true || archive?.ok === true };
 }
