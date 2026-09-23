@@ -330,16 +330,19 @@ its one slot.
 
 ## What is still open
 
-**Where the configuration lives in production, and who may write it** — unchanged, and
-still [ADR 0036](0036-the-home-screen-becomes-data.md)'s open question. This record makes
-the document more expressive and does not touch where it is served from.
+**Where the configuration lives in production, and who may write it** — ~~unchanged, and
+still [ADR 0036](0036-the-home-screen-becomes-data.md)'s open question~~, answered by
+[ADR 0057](0057-the-structure-comes-from-the-workbench-the-selection-from-wordpress.md) §1
+and §4 and by [ADR 0058](0058-the-workbench-holds-no-power-and-github-is-who-you-are.md) §2.
+This record makes the document more expressive and does not touch where it is served from.
 
 **Whether a day is enough.** Everything here repeats every twenty-four hours. A weekend
 edition, a moment that fires once on an election night, a block that appears for three
-days: none of them is expressible and none of them has been asked for. The shape does not
+days: none of them is expressible ~~and none of them has been asked for~~. The shape does not
 prevent one — a moment is a time and a set of changes, and a condition beside the time is
-an addition rather than a rewrite — and it is deliberately not built ahead of somebody
-wanting it.
+an addition rather than a rewrite — ~~and it is deliberately not built ahead of somebody
+wanting it~~. It was asked for on 2026-09-23, and
+[ADR 0059](0059-the-day-gets-a-date-and-the-newsroom-plans-in-editions.md) is that addition.
 
 **The pinned article's fallback is untested against a real vanished article.** ADR 0036
 §8 wants a pin that has gone to fall back to the place's rule, and the module does that
