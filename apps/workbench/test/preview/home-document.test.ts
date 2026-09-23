@@ -4,20 +4,30 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseHomeLayout, stateAt, type HomeLayout } from '@correctiv/app-core/lib/home-layout';
+import { berlinInstant } from '@correctiv/app-core/lib/berlin-time';
+import {
+  parseHomeLayout,
+  stateAt,
+  stateAtInstant,
+  type HomeLayout,
+} from '@correctiv/app-core/lib/home-layout';
 import { MODULE_SETTINGS } from '@correctiv/app-core/lib/home-settings';
 
 import { ROOT } from '../../plugin/collect.ts';
 import { SOURCES } from '../../content/sources.manifest.ts';
 import {
   changedAt,
+  decidedAt,
   differs,
+  editionHue,
+  editionsOn,
   effectiveAt,
   formatLayoutDocument,
   HOME_LAYOUT_ENDPOINT,
   HOME_LAYOUT_KEY,
   HOME_TIME_KEY,
   inheritedAt,
+  inheritedFor,
   added,
   mintId,
   moduleLabel,
@@ -32,11 +42,21 @@ import {
   settingLabel,
   SHIPPED,
   spanOf,
+  targetAt,
+  withEdition,
+  withEditionFrom,
+  withEditionMoment,
+  withEditionSpan,
+  withEditionTitle,
   withHidden,
   withMoment,
+  withoutEdition,
   withoutMoment,
   withSetting,
+  writeHidden,
+  writeSetting,
 } from '../../src/preview/home/document';
+import { restorable } from '../../src/preview/home/write';
 
 /**
  * The home-layout editor, held to what it cannot check itself.
@@ -103,6 +123,17 @@ function oxfmt(text: string): string {
 
 const AT = (hours: number, minutes = 0) => hours * 60 + minutes;
 
+/** A Berlin wall-clock instant, which is how the playhead names a time since ADR 0059. */
+const BERLIN = (date: string, hours: number, minutes = 0) =>
+  berlinInstant(date, hours * 60 + minutes)!;
+
+/** The shipped day with one edition on Saturday evening, as "Edition here" makes one. */
+const planned = (): HomeLayout => {
+  const made = withEdition(SHIPPED, '2026-09-27', AT(18));
+  return withEditionTitle(made.layout, made.id!, 'Wahlabend');
+};
+const SATURDAY = BERLIN('2026-09-27', 19);
+
 describe('the document the editor writes', () => {
   it('prints the shipped file byte for byte', () => {
     expect(formatLayoutDocument(SHIPPED)).toBe(source(FILE));
@@ -133,20 +164,42 @@ describe('the document the editor writes', () => {
       // widths either side of the break. The longest line in the shipped document is
       // exactly `printWidth` without its trailing comma and breaks with it, so a printer
       // that forgets the comma is right on every document but this one.
-      { version: 2, sections: [], moments: [] },
+      { version: 3, sections: [], moments: [], editions: [] },
       {
-        version: 2,
+        version: 3,
         sections: [{ id: 'a', module: 'article-hero', hidden: true, settings: { pin: null } }],
         moments: [],
+        editions: [],
       },
       {
-        version: 2,
+        version: 3,
         sections: [
           { id: 'callout-lifted', module: 'callout-teaser', hidden: true },
           { id: 'callout', module: 'callout-teaser' },
         ],
         moments: [{ at: '11:00', minute: 660, changes: [{ id: 'callout-lifted', hidden: false }] }],
+        editions: [],
       },
+      // Editions, ADR 0059 §8: one as "Edition here" makes it, empty, which is the case of
+      // an empty `changes` list; then one of each kind of edit on it; then two, which is
+      // the case where the list breaks by shape rather than by width.
+      planned(),
+      writeHidden(planned(), SATURDAY, 'briefing', true),
+      writeSetting(planned(), SATURDAY, 'hero', 'pin', 'https://correctiv.org/x/'),
+      writeSetting(planned(), SATURDAY, 'fact-checks', 'count', 3),
+      writeHidden(
+        withEditionMoment(planned(), 'edition-2026-09-27', AT(23)),
+        BERLIN('2026-09-27', 23, 30),
+        'mediathek',
+        true,
+      ),
+      withEditionSpan(planned(), 'edition-2026-09-27', '2026-09-20T00:00', '2026-10-04T00:00'),
+      withEdition(planned(), '2026-09-27', AT(20)).layout,
+      withEditionTitle(
+        planned(),
+        'edition-2026-09-27',
+        'A title long enough to push the edition past the width',
+      ),
     ];
 
     for (const layout of cases) {
@@ -548,16 +601,18 @@ describe('the vocabulary the editor offers', () => {
    */
   it('counts a change at the minute it happens and not at the others', () => {
     const edited = withHidden(SHIPPED, AT(11), 'mediathek', true);
-    expect(changedAt(edited, AT(9))).toEqual([]);
-    expect(changedAt(edited, AT(12))).toEqual(['mediathek']);
-    expect(changedAt(edited, AT(15))).toEqual(['mediathek']);
+    const on = (hours: number) => BERLIN('2026-09-03', hours);
+    expect(changedAt(edited, on(9))).toEqual([]);
+    expect(changedAt(edited, on(12))).toEqual(['mediathek']);
+    expect(changedAt(edited, on(15))).toEqual(['mediathek']);
   });
 
   it('counts a move as one change and not as two', () => {
     // A section that moved makes its neighbour move too, and an editor who lifted one
     // block should not be told they changed four.
-    expect(changedAt(SHIPPED, AT(9))).toEqual([]);
-    expect(changedAt(moved(SHIPPED, 'hero', -1), AT(9))).toEqual(['hero', 'callout-lifted']);
+    const nine = BERLIN('2026-09-03', 9);
+    expect(changedAt(SHIPPED, nine)).toEqual([]);
+    expect(changedAt(moved(SHIPPED, 'hero', -1), nine)).toEqual(['hero', 'callout-lifted']);
   });
 });
 
@@ -760,5 +815,214 @@ describe('the panel and the frame', () => {
     for (const point of [null, AT(11), AT(14)]) {
       expect(effectiveAt(SHIPPED, point)).toEqual(stateAt(SHIPPED, point ?? 0));
     }
+  });
+});
+
+/**
+ * Editions in the editor, ADR 0059 §2 and §8: the layer an edit lands on, what "Edition
+ * here" makes, and the file that comes out.
+ */
+describe('an edition, as the editor makes and edits one', () => {
+  it('makes a one-day edition at the playhead, carrying nothing, that the core reads back', () => {
+    const { layout, id } = withEdition(SHIPPED, '2026-09-27', AT(18));
+    expect(id).toBe('edition-2026-09-27');
+    expect(layout.editions).toEqual([
+      {
+        id,
+        from: '2026-09-27T18:00',
+        until: '2026-09-28T18:00',
+        start: BERLIN('2026-09-27', 18),
+        end: BERLIN('2026-09-28', 18),
+        changes: [],
+        moments: [],
+      },
+    ]);
+    const back = parseHomeLayout(JSON.parse(formatLayoutDocument(layout)));
+    expect(back.problems).toEqual([]);
+    expect(back.layout).toEqual(layout);
+    // And, carrying nothing, it changes nothing the frame shows.
+    expect(stateAtInstant(layout, SATURDAY)).toEqual(stateAtInstant(SHIPPED, SATURDAY));
+  });
+
+  it('mints the next free id for a second edition on the same day', () => {
+    expect(withEdition(planned(), '2026-09-27', AT(20)).id).toBe('edition-2026-09-27-2');
+  });
+
+  /** ADR 0059 §2: the narrowest edition at the playhead, or the day when none is. */
+  it('lands an edit on the edition running at the playhead, and on the day outside it', () => {
+    expect(targetAt(planned(), SATURDAY).edition?.id).toBe('edition-2026-09-27');
+    expect(targetAt(planned(), BERLIN('2026-09-27', 17)).edition).toBeNull();
+
+    const edited = writeHidden(planned(), SATURDAY, 'briefing', true);
+    expect(edited.editions[0]?.changes).toEqual([{ id: 'briefing', hidden: true }]);
+    // The day is untouched, which is §5: it stays a whole screen on its own.
+    expect(edited.moments).toEqual(SHIPPED.moments);
+    expect(edited.sections).toEqual(SHIPPED.sections);
+
+    const outside = writeHidden(planned(), BERLIN('2026-09-27', 12), 'briefing', true);
+    expect(outside.editions[0]?.changes).toEqual([]);
+    expect(outside).toEqual(withHidden(planned(), AT(11), 'briefing', true));
+  });
+
+  it('lands on the narrower of two editions, which is the one whose word stands', () => {
+    const wide = withEditionSpan(
+      planned(),
+      'edition-2026-09-27',
+      '2026-09-20T00:00',
+      '2026-10-04T00:00',
+    );
+    const both = withEdition(wide, '2026-09-27', AT(18));
+    expect(targetAt(both.layout, SATURDAY).edition?.id).toBe(both.id);
+    const edited = writeSetting(both.layout, SATURDAY, 'hero', 'pin', 'https://correctiv.org/x/');
+    expect(edited.editions.map((edition) => edition.changes)).toEqual([
+      [],
+      [{ id: 'hero', settings: { pin: 'https://correctiv.org/x/' } }],
+    ]);
+  });
+
+  /**
+   * The editor's first rule, one level up: switching a block back to what the edition would
+   * show without it is the edition falling silent about that block, not a second statement.
+   */
+  it('takes an edition’s change out again when it is set back to what shows through', () => {
+    const once = writeHidden(planned(), SATURDAY, 'briefing', true);
+    const back = writeHidden(once, SATURDAY, 'briefing', false);
+    expect(back.editions[0]?.changes).toEqual([]);
+    expect(formatLayoutDocument(back)).toBe(formatLayoutDocument(planned()));
+
+    const pinned = writeSetting(planned(), SATURDAY, 'hero', 'pin', 'https://x/');
+    expect(writeSetting(pinned, SATURDAY, 'hero', 'pin', null).editions[0]?.changes).toEqual([]);
+  });
+
+  it('writes into the edition’s moment in effect, and says what that point inherits', () => {
+    const withLate = withEditionMoment(planned(), 'edition-2026-09-27', AT(23));
+    const late = BERLIN('2026-09-27', 23, 30);
+    expect(targetAt(withLate, late).point).toBe(AT(23));
+
+    const early = writeHidden(withLate, SATURDAY, 'briefing', true);
+    const later = writeHidden(early, late, 'briefing', false);
+    expect(later.editions[0]?.changes).toEqual([{ id: 'briefing', hidden: true }]);
+    expect(later.editions[0]?.moments[0]?.changes).toEqual([{ id: 'briefing', hidden: false }]);
+
+    // What the 23:00 moment inherits is the edition's start over the day, at that instant.
+    const inherits = inheritedFor(later, late, targetAt(later, late));
+    expect(inherits.find((section) => section.id === 'briefing')?.hidden).toBe(true);
+  });
+
+  it('refuses a span the core would refuse, and keeps the one it had', () => {
+    const layout = planned();
+    const id = 'edition-2026-09-27';
+    expect(withEditionSpan(layout, id, '2026-09-28T18:00', '2026-09-28T18:00')).toBe(layout);
+    expect(withEditionSpan(layout, id, '2026-09-29T00:00', '2026-09-28T18:00')).toBe(layout);
+    expect(withEditionSpan(layout, id, 'tomorrow', '2026-09-28T18:00')).toBe(layout);
+  });
+
+  it('writes no title for an empty one, and deletes an edition with all it carried', () => {
+    const untitled = withEditionTitle(planned(), 'edition-2026-09-27', '  ');
+    expect(untitled.editions[0]).not.toHaveProperty('title');
+    const gone = withoutEdition(
+      writeHidden(planned(), SATURDAY, 'briefing', true),
+      'edition-2026-09-27',
+    );
+    expect(formatLayoutDocument(gone)).toBe(formatLayoutDocument(SHIPPED));
+  });
+
+  it('takes a removed block out of every edition that named it', () => {
+    const edited = writeHidden(planned(), SATURDAY, 'briefing', true);
+    expect(removed(edited, 'briefing').editions[0]?.changes).toEqual([]);
+  });
+
+  it('says which edition decides a block, and nothing about the ones it does not touch', () => {
+    const edited = writeHidden(planned(), SATURDAY, 'briefing', true);
+    expect([...decidedAt(edited, SATURDAY)]).toEqual([['briefing', 'edition-2026-09-27']]);
+    expect([...decidedAt(edited, BERLIN('2026-09-27', 12))]).toEqual([]);
+  });
+
+  it('puts an edition on the track of each day it touches, clamped to that day', () => {
+    const on = (date: string) =>
+      editionsOn(planned(), date).map(({ edition, from, to }) => [edition.id, from, to]);
+    expect(on('2026-09-26')).toEqual([]);
+    expect(on('2026-09-27')).toEqual([['edition-2026-09-27', AT(18), 24 * 60]]);
+    expect(on('2026-09-28')).toEqual([['edition-2026-09-27', 0, AT(18)]]);
+    expect(on('2026-09-29')).toEqual([]);
+  });
+
+  /** ADR 0059 §2: the same campaign is the same colour on every machine. */
+  it('gives an edition a hue from its id alone, and neighbouring ids different ones', () => {
+    expect(editionHue('edition-2026-09-27')).toBe(editionHue('edition-2026-09-27'));
+    expect(editionHue('edition-2026-09-27')).not.toBe(editionHue('edition-2026-09-28'));
+    for (const id of ['a', 'wahlabend-2026', 'edition-2026-09-27-2']) {
+      const hue = editionHue(id);
+      expect(Number.isInteger(hue) && hue >= 0 && hue < 360).toBe(true);
+    }
+  });
+});
+
+/** The defects a cold review of #247 reproduced in the editor, each held where it was found. */
+describe('an edition, where the first version of the editor went wrong', () => {
+  /**
+   * "Edition here" inside a shorter edition: a day-long one lost to the four-hour election
+   * night on precedence, so the panel stayed on the old one and edits landed there.
+   */
+  it('makes an edition inside a shorter one end with it, so edits land on the new one', () => {
+    const night = withEditionSpan(
+      planned(),
+      'edition-2026-09-27',
+      '2026-09-27T18:00',
+      '2026-09-27T22:00',
+    );
+    const made = withEdition(night, '2026-09-27', AT(19));
+    expect(made.id).toBe('edition-2026-09-27-2');
+    expect(made.layout.editions[1]?.until).toBe('2026-09-27T22:00');
+    expect(targetAt(made.layout, BERLIN('2026-09-27', 19)).edition?.id).toBe(made.id);
+    const edited = writeHidden(made.layout, BERLIN('2026-09-27', 19), 'briefing', true);
+    expect(edited.editions.map((edition) => edition.changes)).toEqual([
+      [],
+      [{ id: 'briefing', hidden: true }],
+    ]);
+  });
+
+  it('makes nothing where an edition runs from exactly this minute, and says so by its id', () => {
+    // Same start, same end: the fold breaks the tie by id, and `wahlabend` sorts after any
+    // id the editor mints, so a new one could never be the edition an edit lands on.
+    const running = parseHomeLayout({
+      ...JSON.parse(formatLayoutDocument(SHIPPED)),
+      editions: [{ id: 'wahlabend', from: '2026-09-27T18:00', until: '2026-09-28T18:00' }],
+    }).layout!;
+    const made = withEdition(running, '2026-09-27', AT(18));
+    expect(made.id).toBeNull();
+    expect(made.layout).toBe(running);
+  });
+
+  /** Moving the start moves the whole edition, rather than springing the field back. */
+  it('moves the end with the start, keeping the edition’s length', () => {
+    const moved = withEditionFrom(planned(), 'edition-2026-09-27', '2026-09-30T18:00');
+    expect(moved.editions[0]).toMatchObject({
+      from: '2026-09-30T18:00',
+      until: '2026-10-01T18:00',
+    });
+  });
+
+  it('refuses a span in the spring gap, which the core would refuse', () => {
+    const layout = planned();
+    expect(
+      withEditionSpan(layout, 'edition-2026-09-27', '2026-03-29T02:30', '2026-03-29T06:00'),
+    ).toBe(layout);
+  });
+
+  /**
+   * An override saved by the version 2 editor was thrown away on load: the new parser
+   * reports `version-unknown` and `restore()` took only a clean parse, so the editor opened
+   * on the shipped file while the frame drew the override, and the first edit overwrote it.
+   */
+  it('opens a document an older editor saved, renumbered, and refuses a later one', () => {
+    const older = { ...JSON.parse(formatLayoutDocument(moved(SHIPPED, 'hero', -1))), version: 2 };
+    const opened = restorable(older);
+    expect(opened?.version).toBe(3);
+    expect(opened?.sections.map((section) => section.id)).toEqual(
+      moved(SHIPPED, 'hero', -1).sections.map((section) => section.id),
+    );
+    expect(restorable({ ...older, version: 4 })).toBeNull();
+    expect(restorable({ ...older, sections: [{ id: 'x' }] })).toBeNull();
   });
 });

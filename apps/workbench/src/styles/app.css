@@ -49,6 +49,42 @@
   transition: flex-grow 200ms ease-out;
 }
 
+/*
+ * An edition's colour in the home editor, which is the one colour here the palette does not
+ * name, and still takes the half of it that matters from the palette.
+ *
+ * ADR 0059 §2 derives it from the edition's id, so a campaign is the same colour on every
+ * machine and in every screenshot; `preview/home/document.ts` turns the id into a hue and
+ * `Edition.tsx` sets it as `--edition-hue`. The lightness is `on-canvas-muted`'s own, read
+ * out of the token with relative colour syntax, so it follows the appearance setting the way
+ * the muted text does, and is legible on the canvas in both schemes for the same reason that
+ * text is. The chroma is the one number chosen here, and it is not a colour.
+ *
+ * A little darker than the muted text itself, because the band's label is small white text
+ * on this colour in the light scheme (and small dark text in the dark one): at the token's
+ * own lightness some hues measured under 4.5:1 against it. The same step in the dark scheme
+ * keeps the dark label at well over that.
+ */
+.edition-ink {
+  --edition: oklch(from var(--color-on-canvas-muted) calc(l - 0.07) 0.16 var(--edition-hue));
+}
+
+/*
+ * A browser without relative colour syntax drops the declaration above, and the bands, the
+ * label and the hairline would all vanish without a word: found by a cold review of #247.
+ * So it gets the same hue at a fixed lightness per scheme, which is a colour this site
+ * decides for want of any other, and the one line here marked for it.
+ */
+@supports not (color: oklch(from red l c h)) {
+  .edition-ink {
+    --edition: hsl(var(--edition-hue) 60% 27%); /* palette-exempt: no token has a hue to turn */
+
+    @variant dark {
+      --edition: hsl(var(--edition-hue) 60% 70%); /* palette-exempt: the dark half of the same */
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
