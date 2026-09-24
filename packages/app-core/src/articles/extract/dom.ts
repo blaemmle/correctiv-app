@@ -1,9 +1,17 @@
 import serialize from 'dom-serializer';
-import type { AnyNode, Document, Element } from 'domhandler';
+import { Element, Text, type AnyNode, type Document } from 'domhandler';
 import { getAttributeValue, textContent } from 'domutils';
 import { selectAll, selectOne } from 'css-select';
 import { parseDocument } from 'htmlparser2';
 
+import {
+  adPrefixOf,
+  articleBlockRules,
+  carries as tagCarries,
+  headerPostOf,
+  type BlockMarker,
+  type BlockRule,
+} from '../blocks';
 import { estimateReadingMinutes, extractPageMeta } from '../page-meta';
 import { ratingFromPage, ratingFromText } from '../rating';
 import type { ArticleExtractor, ExtractedArticle } from '../types';
@@ -43,6 +51,9 @@ const KEEP = new Set([
   'u',
   'br',
   'hr',
+  // What `articles/blocks.ts` makes of an accordion.
+  'details',
+  'summary',
 ]);
 
 /** Tags removed together with their contents. */
@@ -77,6 +88,61 @@ function one(query: string, doc: Document | Element): Element | null {
 }
 function all(query: string, doc: Document | Element): Element[] {
   return selectAll(query, doc) as unknown as Element[];
+}
+
+function carries(node: Element, marker: BlockMarker): boolean {
+  return tagCarries(node.attribs ?? {}, marker);
+}
+
+/** The first element under `nodes`, depth first, that carries the marker. */
+function findMarked(nodes: AnyNode[], marker: BlockMarker): Element | null {
+  for (const node of nodes) {
+    if (!isElement(node)) continue;
+    if (carries(node, marker)) return node;
+    const inside = findMarked(node.children ?? [], marker);
+    if (inside) return inside;
+  }
+  return null;
+}
+
+/**
+ * The table in `articles/blocks.ts`, over the parsed tree: the same outcome the
+ * string interpreter there reaches, and it runs before the allowlist for the same
+ * reason — an accordion's title is inside a `<button>`, which the allowlist drops.
+ * The first rule an element matches decides, and an ancestor is decided before
+ * its descendants, which for the rules in that table is the order it lists them in.
+ */
+function applyBlockRules(children: AnyNode[], rules: readonly BlockRule[]): AnyNode[] {
+  const out: AnyNode[] = [];
+  for (const node of children) {
+    if (!isElement(node)) {
+      out.push(node);
+      continue;
+    }
+    const rule = rules.find((r) => carries(node, r.marker));
+    if (rule?.action === 'drop') continue;
+    if (rule?.action === 'unwrap') {
+      out.push(...applyBlockRules(node.children ?? [], rules));
+      continue;
+    }
+    if (rule?.action === 'details') {
+      const summary = findMarked(node.children ?? [], rule.summary);
+      const panel = findMarked(node.children ?? [], rule.panel);
+      if (summary && panel) {
+        const title = textContent(summary).replace(/\s+/g, ' ').trim();
+        out.push(
+          new Element('details', {}, [
+            new Element('summary', {}, [new Text(title)]),
+            ...applyBlockRules(panel.children ?? [], rules),
+          ]),
+        );
+        continue;
+      }
+    }
+    node.children = applyBlockRules(node.children ?? [], rules);
+    out.push(node);
+  }
+  return out;
 }
 
 /** Recursively: drop, unwrap, or keep with allowlisted attributes. */
@@ -124,9 +190,13 @@ export const extractArticleFromDom: ArticleExtractor = (html: string): Extracted
   const excerptEl = one('.detail__excerpt', doc);
   const excerpt = (excerptEl ? textContent(excerptEl).trim() : '') || meta.excerpt;
 
-  const authors = all('.detail__authors a, .detail__authors-link', doc)
+  // A page opening with `cvui/header-post` has no `detail__authors`; the block's
+  // byline is the only one (`articles/blocks.ts`).
+  const headerPost = headerPostOf(html);
+  const bylined = all('.detail__authors a, .detail__authors-link', doc)
     .map((a) => textContent(a).trim())
     .filter(Boolean);
+  const authors = headerPost.authors.length > 0 ? headerPost.authors : bylined;
 
   const timeEl = one('time.detail__date, time[datetime]', doc);
   const datetime = timeEl ? getAttributeValue(timeEl, 'datetime') : undefined;
@@ -141,7 +211,8 @@ export const extractArticleFromDom: ArticleExtractor = (html: string): Extracted
   let bodyHtml = '';
   let bodyText = '';
   if (contentEl) {
-    contentEl.children = sanitizeChildren(contentEl.children);
+    const blocks = applyBlockRules(contentEl.children, articleBlockRules(adPrefixOf(html)));
+    contentEl.children = sanitizeChildren(blocks);
     bodyHtml = serialize(contentEl.children).trim();
     bodyText = textContent(contentEl);
   }
@@ -155,6 +226,7 @@ export const extractArticleFromDom: ArticleExtractor = (html: string): Extracted
     publishedText,
     readingMinutes: meta.readingMinutes ?? estimateReadingMinutes(bodyText),
     heroImageUrl: meta.heroImageUrl,
+    heroVideoUrl: headerPost.videoUrl,
     bodyHtml,
     rating,
   };
