@@ -85,12 +85,16 @@ That is why the reader is a platform pair behind a shared props type
 (`__tests__/web-target.test.ts`), not a comment.
 
 The iframe is the honest equivalent here, because `buildReaderHtml()` builds the
-document locally — nothing foreign is framed. It carries `sandbox="allow-same-origin"`
+document locally — nothing foreign is framed. ~~It carries `sandbox="allow-same-origin"`
 and nothing else: `extract.ts` strips `script`/`style`/`iframe`/`form` anyway, so the
-reader needs no JS, and leaving out `allow-scripts` costs nothing. `allow-same-origin` is
+reader needs no JS, and leaving out `allow-scripts` costs nothing.~~ It carries
+`allow-scripts` as well since embeds from a short list of hosts render in the reader and
+inherit the frame's sandbox, voided by [ADR 0065](0065-embeds-inline-from-a-short-list-and-a-link-for-the-rest.md) §5.
+`allow-same-origin` is
 needed so clicks inside the iframe run through the same `onNavigate` as in the native
-WebView. The two must never be set together — the frame could then remove its own
-sandbox.
+WebView. ~~The two must never be set together~~ (they are, on purpose, voided by
+[ADR 0065](0065-embeds-inline-from-a-short-list-and-a-link-for-the-rest.md) §5) — the
+frame could then remove its own sandbox.
 
 ## Verified
 

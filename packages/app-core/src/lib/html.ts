@@ -303,8 +303,55 @@ export function metaTags(html: string): Map<string, string> {
   return tags;
 }
 
-/** Elements that are never article content. Removed with their contents. */
-const DROP_TAGS = ['script', 'noscript', 'iframe', 'form', 'style', 'svg', 'button'];
+/**
+ * Elements that are never article content. Removed with their contents.
+ *
+ * `iframe` is not on it: every caller hands the body through `rewriteEmbeds`
+ * (`articles/embeds.ts`) first, which decides what a frame becomes, and
+ * `OTHER_FRAMES` below drops whatever reaches here in any other shape.
+ */
+const DROP_TAGS = ['script', 'noscript', 'form', 'style', 'svg', 'button'];
+
+/**
+ * Elements that act from the body without a script: a `<meta>` refresh
+ * navigates the document, `<base>` re-points every relative address, `<link>`
+ * loads and prerenders, and the rest are plug-ins and frames of other kinds.
+ * Only the tags go, opening and closing, because what an `<object>` holds is
+ * fallback content and inert without it (ADR 0065 §7).
+ */
+const ACTIVE_TAGS =
+  /<\/?(?:meta|base|link|portal|object|embed|applet|param|frame|frameset)\b[^>]*>/gi;
+
+/**
+ * Take out every element that acts without a script, to a fixpoint.
+ *
+ * Repeated because a removal can put a tag back together: `<me<meta>ta …>` is a
+ * refresh once the inner tag is gone. Exported for `buildReaderHtml`, which runs
+ * it again over a body from the cache or the offline bundle, written by whatever
+ * cleaner was current then.
+ */
+export function stripActiveMarkup(html: string): string {
+  let out = html;
+  for (let previous = ''; previous !== out;) {
+    previous = out;
+    out = out.replace(/<(script|noscript)\b[\s\S]*?<\/\1\s*>/gi, '');
+    out = out.replace(/<\/?(?:script|noscript)\b[^>]*>/gi, '');
+    out = out.replace(ACTIVE_TAGS, '');
+  }
+  return out;
+}
+
+/**
+ * The one frame that may stay: exactly as `rewriteEmbeds` writes it, attribute
+ * for attribute. Whether its host is on the list is `buildReaderHtml`'s check and
+ * the document's policy, not this pattern's; what this pattern refuses is a frame
+ * with anything else on it, a `srcdoc` first of all.
+ */
+const CANONICAL_FRAME =
+  /^<iframe class="reader-embed" src="https:\/\/[^"<>\s]+"(?: sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox")?(?: title="[^"<>]*")?(?: name="[^"<>]*")?(?: height="\d{2,4}")? loading="lazy"><\/iframe>$/;
+
+/** Any frame but the canonical one, with what it holds. */
+const OTHER_FRAMES = /<iframe\b[^>]*>(?:[\s\S]*?<\/iframe\s*>)?/gi;
 
 /**
  * Clean an article body for the reader, by denylist.
@@ -316,12 +363,34 @@ const DROP_TAGS = ['script', 'noscript', 'iframe', 'form', 'style', 'svg', 'butt
  * one copy too many. Measured on a live article body, `content.rendered` carries
  * only `a br div em figure h2 hr img p span strong` — so this is defence against
  * the post that embeds something, not a fix for one that already does.
+ *
+ * **It is not the reader's security boundary**, and nothing should rely on it
+ * being one. That is `gateReaderBody` in `articles/body-allowlist.ts`, which
+ * `buildReaderHtml` runs over every body whatever produced it: an allowlist over
+ * a parsed tree. This function was the boundary for a day, and a re-check on
+ * 2026-09-24 found two bodies no denylist of this shape stops, a tag left open at
+ * the end and an `<area>` nobody had listed (ADR 0065 §7). What it does is
+ * cleaning: the bytes the cache and the offline bundle store are smaller and
+ * nearer to what the reader shows, and the string extractor's output is readable
+ * on its own.
  */
 export function sanitizeArticleHtml(body: string): string {
   let out = body;
-  for (const tag of DROP_TAGS) {
-    out = out.replace(new RegExp(`<${tag}[\\s\\S]*?</${tag}>`, 'gi'), '');
+  // To a fixpoint, and the frames last, because every removal here can put a tag
+  // back together out of the text on either side of it: `<ifr<script></script>ame`
+  // is a frame once the script is gone.
+  for (let previous = ''; previous !== out;) {
+    previous = out;
+    for (const tag of DROP_TAGS) {
+      out = out.replace(new RegExp(`<${tag}[\\s\\S]*?</${tag}>`, 'gi'), '');
+    }
+    out = stripActiveMarkup(out);
+    out = out.replace(OTHER_FRAMES, (frame) => (CANONICAL_FRAME.test(frame) ? frame : ''));
   }
+  // A tag left open at the very end, which whatever is written after the body
+  // would close. The gate parses it as text; dropping it here keeps it out of the
+  // cache as well.
+  out = out.replace(/<[a-z!/?][^>]*$/i, '');
   // Tracking pixels (1x1) and empty lazyload imgs without a src.
   out = out.replace(/<img[^>]+(facebook\.com\/tr|height="1")[^>]*>/gi, '');
   // Reduce <picture>/<source> variants to the <img> - the reader loads srcset itself.

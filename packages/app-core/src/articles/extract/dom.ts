@@ -12,6 +12,8 @@ import {
   type BlockMarker,
   type BlockRule,
 } from '../blocks';
+import { allowlistNodes } from '../body-allowlist';
+import { rewriteEmbeds } from '../embeds';
 import { estimateReadingMinutes, extractPageMeta } from '../page-meta';
 import { ratingFromPage, ratingFromText } from '../rating';
 import type { ArticleExtractor, ExtractedArticle } from '../types';
@@ -22,61 +24,14 @@ import type { ArticleExtractor, ExtractedArticle } from '../types';
  *
  * The difference that earns its four dependencies is the body cleanup: this
  * sanitises with a tag **allowlist**, unwrapping every unknown wrapper and
- * dropping every attribute that is not on the list. `extract/string.ts` can only
+ * dropping every attribute that is not on the list. The table is
+ * `articles/body-allowlist.ts`, which `buildReaderHtml` holds every body to as
+ * well, so the extractor and the reader's last gate cannot disagree. `extract/string.ts` can only
  * cut out known-bad elements, so the reader gets `<div class="wp-block-…">`
  * scaffolding it has no styles for. Everything else about the two is the same by
  * construction — the page meta, the rating vocabulary and the reading time come
  * from shared modules, and `test/articles.test.ts` asserts the rest.
  */
-
-/** Tags that survive into the reader. */
-const KEEP = new Set([
-  'p',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'ul',
-  'ol',
-  'li',
-  'blockquote',
-  'figure',
-  'figcaption',
-  'img',
-  'a',
-  'strong',
-  'em',
-  'b',
-  'i',
-  'u',
-  'br',
-  'hr',
-  // What `articles/blocks.ts` makes of an accordion.
-  'details',
-  'summary',
-]);
-
-/** Tags removed together with their contents. */
-const DROP = new Set([
-  'script',
-  'style',
-  'noscript',
-  'iframe',
-  'form',
-  'button',
-  'input',
-  'svg',
-  'video',
-  'audio',
-  'ins',
-  'aside',
-  'nav',
-  'header',
-  'footer',
-]);
-
-/** Attributes allowed per tag. Everything else — class, style, data-* — goes. */
-const ATTRS: Record<string, string[]> = { a: ['href'], img: ['src', 'alt'] };
 
 function isElement(node: AnyNode): node is Element {
   return node.type === 'tag' || node.type === 'script' || node.type === 'style';
@@ -145,38 +100,6 @@ function applyBlockRules(children: AnyNode[], rules: readonly BlockRule[]): AnyN
   return out;
 }
 
-/** Recursively: drop, unwrap, or keep with allowlisted attributes. */
-function sanitizeChildren(children: AnyNode[]): AnyNode[] {
-  const out: AnyNode[] = [];
-  for (const node of children) {
-    if (node.type === 'text') {
-      out.push(node);
-      continue;
-    }
-    if (!isElement(node)) continue; // comments, CDATA and friends
-    const tag = node.name.toLowerCase();
-    if (DROP.has(tag)) continue;
-
-    const cleaned = sanitizeChildren(node.children ?? []);
-    if (!KEEP.has(tag)) {
-      // Unknown wrapper (span, div, section …): pull its children up.
-      out.push(...cleaned);
-      continue;
-    }
-
-    node.children = cleaned;
-    node.attribs = Object.fromEntries(
-      Object.entries(node.attribs ?? {}).filter(([k]) => (ATTRS[tag] ?? []).includes(k)),
-    );
-    // Empty paragraphs and headings with neither text nor media are layout noise.
-    const hasText = textContent(node).trim().length > 0;
-    const hasMedia =
-      tag === 'img' || tag === 'br' || tag === 'hr' || selectOne('img', node) != null;
-    if (hasText || hasMedia) out.push(node);
-  }
-  return out;
-}
-
 export const extractArticleFromDom: ArticleExtractor = (html: string): ExtractedArticle => {
   const doc = parseDocument(html);
   const meta = extractPageMeta(html);
@@ -211,8 +134,14 @@ export const extractArticleFromDom: ArticleExtractor = (html: string): Extracted
   let bodyHtml = '';
   let bodyText = '';
   if (contentEl) {
+    // The blocks first, over the tree (`articles/blocks.ts`). Then the embeds,
+    // rewritten as markup the way the string backend does it, so the policy in
+    // `embeds.ts` is one function rather than one per backend. Then the table in
+    // `body-allowlist.ts`, which the reader's last gate holds every body to as well.
     const blocks = applyBlockRules(contentEl.children, articleBlockRules(adPrefixOf(html)));
-    contentEl.children = sanitizeChildren(blocks);
+    contentEl.children = allowlistNodes(parseDocument(rewriteEmbeds(serialize(blocks))).children, {
+      dropEmpty: true,
+    });
     bodyHtml = serialize(contentEl.children).trim();
     bodyText = textContent(contentEl);
   }

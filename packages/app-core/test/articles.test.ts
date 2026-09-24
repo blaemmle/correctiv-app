@@ -142,7 +142,9 @@ describe.each([
   });
 
   it('and only the DOM backend removes classes and inline styles', () => {
-    expect(fromDom.bodyHtml).not.toMatch(/ class="| style="/i);
+    // Bar the two an embed leaves behind, which are the reader's own (ADR 0065,
+    // asserted in `embeds.test.ts`).
+    expect(fromDom.bodyHtml).not.toMatch(/ class="(?!embed-fallback"|reader-embed")| style="/i);
     // Not a defect in the string backend — a documented limit of regex cleanup.
     expect(fromString.bodyHtml).toMatch(/ class="/i);
   });
@@ -561,6 +563,8 @@ describe('reader html', () => {
     byline: 'by A. Autorin, B. Autor',
     readingTime: '5 min read',
     support: 'Made possible by supporters like you.',
+    embedFallback: (host) => `Open content from ${host} in the browser`,
+    embedArticle: 'Read the embedded article',
   };
 
   it('escapes editorial text but passes the sanitised body through', () => {
@@ -809,6 +813,8 @@ describe('the reader document names its language', () => {
     byline: 'by A. Autorin',
     readingTime: '5 min read',
     support: 'Made possible by supporters like you.',
+    embedFallback: (host) => `Open content from ${host} in the browser`,
+    embedArticle: 'Read the embedded article',
   };
 
   it('says German when the host says German', () => {

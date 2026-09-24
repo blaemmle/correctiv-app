@@ -1,6 +1,8 @@
 import { escapeHtml } from '../lib/html';
 import { formatDate } from '../lib/format';
 import { coreMessage } from '../i18n/messages';
+import { gateReaderBody } from './body-allowlist';
+import { INLINE_EMBED_HOSTS } from './embeds';
 import { ratingTone } from './rating';
 import type { Locale } from '../stores/settings';
 import type { Article } from './types';
@@ -60,6 +62,14 @@ export interface ReaderCopy {
   readingTime: string;
   /** The line in the footer, which is the only thing the document says in its own voice. */
   support: string;
+  /**
+   * The link standing in for an embed the reader does not load, named by its host
+   * (`articles/embeds.ts`). A function, because one article can embed from several
+   * hosts and the body that names them was cached without a language.
+   */
+  embedFallback: (host: string) => string;
+  /** The link standing in for a correctiv.org article embedded in this one. */
+  embedArticle: string;
 }
 
 /**
@@ -93,6 +103,18 @@ export const READER_COPY = {
   support: coreMessage({
     id: 'core.reader.support',
     defaultMessage: 'Made possible by supporters like you. Thank you for being here.',
+  }),
+  embedFallback: coreMessage({
+    id: 'core.reader.embedFallback',
+    defaultMessage: 'Open content from {host} in the browser',
+    description:
+      'A link in the article document where the article embeds something the app does not load, a video or a social media post. Tapping it opens the system browser. {host} is the address it comes from without "www.", for example "youtube.com" or "instagram.com".',
+  }),
+  embedArticle: coreMessage({
+    id: 'core.reader.embedArticle',
+    defaultMessage: 'Read the embedded article',
+    description:
+      'A link in the article document where the article embeds another CORRECTIV article. Tapping it opens that article in the app, not in a browser.',
   }),
 };
 
@@ -134,6 +156,25 @@ export interface ReaderHtmlOptions {
 }
 
 const ROOT_FONT_PX = 16;
+
+/**
+ * The document's Content Security Policy, first thing in its `<head>`.
+ *
+ * No script at all, because the document has none of its own and needs none: the
+ * body is a remote page's, and a hole in a cleaner must not become script running
+ * in the app. That is also what lets the web host give its frame `allow-scripts`,
+ * which the embeds' own frames inherit and need (ADR 0065 §5). Frames only from
+ * `INLINE_EMBED_HOSTS`, so the list is enforced by the browser as well as by the
+ * cleaners. A policy in a meta tag can only be tightened by a later one, never
+ * loosened, so a body that brings its own changes nothing.
+ */
+export const READER_CSP = [
+  "script-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  `frame-src ${INLINE_EMBED_HOSTS.map((host) => `https://${host}`).join(' ')}`,
+].join('; ');
 
 export function buildReaderHtml(
   article: Article,
@@ -198,10 +239,20 @@ export function buildReaderHtml(
    */
   const footer = `<p class="support-line">${escapeHtml(copy.support)}</p>`;
 
+  // The last gate: every body, from wherever it came, held to one table over a
+  // parsed tree, with the fallback markers turned into links in the reader's
+  // language (ADR 0065 §7, `body-allowlist.ts`).
+  const body = gateReaderBody(
+    article.bodyHtml,
+    { openElsewhere: copy.embedFallback, openArticle: copy.embedArticle },
+    article.url,
+  );
+
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(locale)}" style="${rootStyle}">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="${READER_CSP}">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 ${links}${styles}
 </head>
@@ -215,7 +266,7 @@ ${rating}
 <p class="meta">${escapeHtml(metaLine)}</p>
 </header>
 ${excerpt}
-<div class="reader-body">${article.bodyHtml}</div>
+<div class="reader-body">${body}</div>
 <footer class="reader-footer">
 ${footer}
 </footer>
@@ -244,13 +295,16 @@ ${footer}
  * asked for less motion then gets no hero at all rather than a moving one.
  *
  * A document with scripting disabled gets its video's controls whether it asked for
- * them or not, which is the HTML standard's rule and is what the web target's
- * sandboxed frame is. The same sandbox keeps `autoplay` from starting anything.
- * Measured in Chromium on 2026-09-24: in `sandbox="allow-same-origin"` the video
- * stayed paused behind its poster with a play bar across it, even with the
- * browser's autoplay policy switched off; without the sandbox it played. So
- * `READER_LAYOUT_CSS` hides the forced controls and takes the pointer off the video,
- * and on the web the hero is a still. The native WebViews run scripts and play it.
+ * them or not, which is the HTML standard's rule, and the same state keeps
+ * `autoplay` from starting anything. Measured in Chromium on 2026-09-24: in
+ * `sandbox="allow-same-origin"` the video stayed paused behind its poster with a
+ * play bar across it, even with the browser's autoplay policy switched off. That
+ * was the web target's frame until ADR 0065 §5 gave it `allow-scripts` for the
+ * embeds, and measured the same day in the web export, the hero now plays there
+ * too, without controls. The document still runs no script of its own: its policy
+ * is `script-src 'none'`, and scripting being ENABLED is what the video rule reads.
+ * `READER_LAYOUT_CSS` keeps hiding forced controls and taking the pointer off the
+ * video, for a host whose frame has scripting off. The native WebViews play it.
  */
 function heroHtml(article: Article): string {
   const image = article.heroImageUrl ? escapeHtml(article.heroImageUrl) : '';
@@ -343,6 +397,24 @@ h1{font-family:'Merriweather',Georgia,serif;font-weight:700;font-size:var(--var-
 .reader-body blockquote{border-left:3px solid var(--var-color-accent);
   padding-left:var(--var-spacing-s);margin:var(--var-spacing-m) 0;
   color:var(--var-color-on-canvas-muted)}
+/* An embed that renders: the full column, at the height its frame states, or at
+   most of a screen where it states none (ADR 0065 §3). The attribute is a
+   presentational hint, so it loses to any height set here; only the frame without
+   one gets a CSS height.
+   The fill is the primitive white on purpose, the case ADR 0022 keeps primitives for:
+   an embed draws itself for a light page and leaves its background transparent, so
+   on the dark canvas a Datawrapper chart printed black text on near-black. */
+.reader-body .reader-embed{display:block;width:100%;border:0;margin:var(--var-spacing-m) 0;
+  background:var(--var-color-white);border-radius:var(--var-radius-md)}
+.reader-body .reader-embed:not([height]){height:75vh}
+/* One that does not: a link that looks like a thing to tap, not like a sentence. */
+.reader-body .embed-fallback{display:block;margin:var(--var-spacing-m) 0;
+  padding:var(--var-spacing-s) var(--var-spacing-m);border:1px solid var(--var-color-stroke);
+  border-radius:var(--var-radius-md);background:var(--var-color-surface);
+  font-family:'SourceSans3',sans-serif;font-weight:700;font-size:var(--var-font-size-text-m);
+  line-height:var(--var-leading-snug);letter-spacing:0;color:var(--var-color-on-canvas-accent)}
+.reader-body .embed-fallback::after{content:' \\2197'}
+.reader-body .embed-fallback--article::after{content:' \\2192'}
 /* An accordion from the site's cvui/interactive-list, rebuilt as <details> by
    articles/blocks.ts, so it opens without a script. The disclosure triangle is the
    browser's own and follows the text colour. */

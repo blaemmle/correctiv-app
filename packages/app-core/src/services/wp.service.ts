@@ -35,6 +35,7 @@
  */
 
 import { applyBlockRules, articleBlockRules, headerPostOf } from '../articles/blocks';
+import { rewriteEmbeds } from '../articles/embeds';
 import { estimateReadingMinutes } from '../articles/page-meta';
 import { ratingFromInterpretation } from '../articles/rating';
 import type { ExtractedArticle } from '../articles/types';
@@ -300,8 +301,9 @@ export function toArticle(post: WpPost): ExtractedArticle {
     heroImageUrl: wpImage(post, 'list') ?? undefined,
     heroVideoUrl: headerPost.videoUrl,
     // The same block table the page path reads (`articles/blocks.ts`), under the
-    // default ad prefix, because a REST body has no `<body>` to declare its own.
-    bodyHtml: sanitizeArticleHtml(applyBlockRules(body, articleBlockRules())),
+    // default ad prefix, because a REST body has no `<body>` to declare its own;
+    // then the embeds, before the cleaner would drop their frames.
+    bodyHtml: sanitizeArticleHtml(rewriteEmbeds(applyBlockRules(body, articleBlockRules()))),
     rating: ratingFromInterpretation(interpretation(post)),
   };
 }

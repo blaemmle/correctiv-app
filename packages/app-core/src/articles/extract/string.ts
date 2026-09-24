@@ -1,5 +1,6 @@
 import { balancedBlock, sanitizeArticleHtml, stripTags } from '../../lib/html';
 import { adPrefixOf, applyBlockRules, articleBlockRules, headerPostOf } from '../blocks';
+import { rewriteEmbeds } from '../embeds';
 import { estimateReadingMinutes, extractPageMeta } from '../page-meta';
 import { ratingFromPage, ratingFromText } from '../rating';
 import type { ArticleExtractor, ExtractedArticle } from '../types';
@@ -59,9 +60,12 @@ export const extractArticleFromString: ArticleExtractor = (html: string): Extrac
 
   const bodyBlock = balancedBlock(html, /<div[^>]*class="[^"]*detail__content[^"]*"[^>]*>/);
   // The blocks first, while the buttons an accordion keeps its titles in are still
-  // there for them to read; see `articles/blocks.ts`.
+  // there for them to read; see `articles/blocks.ts`. Then the embeds, before the
+  // cleaner would drop their frames (`articles/embeds.ts`).
   const bodyHtml = bodyBlock
-    ? sanitizeArticleHtml(applyBlockRules(bodyBlock, articleBlockRules(adPrefixOf(html))))
+    ? sanitizeArticleHtml(
+        rewriteEmbeds(applyBlockRules(bodyBlock, articleBlockRules(adPrefixOf(html)))),
+      )
     : '';
 
   return {

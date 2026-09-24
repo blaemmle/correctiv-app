@@ -1,4 +1,6 @@
-import { WebView, type WebViewNavigation } from 'react-native-webview';
+import { WebView } from 'react-native-webview';
+
+import { allowsFrameLoad } from '@/lib/articles/readerNavigation';
 
 import { READER_BASE_URL, type ReaderViewProps } from './types';
 
@@ -13,7 +15,21 @@ export function ReaderView({ html, onNavigate, onScroll }: ReaderViewProps) {
     <WebView
       originWhitelist={['*']}
       source={{ html, baseUrl: READER_BASE_URL }}
-      onShouldStartLoadWithRequest={(request: WebViewNavigation) => onNavigate(request.url)}
+      /*
+       * A frame inside the article loads without asking the reader, and that is the
+       * embed rendering, not a link being followed (ADR 0065 §4). iOS reports every
+       * frame's load here, so without this a Datawrapper chart would open Safari as
+       * the article appeared. A frame may load a web scheme and nothing else
+       * (`allowsFrameLoad`): the embeds publish anybody's content, and a nested frame
+       * must not hand the phone a `tel:` or the app's own scheme. Which frames the
+       * document may have at all is its Content Security Policy, built from the
+       * core's host list. Android does not report a frame's first load, and marks
+       * everything it does report top-frame, so for it nothing changes. The top frame
+       * still goes through onNavigate, as every link does.
+       */
+      onShouldStartLoadWithRequest={(request) =>
+        request.isTopFrame === false ? allowsFrameLoad(request.url) : onNavigate(request.url)
+      }
       showsVerticalScrollIndicator={false}
       // Let the content start underneath the transparent overlay header.
       contentInsetAdjustmentBehavior="never"
