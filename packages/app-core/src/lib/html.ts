@@ -123,11 +123,6 @@ export function metaTags(html: string): Map<string, string> {
   return tags;
 }
 
-/** One meta tag by `property` or `name`. */
-export function extractMeta(html: string, key: string): string | null {
-  return metaTags(html).get(key) ?? null;
-}
-
 /** Elements that are never article content. Removed with their contents. */
 const DROP_TAGS = ['script', 'noscript', 'iframe', 'form', 'style', 'svg', 'button'];
 

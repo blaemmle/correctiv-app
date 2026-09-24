@@ -1,6 +1,8 @@
 import { escapeHtml } from '../lib/html';
-import { formatDateDe } from '../lib/format';
-import { ratingLabel, ratingTone } from './rating';
+import { formatDate } from '../lib/format';
+import { coreMessage } from '../i18n/messages';
+import { ratingTone } from './rating';
+import type { Locale } from '../stores/settings';
 import type { Article } from './types';
 
 /**
@@ -22,19 +24,123 @@ import type { Article } from './types';
  * dark by redefining them.
  */
 
+/**
+ * Every word this document prints that is not the article's own, formatted.
+ *
+ * Handed IN rather than fetched here, and that is the whole difference between
+ * this file and a screen. The document goes into a WebView as a string: there is
+ * no React tree, no provider and no `useIntl()` to reach for, so the core names
+ * the words it needs (`READER_COPY` below) and the host arrives with them already
+ * turned into text.
+ *
+ * `verdict` is absent on an article with no rating, which is most of them, and
+ * `byline` on one with no named author. Both are then simply not printed, exactly
+ * as before.
+ */
+export interface ReaderCopy {
+  /** The plaque a fact check wears instead of its section. */
+  factcheckBadge: string;
+  /**
+   * The verdict, spelled out — `RATING_LABELS` is where the wording comes from.
+   *
+   * Optional because most articles have no rating, and a host that has one has to
+   * supply it. It cannot be made required without making every unrated article
+   * format a verdict it does not have, and it cannot be tied to `article.rating`
+   * in the type, so the guarantee is made where it is enforceable: an empty one
+   * prints NO plaque rather than an empty one. The closed-union argument
+   * `AUDIO_ERROR_LABELS` makes does not reach here — that one fails to compile
+   * because the Record must be total, and this is one field on a bag of words.
+   * A red box with no word in it asserts a verdict and names none, which is worse
+   * than an article that shows no verdict at all.
+   */
+  verdict?: string;
+  /** The authors with their preposition, as one phrase. */
+  byline?: string;
+  /** How long the article takes to read. */
+  readingTime: string;
+  /** The line in the footer, which is the only thing the document says in its own voice. */
+  support: string;
+}
+
+/**
+ * What the host has to format, as message descriptors.
+ *
+ * These live in the core because the document does: a second host rendering the
+ * same reader must not have to invent a support line, and two hosts inventing two
+ * is the drift this file was written to end. `byline` and `readingTime` take a
+ * value, which is why they are messages and not constants — "von X" and "7 Min.
+ * Lesezeit" are one sentence each in German and two different shapes in English.
+ */
+export const READER_COPY = {
+  factcheckBadge: coreMessage({
+    id: 'core.reader.factcheckBadge',
+    defaultMessage: 'Fact check',
+    description:
+      "The badge on a fact check inside the article document. Uppercased by the code that builds the document, so write it in normal case. home.factCheckBadge is the same word on the home screen's rail.",
+  }),
+  byline: coreMessage({
+    id: 'core.reader.byline',
+    defaultMessage: 'by {authors}',
+    description:
+      'The byline in the article document the reader renders. {authors} is the list of authors, already joined.',
+  }),
+  readingTime: coreMessage({
+    id: 'core.reader.readingTime',
+    defaultMessage: '{minutes} min read',
+    description:
+      'Part of the meta line in the article document, after the byline and the date and joined to them with ‘ · ’. {minutes} is a whole number of minutes. There is no plural here, unlike `article.readingTime` in the feed; say so if your language needs one.',
+  }),
+  support: coreMessage({
+    id: 'core.reader.support',
+    defaultMessage: 'Made possible by supporters like you. Thank you for being here.',
+  }),
+};
+
 export interface ReaderHtmlOptions {
   /** Inline CSS, in order — token variables and `@font-face` first, layout last. */
   css?: string[];
   /** Stylesheet hrefs, resolved against the WebView's base url. */
   stylesheets?: string[];
-  /** The app's text-size setting; scales the root font size. 1 = default. */
+  /**
+   * The app's text scale, the same factor every other screen is drawn at
+   * ([ADR 0033](../../../../adr/0033-one-text-size-for-the-whole-app-the-systems-by-default.md)):
+   * the system's font scale, or the step a reader chose in its place. It sets the
+   * root font size, so every `rem` in the document follows. 1 = the design's size.
+   *
+   * It is the WHOLE scale, so the host has to keep the browser from applying the
+   * system's a second time — on Android the WebView's own text zoom follows the
+   * system font setting unless it is pinned to 100.
+   */
   textScale?: number;
+  /**
+   * What goes in `<html lang>`, which is not decoration.
+   *
+   * A browser hyphenates and a screen reader chooses a voice by this attribute, so
+   * a German article announced as English is read out in an English accent with no
+   * hyphenation. It was the literal `"de"` here until
+   * [ADR 0049](../../../../adr/0049-the-catalogue-is-a-package.md) §4 gave the host a
+   * locale to pass, and then a `= 'de'` default for one release, which a cold review
+   * caught: the sibling module that formats this document's dates refuses to default a
+   * locale in as many words, because a default is the constant back under another name
+   * and its whole failure mode is being invisible. Required, so a host that forgets it
+   * cannot silently claim German.
+   *
+   * It is the LOCALE and not the article's own language, which this document does
+   * not know: the words around the article are the app's, and the app is in one
+   * language at a time. The day an English app shows a German article, that is a
+   * `lang` on the body rather than a second argument here.
+   */
+  locale: Locale;
 }
 
 const ROOT_FONT_PX = 16;
 
-export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {}): string {
-  const { css = [], stylesheets = [], textScale = 1 } = options;
+export function buildReaderHtml(
+  article: Article,
+  copy: ReaderCopy,
+  options: ReaderHtmlOptions,
+): string {
+  const { css = [], stylesheets = [], textScale = 1, locale } = options;
 
   const rootStyle = `font-size:${ROOT_FONT_PX * textScale}px`;
   const links = stylesheets
@@ -46,23 +152,38 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
     ? `<figure class="hero"><img src="${escapeHtml(article.heroImageUrl)}" alt=""></figure>`
     : '';
 
-  // A fact check announces itself; everything else shows its section.
-  const badgeText = article.rating ? 'FAKTENCHECK' : (article.kicker ?? '').toUpperCase();
+  /**
+   * A fact check announces itself; everything else shows its section.
+   *
+   * Uppercased HERE, and that is the correctness of the string rather than of the
+   * stylesheet. `.badge{text-transform:uppercase}` in `READER_LAYOUT_CSS` says the
+   * same thing and is not the guarantee: `css` is optional and the split this file
+   * documents is that the CSS belongs to the HOST, so a host with a stylesheet of
+   * its own — or one that appends ours anywhere but last — renders "Faktencheck"
+   * in title case with nothing failing anywhere. The kicker was already uppercased
+   * in JavaScript on the same line, so the one branch that read differently was
+   * the one only a rendered document could show. The CSS rule stays, because it is
+   * what makes a host's OWN badge text agree with this one.
+   */
+  const badgeText = (article.rating ? copy.factcheckBadge : (article.kicker ?? '')).toUpperCase();
   const badge = badgeText ? `<p class="badge">${escapeHtml(badgeText)}</p>` : '';
 
-  const rating = article.rating
-    ? `<div class="rating rating--${ratingTone(article.rating)}">` +
-      `<span class="rating__label">${escapeHtml(ratingLabel(article.rating))}</span></div>`
-    : '';
+  // Both halves, or neither: a plaque with no word in it is a coloured box
+  // asserting a verdict it does not name. See `ReaderCopy.verdict`.
+  const rating =
+    article.rating && copy.verdict
+      ? `<div class="rating rating--${ratingTone(article.rating)}">` +
+        `<span class="rating__label">${escapeHtml(copy.verdict)}</span></div>`
+      : '';
 
   // The app's own date format wins over the publisher's wording: correctiv.org prints
   // "04. August 2026" where every list in the app reads "4. August 2026", and the
   // reader is the one screen a date row appears in twice. `publishedText` stays as the
-  // fallback for a page with no parsable date — `formatDateDe` returns '' for one.
+  // fallback for a page with no parsable date — `formatDate` returns '' for one.
   const metaLine = [
-    article.authors.length > 0 ? `von ${article.authors.join(', ')}` : '',
-    formatDateDe(article.publishedAt) || article.publishedText,
-    `${article.readingMinutes} Min. Lesezeit`,
+    article.authors.length > 0 ? copy.byline : '',
+    formatDate(article.publishedAt, locale) || article.publishedText,
+    copy.readingTime,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -77,10 +198,10 @@ export function buildReaderHtml(article: Article, options: ReaderHtmlOptions = {
    * includes the app, so that branch addressed nobody and the button offered them
    * what they already had. Removed with ADR 0018.
    */
-  const footer = `<p class="support-line">Ermöglicht durch Unterstützer:innen wie Sie. Danke, dass Sie dabei sind.</p>`;
+  const footer = `<p class="support-line">${escapeHtml(copy.support)}</p>`;
 
   return `<!DOCTYPE html>
-<html lang="de" style="${rootStyle}">
+<html lang="${escapeHtml(locale)}" style="${rootStyle}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -132,14 +253,14 @@ article{max-width:38.75rem;margin:0 auto;padding-bottom:var(--var-spacing-3xl)}
 .hero img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;
   background:var(--var-color-surface)}
 .reader-header{padding:0 var(--var-spacing-m)}
-.badge{display:inline-block;font-family:'SourceSans3',sans-serif;font-weight:700;font-size:11px;
+.badge{display:inline-block;font-family:'SourceSans3',sans-serif;font-weight:700;font-size:0.6875rem;
   letter-spacing:.4px;text-transform:uppercase;color:var(--var-color-white);
   background:var(--var-color-accent);
   padding:3px 8px;border-radius:var(--var-radius-s);margin-bottom:var(--var-spacing-xs)}
 h1{font-family:'Merriweather',Georgia,serif;font-weight:700;font-size:var(--var-font-size-headline-xl);
   line-height:var(--var-leading-tight);letter-spacing:var(--var-letter-spacing-tighter);
   margin-bottom:var(--var-spacing-s)}
-.rating{display:inline-block;font-family:'SourceSans3',sans-serif;font-weight:700;font-size:13px;
+.rating{display:inline-block;font-family:'SourceSans3',sans-serif;font-weight:700;font-size:0.8125rem;
   letter-spacing:.3px;text-transform:uppercase;padding:6px 12px;border-radius:var(--var-radius-md);
   margin-bottom:var(--var-spacing-s);background:var(--var-color-grey-300);
   color:var(--var-color-on-canvas)}

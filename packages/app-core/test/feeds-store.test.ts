@@ -19,6 +19,7 @@ import {
   enrichImage,
   fetchFeedKey,
   fetchMany,
+  investigations,
   loadMore,
   mergedFeedItems,
   mergedFeedStatus,
@@ -499,5 +500,60 @@ describe('image enrichment', () => {
     await store.dispatch(enrichImage('recherchen', 'a'));
 
     expect(store.getState().feeds.byKey.recherchen.items[0].imageUrl).toBe('https://x/keep.jpg');
+  });
+});
+
+/**
+ * The impact card's list, which was three lines inside `app/(tabs)/profil.tsx` and
+ * therefore untested: the screen that must not name a fact check among CORRECTIV's
+ * investigations was also the only place that knew the site-wide stream contains
+ * them.
+ *
+ * The permalinks are the shapes `test/article-url.test.ts` reads off the live feed,
+ * cut down to what this selector needs — the point here is the filter and the
+ * limit, not the URL rule, which has its own suite.
+ */
+describe('investigations', () => {
+  const at = (id: string, path: string): FeedItem => ({
+    ...item(id),
+    url: `https://correctiv.org${path}`,
+  });
+
+  const CHECK = at('c', '/faktencheck/2026/08/11/keine-ki-foto-von-voigt/');
+  const SUB_CHECK = at('s', '/faktencheck/hintergrund/2026/06/30/deutschland-strom-import/');
+  const STORY = at('r', '/russland/2026/08/11/russisches-haus/');
+  const LOCAL = at('l', '/in-eigener-sache/2026/08/07/jugendliche-erleben-wald/');
+
+  it('drops the fact checks the site-wide stream carries', () => {
+    const state = slices({ recherchen: { items: [CHECK, STORY, SUB_CHECK, LOCAL] } });
+
+    expect(investigations(state).map((i) => i.id)).toEqual(['r', 'l']);
+  });
+
+  it('honours the limit the caller asks for', () => {
+    const state = slices({ recherchen: { items: [CHECK, STORY, LOCAL] } });
+
+    expect(investigations(state, 1).map((i) => i.id)).toEqual(['r']);
+  });
+
+  it('answers with everything when no limit is given', () => {
+    const state = slices({ recherchen: { items: [STORY, LOCAL] } });
+
+    expect(investigations(state)).toHaveLength(2);
+  });
+
+  it('reads `recherchen` and nothing else', () => {
+    // The card is about CORRECTIV's own investigations, so a story that only ever
+    // arrived through another feed is not one of them.
+    const state = slices({
+      recherchen: { items: [STORY] },
+      faktencheck: { items: [at('x', '/klima/2026/08/11/etwas/')] },
+    });
+
+    expect(investigations(state).map((i) => i.id)).toEqual(['r']);
+  });
+
+  it('reaches no store of its own', () => {
+    expect(investigations(createAppStore().getState().feeds, 3)).toEqual([]);
   });
 });

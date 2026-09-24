@@ -9,6 +9,9 @@
     ".": "./src/index.ts",
     "./*": "./src/*"
   },
+  "devDependencies": {
+    "@correctiv/prose-and-code": "*"
+  },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",
     "css-select": "^7.0.0",

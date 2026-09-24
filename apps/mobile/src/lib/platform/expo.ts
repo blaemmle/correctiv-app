@@ -1,6 +1,12 @@
 import { createMMKV, type MMKV } from 'react-native-mmkv';
 
-import type { BlobStore, ContentBundle, CorePlatform, KeyValueStore } from '@correctiv/app-core';
+import type {
+  BlobStore,
+  ContentBundle,
+  CorePlatform,
+  ErrorReporter,
+  KeyValueStore,
+} from '@correctiv/app-core';
 import type { Article } from '@correctiv/app-core/articles/types';
 
 import { OFFLINE_ARTICLES, OFFLINE_FEEDS } from '@/lib/articles/offlineBundle.generated';
@@ -132,6 +138,29 @@ function store(id: string): MMKV | null {
 }
 
 /**
+ * The two stores, by id, opened if they are not already.
+ *
+ * One reader: the MMKV inspector in `lib/devtools/AgentTools.tsx`, which is
+ * development-only and is selected away at module scope in a release build, so
+ * nothing in the shipped app calls this. It is here rather than a second
+ * `createMMKV({ id })` inside that file so that the inspector watches the very
+ * handles `persist()` and the cache write through, and so that the two ids stay
+ * one fact in one place.
+ *
+ * A store that failed to open is left out rather than reported as empty: a panel
+ * listing a namespace with no keys says the app wrote nothing, which is a
+ * different fault from the one `store()` already warned about.
+ */
+export function openStores(): Record<string, MMKV> {
+  const open: Record<string, MMKV> = {};
+  for (const id of [STATE_ID, CACHE_ID]) {
+    const instance = store(id);
+    if (instance) open[id] = instance;
+  }
+  return open;
+}
+
+/**
  * A read that fails and a key that is absent are the same thing to `persist()`:
  * it starts that slice from its initial state. Logged, because a broken storage
  * backend otherwise looks exactly like state that resets on its own.
@@ -224,9 +253,41 @@ const content: ContentBundle = {
 };
 
 /**
- * Storage and bundled content. The audio backend is the fourth port and is added
- * at the boot site (`app/_layout.tsx`) rather than here, so that reasoning about
- * where state is stored does not drag in an audio SDK — and so these three ports
- * stay testable without one.
+ * Where a fault goes, and the one file issue #95 changes.
+ *
+ * This is the whole of what a report does today: a line in the log, which is
+ * exactly what the error boundary already did before the port existed. What is
+ * new is that it is now an implementation of a port rather than a placeholder, so
+ * the core can report too and choosing a provider is a change to this function
+ * ([ADR 0032](../../../../../adr/0032-a-port-for-the-error-report-before-a-provider-for-it.md)).
+ *
+ * `console.error` for every report, with no severity in the port to grade it by.
+ * That is deliberate rather than unfinished: a severity is policy about a service
+ * nobody has chosen, and a report that is not worth a developer's attention is a
+ * report that should not have been made.
+ *
+ * **A release build has no console, so this is not a quieter report — it is no
+ * report.** `Localisation.tsx` made the same call in the other direction and said
+ * so; the reasoning is to be re-made here rather than inherited, once a report has
+ * somewhere to go. Until then the honest description of this app's reporting is
+ * "development only", and that is the gap #95 closes.
+ *
+ * Nothing is awaited and nothing throws, which is the port's contract: a report
+ * must not change what the caller does next.
  */
-export const expoPlatform: CorePlatform = { keyValue, blobs, content };
+const errors: ErrorReporter = {
+  report({ domain, code, context, cause }) {
+    // The code first, because it is the part that is searchable and stable. The
+    // cause goes through as the object it arrived as, so a devtools console can
+    // still expand its stack.
+    console.error(`[${domain}] ${code}`, context ?? {}, cause);
+  },
+};
+
+/**
+ * Storage, bundled content and reporting. The audio backend is the one port added
+ * at the boot site (`app/_layout.tsx`) rather than here, so that reasoning about
+ * where state is stored does not drag in an audio SDK — and so these ports stay
+ * testable without one.
+ */
+export const expoPlatform: CorePlatform = { keyValue, blobs, content, errors };

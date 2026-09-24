@@ -1,6 +1,22 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { defineMessages, useIntl } from 'react-intl';
 
 import { READER_BASE_URL, type ReaderViewProps } from './types';
+
+/**
+ * The frame's name, in ENGLISH; the German ships in
+ * `packages/catalogue/src/de/article.ts` (ADR 0026 §6). An iframe's `title` is the
+ * whole document's name to a screen reader, so it is read aloud and belongs in
+ * the catalogue like any other word a person receives.
+ */
+const COPY = defineMessages({
+  frameTitle: {
+    id: 'article.frameTitle',
+    defaultMessage: 'Article',
+    description:
+      'The accessible name of the frame the article document is rendered in, read aloud and never seen. Same word as article.documentTitle, which is the browser TAB.',
+  },
+});
 
 /**
  * Article renderer for the web demo.
@@ -21,6 +37,7 @@ import { READER_BASE_URL, type ReaderViewProps } from './types';
  * uses. That is what keeps the two platforms behaving identically.
  */
 export function ReaderView({ html, onNavigate, onScroll }: ReaderViewProps) {
+  const intl = useIntl();
   const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   const handleClick = useCallback(
@@ -83,7 +100,7 @@ export function ReaderView({ html, onNavigate, onScroll }: ReaderViewProps) {
     <iframe
       ref={frameRef}
       srcDoc={html}
-      title="Artikel"
+      title={intl.formatMessage(COPY.frameTitle)}
       /*
        * allow-same-origin and NOTHING else, deliberately:
        *

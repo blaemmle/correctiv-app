@@ -402,7 +402,7 @@ export function slugFromUrl(url: string): string | null {
  * Is the post the API returned the one that was asked for?
  *
  * A slug is only unique among posts, and `slugFromUrl` takes the last path
- * segment of *any* correctiv.org URL. `articleUrl.ts` routes every non-listing
+ * segment of *any* correctiv.org URL. `articles/url.ts` routes every non-listing
  * path with at least two segments into the reader, so a page such as
  * `/projekte/klimawandel/` is asked for by the segment `klimawandel` — and if a
  * post carries that slug, the API answers with the post.

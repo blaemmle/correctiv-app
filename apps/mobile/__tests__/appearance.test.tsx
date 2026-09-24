@@ -100,7 +100,7 @@ describe('appearance', () => {
  * The docblock above says Uniwind keeps following the device while it holds
  * `'system'`, and on the web that turned out to be half true: `setTheme('system')`
  * reads `prefers-color-scheme` once and stamps the answer on the root element, and
- * nothing re-reads it. Measured on the built handbook on 2026-09-11 with the
+ * nothing re-reads it. Measured on the built workbench on 2026-09-11 with the
  * setting on System and the machine switched to dark with the page open: the
  * site's own chrome followed, because its CSS sits behind a media query, while
  * everything Uniwind had painted stayed light. So the setting still arrives

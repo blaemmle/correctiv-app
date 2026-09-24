@@ -6,7 +6,7 @@ record; iOS remains unrun. See the last two sections.
 
 ## Context
 
-[ADR 0026](0026-react-native-review-and-hardening.md) section 9 decided the shape and
+[ADR 0026](0026-react-native-review-and-hardening.md) §9 decided the shape and
 left three details open. This record carries them out and answers the three.
 
 The argument is [ADR 0013](0013-native-tabs-and-a-web-tab-bar-of-its-own.md)'s, one
@@ -17,7 +17,7 @@ large-title collapse on iOS, and press feedback that belongs to the platform rat
 than to us. None of that survives being redrawn, and none of it has to be written if
 it is not.
 
-## Decision
+## 1. Decision
 
 **The platform's stack header on iOS and Android, configured; the app's drawn bar on
 web.** One seam, `components/ui/ScreenHeader`, with `ScreenHeader.tsx` setting
@@ -80,7 +80,7 @@ motion a user has already learned, and it is a design change to thirteen screens
 of which currently draws its heading inside its own scroller with its own spacing. It
 wants a designer, and it is not this record.
 
-## The two exceptions, named so they are a decision
+## 2. The two exceptions, named so they are a decision
 
 **`/suche` keeps the drawn bar on every platform.** The native alternative is
 `headerSearchBarOptions`, and it is a different interaction on each platform: on
@@ -326,7 +326,7 @@ appears, its colours arrive, and the title was duplicated on six screens. What i
 not answer:
 
 - `correctiv://gespeichert` and the native arrow, against `goBack` — the ten-minute
-  check the issue asks for, and the one open item of ADR 0026 section 9 that is still
+  check the issue asks for, and the one open item of ADR 0026 §9 that is still
   open;
 - how the bar behaves at large accessibility text sizes. The header is the system's
   font at the system's size now, not Source Sans 3 at ours, and it is the first part of

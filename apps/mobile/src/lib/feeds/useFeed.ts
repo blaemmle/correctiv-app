@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import {
   fetchFeedKey,
   fetchMany,
+  investigations,
   mergedFeedItems,
   mergedFeedStatus,
   type FeedStatus,
@@ -101,4 +102,27 @@ export function useMergedFeeds(feeds: FeedKey[]): AsyncState<FeedItem[]> {
     status,
     () => void Promise.all(feeds.map((key) => dispatch(fetchFeedKey(key, { force: true })))),
   );
+}
+
+/**
+ * The site-wide stream with its fact checks taken out, loaded on first use.
+ *
+ * `investigations` is the core's selector rather than a `.filter().slice()` in a
+ * screen, and it is memoised because it builds a fresh array: handed straight to
+ * `useSelector` it would compare unequal on every unrelated dispatch. Same shape
+ * and the same reason as `useSpotlight` in `lib/store/core.ts`.
+ *
+ * ONE slice is subscribed to, not `s.feeds`. Immer patches `byKey[feed]` in place
+ * and leaves its siblings alone, so `byKey.recherchen` keeps its identity while the
+ * other six feeds land and `s.feeds` does not — reading the whole object would
+ * re-render the profile every time Home finished loading something it does not
+ * show. The selector takes that slice (`RecherchenFeed`), so the narrow read is
+ * what it asks for rather than something this hook has to remember.
+ */
+export function useInvestigations(limit: number): FeedItem[] {
+  const recherchen = useAppSelector((s) => s.feeds.byKey.recherchen);
+
+  useLazyLoad(recherchen.status, fetchFeedKey, 'recherchen');
+
+  return useMemo(() => investigations({ byKey: { recherchen } }, limit), [recherchen, limit]);
 }

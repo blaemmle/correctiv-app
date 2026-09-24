@@ -28,23 +28,31 @@ import {
   type ParticipationState,
 } from '@correctiv/app-core/stores/participation';
 import { close as closeVideo } from '@correctiv/app-core/stores/video';
+import {
+  PERSISTED_KEYS as HOME_LAYOUT_KEYS,
+  homeLayoutActions,
+  type HomeLayoutState,
+} from '@correctiv/app-core/stores/homeLayout';
 
 import { LoginGate } from '@/components/gate/LoginGate';
 import { RecoveryScreen } from '@/components/recovery/RecoveryScreen';
 import { expoAudio } from '@/lib/audio/backend';
+import { DraftMarker } from '@/lib/draftMarker';
+import { useHomeLayoutRefresh } from '@/lib/home/layout';
 import { stop as stopAudio } from '@/lib/audio/player';
 // Everything a component of this app needs around it before it draws: the
 // stylesheet, the fonts, the store, the safe area, the gesture root and the
-// appearance handed to Uniwind. The handbook wraps each specimen it draws in the
+// appearance handed to Uniwind. The workbench wraps each specimen it draws in the
 // same component, which is the whole reason it is one (ADR 0028).
 import { AppEnvironment, useAppFonts } from '@/lib/env/AppEnvironment';
 import { expoPlatform } from '@/lib/platform/expo';
 import { coreStore, useAppStore, useIsAdmitted } from '@/lib/store/core';
 import { useColors, useIsDark } from '@/lib/theme';
 
-// Hand the core its platform capabilities before anything reads a store. Storage
-// and bundled content come from the adapter; the audio backend is composed in
-// here, so this one line is the whole answer to "what does this host give the core".
+// Hand the core its platform capabilities before anything reads a store. Storage,
+// bundled content and the error reporter come from the adapter; the audio backend
+// is composed in here, so this one line is the whole answer to "what does this
+// host give the core".
 configurePlatform({ ...expoPlatform, audio: expoAudio });
 
 /**
@@ -87,6 +95,10 @@ function registerPersistence(): Promise<void> {
     persisted<SavedArticlesState>('savedArticles', ['items'], savedArticlesActions.hydrate),
     persisted<InterestsState>('interests', ['selected'], interestsActions.hydrate),
     persisted<ParticipationState>('participation', ['submissions'], participationActions.hydrate),
+    // The home document the app last fetched (ADR 0036 §4), here rather than in the blob
+    // cache because that one evicts, and an evicted copy would put a phone back on the
+    // bundled layout for a reason nobody could see.
+    persisted<HomeLayoutState>('homeLayout', HOME_LAYOUT_KEYS, homeLayoutActions.hydrate),
   ]);
 }
 
@@ -99,9 +111,41 @@ function registerPersistence(): Promise<void> {
  */
 export const unstable_settings = { anchor: '(tabs)' };
 
+/**
+ * Rozenite's hook-shaped domains — Redux for an agent, MMKV, React Navigation —
+ * or nothing at all.
+ *
+ * **Selected at MODULE scope, and that is the whole point of the line.** The
+ * tempting shape — `__DEV__` around a `require` inside a function — does NOT keep
+ * a module out of a release bundle: Metro collects a `require` from the syntax
+ * tree however unreachable the call is, and only a module-scope guard folds one
+ * away. A package written that way survives it, because each of these three
+ * guards ITSELF at module scope and ships a no-op branch for production;
+ * `lib/devtools/AgentTools` is ours and guards nothing, so written that way it
+ * would ship, with three debugger packages behind it.
+ * [ADR 0026](../../../adr/0026-react-native-review-and-hardening.md) §1 carries
+ * the experiment, five variants built into a production export on 2026-09-10, of
+ * which only the two at module scope dropped their module. `lib/store/core.ts`
+ * selects its enhancer the same way, and says why a self-guarding package was not
+ * enough there either.
+ *
+ * The test runner is excluded for the two reasons `devToolsEnhancers()` gives:
+ * `__DEV__` is true under jest, there is no dev client for any of this to talk to,
+ * and the suites mock `expo-router` without the container ref this reaches for.
+ */
+const AgentTools: () => null =
+  // `__DEV__` is the operand that does the work. `NODE_ENV !== 'test'` is TRUE in a
+  // release build, so it must never be left standing alone here — it excludes the
+  // test runner and nothing else.
+  __DEV__ && process.env.NODE_ENV !== 'test'
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+      (require('@/lib/devtools/AgentTools') as typeof import('@/lib/devtools/AgentTools')).default
+    : () => null;
+
 export default function RootLayout() {
   return (
     <AppEnvironment>
+      <AgentTools />
       <AppShell />
     </AppEnvironment>
   );
@@ -133,10 +177,25 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     // screen nobody can dismiss, which is the failure this boundary exists for.
     SplashScreen.hideAsync();
 
-    // THE PLACE AN ERROR REPORT LEAVES THE APP. Issue #95 replaces this one line
-    // with the call to whichever crash reporter is chosen; no provider is picked
-    // yet, so for now it goes to the log and nowhere else.
-    console.error('[app] render failed, showing the recovery screen:', error);
+    /**
+     * THE PLACE AN ERROR REPORT LEAVES THE APP, and it now leaves through the
+     * port. `ErrorReporter` is the host's, implemented in `lib/platform/expo.ts`,
+     * and today that implementation is the log line this call replaces — so the
+     * log is the provider rather than a stand-in for one. Issue #95 chooses a real
+     * sink, and it changes that file and not this one
+     * ([ADR 0032](../../../adr/0032-a-port-for-the-error-report-before-a-provider-for-it.md)).
+     *
+     * Reached on `expoPlatform` directly rather than through the core's
+     * `platform()`, because the boundary is the host's half of the arrangement and
+     * has no business reading the registration the core holds for its own callers.
+     *
+     * `cause` is the thrown thing, unchanged. The rendered message goes to the
+     * recovery screen below, where a person can quote it back to us; this half is
+     * for a machine and gets the error itself. No `context`, because the boundary
+     * genuinely has none — what it knows is that a render failed, and inventing
+     * more is the thing the port's contract forbids.
+     */
+    expoPlatform.errors.report({ domain: 'render', code: 'render-failed', cause: error });
   }, [error]);
 
   // `error` is typed `Error`, but React hands over whatever was thrown, and a
@@ -182,6 +241,10 @@ function AppShell() {
   useEffect(() => {
     if (fontsLoaded && storeReady) SplashScreen.hideAsync();
   }, [fontsLoaded, storeReady]);
+
+  // At launch once the kept copy is back in the store, and on every return to the
+  // foreground; `lib/home/layout.ts` says why not in development.
+  useHomeLayoutRefresh(storeReady);
 
   /**
    * The door. The whole route tree hangs on this one value: while the session is
@@ -259,6 +322,13 @@ function AppShell() {
       {/* Explicit rather than "auto": auto follows the device, and the app's
           appearance setting may deliberately disagree with it. */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {/*
+        Beside the routes rather than inside one, so it is on screen whichever the
+        door shows — the gate carries a draft's edited copy as much as any other
+        screen does. `DraftMarker` renders nothing of its own while no override
+        actually changes anything, on a phone always.
+      */}
+      <DraftMarker />
       {admitted ? (
         <Stack
           screenOptions={{

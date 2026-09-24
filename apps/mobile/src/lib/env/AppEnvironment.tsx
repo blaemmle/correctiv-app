@@ -3,18 +3,22 @@
  *
  * **One definition, two hosts**, which is what [ADR 0006](../../../../../adr/0006-one-core-two-hosts.md)
  * asks for everywhere else. `app/_layout.tsx` wraps the router in this; the
- * handbook wraps every specimen it draws in the same component
- * (`apps/handbook/src/components/DirectPreview.tsx`). Neither keeps a list of
- * providers of its own, and `apps/handbook/test/environment.test.ts` fails if the
+ * workbench wraps every specimen it draws in the same component
+ * (`apps/workbench/src/components/DirectPreview.tsx`). Neither keeps a list of
+ * providers of its own, and `apps/workbench/test/environment.test.ts` fails if the
  * second one starts one.
  *
- * It exists because the handbook's copy of that list drifted, and the drift was
+ * It exists because the workbench's copy of that list drifted, and the drift was
  * invisible on every check. Measured on 2026-09-11 against the assembled site,
- * with the handbook holding a `Provider` and a `SafeAreaProvider` and nothing
+ * with the workbench holding a `Provider` and a `SafeAreaProvider` and nothing
  * else: no font file was loaded at all, so all 45 components drew in the
  * browser's default serif rather than Source Sans, and every bold and semibold
  * string drew at regular weight — this app names one loaded family per cut, so a
  * missing family takes the weight with it. ADR 0028 carries the table.
+ *
+ * **The language is here**, since ADR 0026 §6: `i18n/Localisation` is the
+ * `react-intl` provider, and a specimen the workbench draws formats its messages
+ * against the same catalogue the app does.
  *
  * **What is deliberately NOT here**, because it is routing or the app's own
  * lifecycle and a drawn card has neither: the splash screen, the persistence
@@ -23,7 +27,7 @@
  *
  * **The ports are not here either.** `configurePlatform()` is what this host
  * gives the core — storage, the bundle, audio — and it is a statement about the
- * running app, not about how a component looks. The handbook leaves the core on
+ * running app, not about how a component looks. The workbench leaves the core on
  * its default `createMemoryPlatform()` and a thunk that reaches for storage gets
  * an empty answer instead of throwing, which is what a drawn specimen wants.
  */
@@ -38,8 +42,10 @@ import { Provider } from 'react-redux';
 // names are written in, so whoever compiles it gets the whole app's utilities
 // and not only the ones the host happens to write itself.
 import '@/global.css';
+import { Localisation } from '@/i18n/Localisation';
 import { coreStore } from '@/lib/store/core';
 import { useAppearance, useGivenAppearance, type ThemeSetting } from '@/lib/theme';
+import { TextSizeProvider } from '@/lib/theme/textScaling';
 
 import { useAppFonts } from './fonts';
 
@@ -50,7 +56,7 @@ export interface AppEnvironmentProps {
   /**
    * The appearance to paint in. Left out, the app's own stored setting decides,
    * which is what the app wants; a host with a control of its own passes that
-   * control's value, which is what the handbook wants.
+   * control's value, which is what the workbench wants.
    */
   appearance?: ThemeSetting;
   /**
@@ -61,7 +67,7 @@ export interface AppEnvironmentProps {
    * defaulting, so something has to answer. In the app expo-router already does:
    * `ExpoRoot` mounts a `SafeAreaProvider` above the root route, which is why
    * `RecoveryScreen` can still draw after the boundary has unmounted everything
-   * below it. On a page there is no router and no notch, so the handbook states
+   * below it. On a page there is no router and no notch, so the workbench states
    * zero — and states it rather than letting a provider measure, because a
    * provider with nothing measured yet renders `null`, which inside a card is a
    * component that never appears.
@@ -83,11 +89,20 @@ export function AppEnvironment({ children, appearance, insets }: AppEnvironmentP
           `useSelector` and that cannot run in the component that renders the
           Provider — the same split `app/_layout.tsx` makes for `AppShell`. */}
       <Appearance setting={appearance} />
-      <SafeArea insets={insets}>
-        {/* `flex: 1` fills a device window and is inert in a page's block box,
-            where the specimen's own height decides. */}
-        <GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>
-      </SafeArea>
+      {/* Inside the Provider, because the locale is a selector on the store, and
+          above everything drawn, because a component that formats a message finds
+          no provider otherwise — in the app OR in the workbench. */}
+      <Localisation>
+        {/* The app's one subscription to the text size (ADR 0033); every line of
+            text reads it from here. */}
+        <TextSizeProvider>
+          <SafeArea insets={insets}>
+            {/* `flex: 1` fills a device window and is inert in a page's block box,
+                where the specimen's own height decides. */}
+            <GestureHandlerRootView style={{ flex: 1 }}>{children}</GestureHandlerRootView>
+          </SafeArea>
+        </TextSizeProvider>
+      </Localisation>
     </Provider>
   );
 }
