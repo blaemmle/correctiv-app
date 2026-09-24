@@ -1,8 +1,6 @@
 # ADR 0064 - CI/CD for a public repository
 
-Status: accepted with the client on 2026-09-24; implementation pending.
-First proposed 2026-09-10. This record changes the intended setup, not the workflows.
-
+Status: draft; implementation pending.
 ## 1. Decision
 
 Use **GitHub Actions with Fastlane**: verify builds on PRs, distribute a separate
