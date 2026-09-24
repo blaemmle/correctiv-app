@@ -633,6 +633,15 @@
       ]
     }
   },
+  "0063": {
+    "slugs": ["android-back-is-the-navigators-and-the-onboarding-answers-its-own"],
+    "decisions": {
+      "1": ["The navigator answers back, and a screen answers only for what is not a route"],
+      "2": ["Predictive back stays off, because turned on it draws nothing"],
+      "3": ["Back on the door leaves the app"],
+      "4": ["On the web, browser back is the browser's"]
+    }
+  },
   "0064": {
     "slugs": ["ci-cd-for-a-public-repository"],
     "decisions": {
@@ -643,6 +652,6 @@
       "5": ["Android download on the documentation site"],
       "6": ["Signing and OSS trust"],
       "7": ["No ad-hoc iOS distribution"]
-    }
+     }
   }
 }

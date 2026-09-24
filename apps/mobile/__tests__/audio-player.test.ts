@@ -25,7 +25,21 @@ import {
 const mockPlayer = {
   play: jest.fn(),
   pause: jest.fn(),
-  replace: jest.fn(),
+  /*
+   * Android's native `replace` takes a non-null `AudioSource`, so `replace(null)` is
+   * rejected with a synchronous throw, and inside a press handler that throw closes
+   * the release build. The mock refuses it the same way; iOS and the web accept it,
+   * which is how it shipped.
+   */
+  replace: jest.fn((source: unknown) => {
+    if (source === null) {
+      throw new Error(
+        "Call to function 'AudioPlayer.replace' has been rejected. " +
+          'The 2nd argument cannot be cast to type class expo.modules.audio.AudioSource (received null)',
+      );
+    }
+  }),
+  release: jest.fn(),
   seekTo: jest.fn(() => Promise.resolve()),
   setPlaybackRate: jest.fn(),
   setActiveForLockScreen: jest.fn(),
@@ -39,9 +53,16 @@ const mockPlayer = {
 let emit: ((status: AudioStatus) => void) | null = null;
 
 jest.mock('expo-audio', () => ({
-  createAudioPlayer: jest.fn(() => mockPlayer),
+  /*
+   * A new object per player, sharing `mockPlayer`'s functions, so the assertions on
+   * `mockPlayer` see every player and a stopped player is still a different object
+   * from the one that replaced it, which is what the backend tells them apart by.
+   */
+  createAudioPlayer: jest.fn(() => ({ ...mockPlayer })),
   setAudioModeAsync: jest.fn(() => Promise.resolve()),
 }));
+
+import { createAudioPlayer } from 'expo-audio';
 
 import { configurePlatform, createMemoryPlatform } from '@correctiv/app-core';
 import { isLive, resetAudioController } from '@correctiv/app-core/stores/audio';
@@ -230,14 +251,35 @@ describe('failures', () => {
 });
 
 describe('stopping and coordinating', () => {
-  it('releases the source, the lock screen and the state', async () => {
+  it('releases the player, the lock screen and the state', async () => {
     await playRadio(RADIO);
-    stop();
+    jest.clearAllMocks();
+    // This threw on Android: "Wiedergabe beenden" on the mini player closed the app.
+    expect(() => stop()).not.toThrow();
 
-    // A paused live stream keeps buffering — releasing the source is the point.
-    expect(mockPlayer.replace).toHaveBeenLastCalledWith(null);
+    // A paused live stream keeps buffering, so the player is released rather than
+    // paused: taken out of expo-audio's registry first, then freed. The order is
+    // read off the calls `stop()` made and nothing before it, because `beforeEach`
+    // removes the previous test's player too. After `release()` a native call on
+    // the object throws, so `remove()` after it would be the same crash again.
+    expect(mockPlayer.replace).not.toHaveBeenCalledWith(null);
+    expect(mockPlayer.remove).toHaveBeenCalledTimes(1);
+    expect(mockPlayer.release).toHaveBeenCalledTimes(1);
+    expect(mockPlayer.remove.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      mockPlayer.release.mock.invocationCallOrder.at(-1)!,
+    );
     expect(mockPlayer.clearLockScreenControls).toHaveBeenCalled();
     expect(coreStore.getState().audio).toMatchObject({ track: null, status: 'idle', speed: 1 });
+  });
+
+  it('builds a fresh player for the next track after a stop', async () => {
+    await playRadio(RADIO);
+    stop();
+    const created = (createAudioPlayer as jest.Mock).mock.calls.length;
+
+    await playEpisode(EPISODE);
+    expect((createAudioPlayer as jest.Mock).mock.calls.length).toBe(created + 1);
+    expect(mockPlayer.play).toHaveBeenCalled();
   });
 
   it('ignores status updates that arrive after stopping', async () => {
@@ -247,6 +289,26 @@ describe('stopping and coordinating', () => {
     emit?.(status({ playing: true, currentTime: 42 }));
 
     expect(coreStore.getState().audio).toMatchObject({ track: null, positionSec: 0 });
+  });
+
+  /*
+   * Android tears a released player down on a later main-thread turn
+   * (`BaseAudioPlayer.sharedObjectDidRelease` launches `releasePlayer()`), so its
+   * last status can arrive after the next track has started. It must not reach
+   * that track: a stale "finished" or "not loaded" would stop or stall it.
+   */
+  it('drops a status from a released player once the next track has started', async () => {
+    await playRadio(RADIO);
+    const released = emit;
+    stop();
+    await playEpisode(EPISODE);
+    emit?.(status({ playing: true, isLoaded: true, currentTime: 5, duration: 600 }));
+    expect(coreStore.getState().audio).toMatchObject({ status: 'playing', positionSec: 5 });
+
+    released?.(status({ playing: false, isLoaded: false, didJustFinish: true, currentTime: 99 }));
+
+    expect(coreStore.getState().audio).toMatchObject({ status: 'playing', positionSec: 5 });
+    expect(coreStore.getState().audio.track?.url).toBe(EPISODE.url);
   });
 
   it('stops the video when audio starts', async () => {
