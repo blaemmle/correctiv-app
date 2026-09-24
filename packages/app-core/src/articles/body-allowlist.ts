@@ -4,6 +4,7 @@ import { textContent } from 'domutils';
 import { Text } from 'domhandler';
 import { parseDocument } from 'htmlparser2';
 
+import { READER_BOX_CLASSES } from './blocks';
 import {
   EMBED_FALLBACK_CLASS,
   EMBED_FRAME_CLASS,
@@ -54,7 +55,10 @@ const KEEP: Record<string, readonly string[]> = {
   blockquote: [],
   figure: [],
   figcaption: [],
-  img: ['src', 'alt', 'width', 'height'],
+  // The sizes the site offers, so a device loads the one it needs rather than the
+  // `src`, which WordPress sets to a large one. Every address in `srcset` is held
+  // to the rule `src` is (`imageSet` below).
+  img: ['src', 'srcset', 'sizes', 'alt', 'width', 'height'],
   a: ['href'],
   strong: [],
   em: [],
@@ -127,6 +131,26 @@ const BASE = 'https://correctiv.org/';
 
 const PIXELS = /^\d{1,4}$/;
 
+/** A candidate's descriptor in `srcset`: a width, a density, or none. */
+const DESCRIPTOR = /^(?:\d{1,5}w|\d{1,2}(?:\.\d{1,3})?x)?$/;
+
+/**
+ * What `sizes` may hold: letters, digits, whitespace and the punctuation of media
+ * conditions and lengths, `calc()` included. That lets through functions it has no
+ * use for, `url()` or `var()`, and they are harmless, because `sizes` is only ever
+ * read as a list of lengths and never fetches anything. So this bounds what the
+ * attribute can carry rather than defending anything; a value outside it is
+ * dropped, and the browser then assumes the full width of the screen, which is
+ * what the reader's column is on a phone.
+ */
+const SIZES = /^[a-z0-9\s(),.:%+\-*/]{1,300}$/i;
+
+/** The one class a box keeps, if it carries one the reader styles (`blocks.ts`). */
+function boxClass(attribs: Record<string, string>): string | undefined {
+  const classes = (attribs.class ?? '').split(/\s+/);
+  return READER_BOX_CLASSES.find((name) => classes.includes(name));
+}
+
 export interface AllowlistOptions {
   /**
    * Drop a kept element with neither text nor media in it. The extractor wants
@@ -158,8 +182,32 @@ export function gateReaderBody(
   return serialize(nodes, { encodeEntities: 'utf8' });
 }
 
-/** Recursively: drop, unwrap, or keep with the table's attributes. */
-export function allowlistNodes(children: AnyNode[], options: AllowlistOptions): AnyNode[] {
+/**
+ * Recursively: drop, unwrap, or keep with the table's attributes.
+ *
+ * `parent` is the nearest KEPT element above these children, which is what their
+ * parent will be once the unwrapped ones in between are gone, and undefined at the
+ * top of the body. Two tags are kept only where a browser re-reading the output
+ * builds the same tree this parser did, because htmlparser2 applies few of the HTML
+ * standard's implied end tags and the browser applies all of them:
+ *
+ * - An `<li>` only straight inside a `<ul>` or an `<ol>`. A browser that meets an
+ *   `<li>` closes an open one above it, looking up through any `<div>` and `<p>` on
+ *   the way and stopping at a list. With every `<li>` in a list of its own, the
+ *   list is always the first thing that search meets.
+ * - A box only at the top of the body. It is the one `<div>` the gate emits, and a
+ *   `</div>` the browser does not match to it closes the reader's own wrapper, after
+ *   which the rest of the body sits outside every rule of the reader's stylesheet.
+ *   `<ul><li><div class="infobox"><li>` did exactly that, measured with parse5 on
+ *   2026-09-24: the inner `<li>` closed the outer one and the box with it. At the
+ *   top, nothing the box can hold reaches past it. A box found further down is
+ *   unwrapped and keeps its words.
+ */
+export function allowlistNodes(
+  children: AnyNode[],
+  options: AllowlistOptions,
+  parent?: string,
+): AnyNode[] {
   const out: AnyNode[] = [];
   for (const node of children) {
     if (node.type === 'text') {
@@ -192,18 +240,35 @@ export function allowlistNodes(children: AnyNode[], options: AllowlistOptions): 
     }
     if (DROP.has(tag)) continue;
 
-    const cleaned = allowlistNodes(node.children ?? [], options);
-    const allowed = KEEP[tag];
+    const box = tag === 'div' && parent === undefined ? boxClass(node.attribs ?? {}) : undefined;
+    const allowed =
+      tag === 'li' && parent !== 'ul' && parent !== 'ol' ? undefined : box ? [] : KEEP[tag];
     if (!allowed) {
-      out.push(...cleaned);
+      out.push(...allowlistNodes(node.children ?? [], options, parent));
       continue;
     }
 
-    node.children = cleaned;
-    node.attribs = keptAttributes(node.attribs ?? {}, allowed);
+    const cleaned = allowlistNodes(node.children ?? [], options, tag);
+    node.children = tag === 'p' ? withoutEdgeBreaks(cleaned) : cleaned;
+    node.attribs = box ? { class: box } : keptAttributes(node.attribs ?? {}, allowed);
     if (!options.dropEmpty || TABLE_PARTS.has(tag) || hasContent(node)) out.push(node);
   }
   return out;
+}
+
+/**
+ * A paragraph without a `<br>` at its start or its end. correctiv.org writes
+ * `<p><br>Im November 2016 …` in its infoboxes, which is a blank line the reader
+ * then prints on top of the paragraph's own margin.
+ */
+function withoutEdgeBreaks(children: AnyNode[]): AnyNode[] {
+  const isBreak = (node: AnyNode) => isElement(node) && node.name.toLowerCase() === 'br';
+  const isBlank = (node: AnyNode) => node.type === 'text' && !(node as Text).data.trim();
+  let start = 0;
+  let end = children.length;
+  while (start < end && (isBlank(children[start]) || isBreak(children[start]))) start++;
+  while (end > start && (isBlank(children[end - 1]) || isBreak(children[end - 1]))) end--;
+  return children.slice(start, end);
 }
 
 function keptAttributes(
@@ -219,11 +284,17 @@ function keptAttributes(
         ? linkAddress(value)
         : name === 'src'
           ? imageAddress(value)
-          : name === 'width' || name === 'height'
-            ? PIXELS.test(value)
-              ? value
-              : undefined
-            : value;
+          : name === 'srcset'
+            ? imageSet(value)
+            : name === 'sizes'
+              ? SIZES.test(value)
+                ? value.trim()
+                : undefined
+              : name === 'width' || name === 'height'
+                ? PIXELS.test(value)
+                  ? value
+                  : undefined
+                : value;
     if (kept !== undefined) out[name] = kept;
   }
   return out;
@@ -258,6 +329,58 @@ function linkAddress(value: string): string | undefined {
 function imageAddress(value: string): string | undefined {
   const url = parse(value);
   return url && ['https:', 'http:'].includes(url.protocol) ? url.toString() : undefined;
+}
+
+/**
+ * A `srcset`, candidate by candidate: each address held to `imageAddress` and
+ * written out absolute, each descriptor to a width or a density. A candidate that
+ * fails either is left out and the rest are kept; with none left, so is the
+ * attribute. What is written is rebuilt from the parts, never the value as it came.
+ *
+ * Read the way the HTML standard reads it, because the browser is the reader that
+ * matters: an address runs to the next whitespace and may hold commas, a comma at
+ * its end ends the candidate, and a comma inside a descriptor's parentheses does
+ * not.
+ */
+function imageSet(value: string): string | undefined {
+  const kept: string[] = [];
+  for (const { url, descriptor } of srcsetCandidates(value)) {
+    const address = imageAddress(url);
+    if (!address || !DESCRIPTOR.test(descriptor)) continue;
+    // An address that ended in a comma would end its candidate early when the
+    // browser reads it back; resolving never adds one, and this says so.
+    if (address.endsWith(',')) continue;
+    kept.push(descriptor ? `${address} ${descriptor}` : address);
+  }
+  return kept.length > 0 ? kept.join(', ') : undefined;
+}
+
+function srcsetCandidates(value: string): { url: string; descriptor: string }[] {
+  const out: { url: string; descriptor: string }[] = [];
+  let i = 0;
+  while (i < value.length) {
+    while (i < value.length && /[\s,]/.test(value[i])) i++;
+    if (i >= value.length) break;
+    let end = i;
+    while (end < value.length && !/\s/.test(value[end])) end++;
+    let url = value.slice(i, end);
+    i = end;
+    let descriptor = '';
+    if (url.endsWith(',')) {
+      url = url.replace(/,+$/, '');
+    } else {
+      let depth = 0;
+      while (i < value.length && (value[i] !== ',' || depth > 0)) {
+        if (value[i] === '(') depth++;
+        else if (value[i] === ')' && depth > 0) depth--;
+        descriptor += value[i];
+        i++;
+      }
+      i++; // the comma
+    }
+    if (url) out.push({ url, descriptor: descriptor.trim() });
+  }
+  return out;
 }
 
 function parse(value: string): URL | undefined {
