@@ -652,6 +652,22 @@
       "5": ["Android download on the documentation site"],
       "6": ["Signing and OSS trust"],
       "7": ["No ad-hoc iOS distribution"]
-     }
+    }
+  },
+  "0065": {
+    "slugs": ["embeds-inline-from-a-short-list-and-a-link-for-the-rest"],
+    "decisions": {
+      "1": ["A frame renders inline when its host is on one short list"],
+      "2": ["Every other embed is a visible link, and never nothing"],
+      "3": ["A frame is as tall as it says, or most of a screen"],
+      "4": ["On iOS, a frame's own load is not a link"],
+      "5": [
+        "The document runs no script, by policy, and so the web frame may carry `allow-scripts`"
+      ],
+      "6": ["The link's words are written when the document is built"],
+      "7": [
+        "The body is gated for what acts without a script, and an embed that can do without an origin gets none"
+      ]
+    }
   }
 }
