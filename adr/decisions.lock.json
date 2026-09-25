@@ -645,12 +645,14 @@
   "0064": {
     "slugs": ["ci-cd-for-a-public-repository"],
     "decisions": {
-      "1": ["Decision"],
-      "2": ["Build verification"],
-      "3": ["Review and release identities"],
-      "4": ["Versions and delivery"],
-      "5": ["Android download on the documentation site"],
-      "6": ["Signing and OSS trust"],
+      "1": [
+        "GitHub Actions and Fastlane build every stage, and EAS stays out while the repository is public"
+      ],
+      "2": ["A pull request proves the build without a secret"],
+      "3": ["The review app is a second app, with its own name, icon and scheme"],
+      "4": ["The build number is the run number, and the newest `main` wins"],
+      "5": ["The review APK is a release asset, and the site links to it"],
+      "6": ["Signing stays with CORRECTIV, and only `main` and releases reach it"],
       "7": ["No ad-hoc iOS distribution"]
     }
   },
